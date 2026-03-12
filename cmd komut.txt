@@ -1,0 +1,6 @@
+C:\Users\gökhan\Desktop>cd trading-bot
+C:\Users\gökhan\Desktop\trading-bot>python api_server.py
+
+
+
+C:\Users\gökhan\Desktop\trading-platform\src>npm run dev
