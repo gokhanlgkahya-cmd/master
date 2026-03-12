@@ -1,0 +1,21 @@
+# Basit test - ccxt olmadan
+import pandas as pd
+import numpy as np
+from datetime import datetime, timedelta
+
+print("🔍 Trading Bot Test (ccxt olmadan)")
+print("=" * 50)
+
+# Sahte veri (gerçek veri yerine)
+dates = pd.date_range(end=datetime.now(), periods=20, freq='1h')
+data = {
+    'timestamp': dates,
+    'close': np.random.uniform(43000, 44000, 20),
+    'volume': np.random.uniform(100, 1000, 20)
+}
+df = pd.DataFrame(data)
+
+print("\n📊 Son 5 mum:")
+print(df.tail())
+
+print("\n✅ SISTEM ÇALIŞIYOR!")

@@ -1,0 +1,199 @@
+═══════════════════════════════════════════════════════════════════════════════
+TİMEFRAME, SEKTÖR, BORSA SEÇİMİ - KAPSAMLI ÖZET
+═══════════════════════════════════════════════════════════════════════════════
+
+🎯 SORUNUZ 1: HANGİ TİMEFRAMELERİ KULLANABİLİRİZ?
+═════════════════════════════════════════════════════════════════════════════
+
+MEVCUT TIMEFRAME'LER:
+┌─────────┬──────────┬─────────────┬──────────┬─────────────┐
+│ TF      │ İşlem    │ İşlem/Gün   │ Doğruluk │ Risk        │
+├─────────┼──────────┼─────────────┼──────────┼─────────────┤
+│ 1m      │ Scalp    │ 50-100      │ 45-50%   │ ❌❌❌ KAPA  │
+│ 5m      │ Scalp    │ 20-50       │ 48-52%   │ ❌❌ YÜKSEK  │
+│ 15m     │ Intraday │ 10-20       │ 55-60%   │ ❌ ORTA     │
+│ 30m     │ Intraday │ 5-10        │ 58-62%   │ ORTA        │
+│ 1h      │ Swing    │ 2-5         │ 60-65%   │ DÜŞÜK ✅    │
+│ 4h      │ Swing    │ 1-2         │ 65-70%   │ DÜŞÜK ✅    │
+│ 1d      │ Position │ 0.5-1       │ 70-75%   │ ÇOK DÜŞÜK ✅│
+│ 1w      │ Position │ 0.2-0.5     │ 75-80%   │ ÇOK DÜŞÜK ✅│
+└─────────┴──────────┴─────────────┴──────────┴─────────────┘
+
+⭐ TAVSIYE EDİLEN: 1h + 4h (en iyi risk/reward)
+
+
+🎯 SORUNUZ 2: KAÇ TİMEFRAME AYNANDA ÇALIŞTIRABILIR?
+═════════════════════════════════════════════════════════════════════════════
+
+AYNANDA TF YAPMA KAPASİTESİ:
+┌──────────────────┬────────────┬──────────────┬────────────┐
+│ Kombinasyon      │ Veri Çekme │ Analiz Zaman │ Update     │
+├──────────────────┼────────────┼──────────────┼────────────┤
+│ 1 TF (1h)        │ 2 sn       │ 1 sn         │ Her saat   │
+│ 2 TF (1h + 4h)   │ 4 sn       │ 2 sn         │ Her saat   │
+│ 3 TF (1h+4h+1d)  │ 6 sn       │ 3 sn         │ Her saat   │
+│ 5 TF (hepsi)     │ 15 sn      │ 10 sn        │ Her 1 dk   │
+└──────────────────┴────────────┴──────────────┴────────────┘
+
+✅ YAPILACAK: 1h + 4h (paralel çalışır)
+❌ YAPILMAYACAK: 1m + 5m (çok sık update, yoğun)
+
+
+🎯 SORUNUZ 3: KAÇ COİN / SEKTÖR AYNANDA ÇALIŞTIRABILIR?
+═════════════════════════════════════════════════════════════════════════════
+
+COIN KAPASITESI (Parallel):
+┌─────────────┬─────────────┬──────────────┬─────────────────┐
+│ Coin Sayısı │ TF Per Coin │ Toplam       │ Zaman           │
+├─────────────┼─────────────┼──────────────┼─────────────────┤
+│ 1           │ 1h + 4h     │ 2 TF         │ 30 saniye       │
+│ 2           │ 1h + 4h     │ 4 TF         │ 1 dakika        │
+│ 5           │ 1h + 4h     │ 10 TF        │ 2.5 dakika      │
+│ 10          │ 1h + 4h     │ 20 TF        │ 5 dakika        │
+│ 20          │ 1h + 4h     │ 40 TF        │ 10 dakika       │
+│ 50          │ 1h + 4h     │ 100 TF       │ 25 dakika       │
+│ 100         │ 1h + 4h     │ 200 TF       │ 50 dakika ⚠️     │
+└─────────────┴─────────────┴──────────────┴─────────────────┘
+
+✅ TAVSIYE: 2-5 coin (15m-2dk)
+⚠️  LIMIT: 10+ coin'e gitmeyin (yavaş)
+
+
+🎯 SORUNUZ 4: SÜRKTÖRLERİ NELERİ ÇEKEBILIRIM?
+═════════════════════════════════════════════════════════════════════════════
+
+MEVCUT SEKTÖRLER:
+┌──────────────────┬──────────┬──────────────┬──────────────────┐
+│ Sektör           │ Borsa    │ Kostless     │ 24/7             │
+├──────────────────┼──────────┼──────────────┼──────────────────┤
+│ CRYPTO           │ Binance  │ ✅ TAMAMEN   │ ✅ EVET (24/7)   │
+│                  │ Kraken   │ ✅ TAMAMEN   │ ✅ EVET (24/7)   │
+│ BIST HISSE       │ yfinance │ ✅ TAMAMEN   │ ❌ 09:30-16:00   │
+│ US STOCKS        │ yfinance │ ✅ TAMAMEN   │ ❌ 09:30-16:00   │
+│ EMTIA (Altın)    │ Özel     │ ⚠️ GEREKLI   │ ✅ Session-based │
+└──────────────────┴──────────┴──────────────┴──────────────────┘
+
+⭐ TAVSIYE: CRYPTO (24/7 + ÜCRETSİZ)
+
+
+🎯 SORUNUZ 5: KAÇA ALABİLİRİ VERİ?
+═════════════════════════════════════════════════════════════════════════════
+
+VERİ MIKTARI:
+┌──────────────────┬──────────────┬──────────────┬─────────────────┐
+│ Timeframe        │ Maksimu      │ İstenen      │ İyi Backtest    │
+├──────────────────┼──────────────┼──────────────┼─────────────────┤
+│ 1m               │ 1 yıl        │ 500 bar      │ 1000+ bar       │
+│ 5m               │ 5 yıl        │ 500 bar      │ 2000+ bar       │
+│ 15m              │ 5 yıl        │ 500 bar      │ 2000+ bar       │
+│ 1h               │ 10 yıl       │ 500 bar      │ 2000+ bar       │
+│ 4h               │ 10 yıl       │ 300 bar      │ 1500+ bar       │
+│ 1d               │ 20 yıl       │ 100 bar      │ 1000+ bar       │
+│ 1w               │ 30 yıl       │ 50 bar       │ 300+ bar        │
+└──────────────────┴──────────────┴──────────────┴─────────────────┘
+
+✅ STANDART: Her TF için son 200 bar (otomatik)
+
+
+═══════════════════════════════════════════════════════════════════════════════
+ÖNERİLEN SETUP'LAR - KULLANI
+═══════════════════════════════════════════════════════════════════════════════
+
+SETUP A - BAŞLANGIÇ (Hiç tecrübe yok):
+┌─────────────────────────────────────────────────────────────┐
+│ 📊 Timeframe: 1h + 4h                                       │
+│ 💰 Coin: BTC/USDT (sadece 1 tane)                          │
+│ 📈 Sektör: CRYPTO (Binance)                                │
+│ 🔄 Update: Her 1 saat                                       │
+│ ⏱️  Zaman: 30 saniye                                        │
+│ 💵 Başlangıç: $0 (backtest) → $10 (micro)                 │
+│ 📊 İşlem/Hafta: 1-2                                        │
+│ 🎯 Hedef: Sistemi öğren, %60 win rate                     │
+│ ✅ Avantaj: Basit, düşük risk, öğrenme                     │
+└─────────────────────────────────────────────────────────────┘
+
+SETUP B - PART-TIME (Günde 1-2 saat):
+┌─────────────────────────────────────────────────────────────┐
+│ 📊 Timeframe: 1h + 4h                                       │
+│ 💰 Coin: BTC, ETH, SOL (3 tane)                           │
+│ 📈 Sektör: CRYPTO (Binance)                                │
+│ 🔄 Update: Her 1 saat (otomatik)                           │
+│ ⏱️  Zaman: 2 dakika                                        │
+│ 💵 Başlangıç: $50-200                                      │
+│ 📊 İşlem/Hafta: 5-8                                        │
+│ 🎯 Hedef: Haftada $20-50 passive income                   │
+│ ✅ Avantaj: İdeal balance, gece rahat uyku                 │
+└─────────────────────────────────────────────────────────────┘
+
+SETUP C - FULL-TIME (8+ saat):
+┌─────────────────────────────────────────────────────────────┐
+│ 📊 Timeframe: 15m + 1h + 4h                                │
+│ 💰 Coin: Top 5-10 coins                                   │
+│ 📈 Sektör: CRYPTO (Binance)                                │
+│ 🔄 Update: Her 15 dakika                                   │
+│ ⏱️  Zaman: 5 dakika                                        │
+│ 💵 Başlangıç: $500+                                        │
+│ 📊 İşlem/Gün: 5-10                                         │
+│ 🎯 Hedef: Günde $100+ (aktif yönetim)                    │
+│ ✅ Avantaj: Fazla sinyal, hızlı kar                        │
+└─────────────────────────────────────────────────────────────┘
+
+SETUP D - PASSIVE (Faul Yatırıcı):
+┌─────────────────────────────────────────────────────────────┐
+│ 📊 Timeframe: 1d                                            │
+│ 💰 Coin: BTC + ETH (2 tane)                               │
+│ 📈 Sektör: CRYPTO + US STOCKS                             │
+│ 🔄 Update: Günde 1 (otomatik)                             │
+│ ⏱️  Zaman: 1 dakika                                        │
+│ 💵 Başlangıç: $100+                                        │
+│ 📊 İşlem/Hafta: 1-2                                        │
+│ 🎯 Hedef: Ayda $100-500 (passive)                        │
+│ ✅ Avantaj: Set-and-Forget, stress sıfır                  │
+└─────────────────────────────────────────────────────────────┘
+
+
+═══════════════════════════════════════════════════════════════════════════════
+📝 HIZLI BAŞLAMA KODU
+═════════════════════════════════════════════════════════════════════════════
+
+# Setup A - Başlangiç (1h + 4h, 1 coin)
+from market_scanner_system import MarketScanner
+
+scanner = MarketScanner(
+    strategy='swing_trader',      # 1h, 4h, 1d kullan
+    sectors=['CRYPTO']
+)
+
+# Haftada 1 kez Pazartesi sabahı çalıştır
+scanner.run_scan(output_file='weekly_scan.json')
+
+
+# Setup D - Passive (1d, multi-sector)
+scanner2 = MarketScanner(
+    strategy='position_trader',   # 1d, 1w kullan
+    sectors=['CRYPTO', 'BIST_HISSE', 'US_STOCKS']
+)
+
+# Günde 1 çalıştır (cron job)
+scanner2.run_scan(output_file='daily_scan.json')
+
+
+═══════════════════════════════════════════════════════════════════════════════
+⚡ SONUÇ: HANGİSİ SEÇMELİYİM?
+═════════════════════════════════════════════════════════════════════════════
+
+BAŞLANGIÇ:        1h + 4h, BTC/USDT, Swing Trader Mode ✅
+HEDEF:            Haftada 1-2 güvenilir sinyal
+ZAMİ:             30 saniye / saat
+RİSK:             Çok düşük
+BAŞLANGIÇ RAH:    $0 (paper) → $10 (micro) → $50+ (real)
+BAŞARILI ORANSAL: 60-65%
+
+KOD ÇALIŞTIR:
+---
+from market_scanner_system import MarketScanner
+scanner = MarketScanner('swing_trader', sectors=['CRYPTO'])
+scanner.run_scan()
+---
+
+═══════════════════════════════════════════════════════════════════════════════

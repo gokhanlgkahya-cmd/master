@@ -1,0 +1,62 @@
+from flask import Flask, jsonify
+from flask_cors import CORS
+from trading_bot_analysis import analyze_crypto
+import threading, time
+
+app = Flask(__name__)
+CORS(app)
+
+# Cache — her 60 saniyede güncellenir
+cache = {}
+cache_lock = threading.Lock()
+
+def refresh_data():
+    while True:
+        try:
+            print("[API] Veri güncelleniyor...")
+            symbols = ['BTC/USDT', 'ETH/USDT', 'SOL/USDT']
+            results = {}
+            for sym in symbols:
+                try:
+                    bot = analyze_crypto(sym, '1h')
+                    if bot:
+                        results[sym] = bot
+                except Exception as e:
+                    print(f"[API] {sym} hata: {e}")
+            with cache_lock:
+                cache.update(results)
+            print(f"[API] Güncellendi — {len(results)} sembol")
+        except Exception as e:
+            print(f"[API] Genel hata: {e}")
+        time.sleep(60)
+
+@app.route('/api/signals')
+def get_signals():
+    with cache_lock:
+        data = {}
+        for sym, bot in cache.items():
+            try:
+                last = bot.df.iloc[-1]
+                data[sym] = {
+                    'symbol': sym,
+                    'price':  round(float(last['close']), 2),
+                    'rsi':    round(float(last['rsi']), 2),
+                    'adx':    round(float(last.get('adx', 0)), 2),
+                    'trend':  str(last.get('trend', 'UNKNOWN')),
+                    'buy_signals':  [s for s in ['RANGE_BUY','SQUEEZE_BUY','TREND_BUY'] if last.get(s.lower(), False)],
+                    'sell_signals': [s for s in ['RANGE_SELL','SQUEEZE_SELL','TREND_SELL'] if last.get(s.lower(), False)],
+                }
+            except Exception as e:
+                print(f"[API] {sym} serialize hata: {e}")
+    return jsonify({'status': 'ok', 'data': data, 'count': len(data)})
+
+@app.route('/api/health')
+def health():
+    return jsonify({'status': 'ok', 'cached': list(cache.keys())})
+
+if __name__ == '__main__':
+    # Arka planda veri çekmeye başla
+    t = threading.Thread(target=refresh_data, daemon=True)
+    t.start()
+    print("[API] Server başlatılıyor: http://localhost:5000")
+    app.run(port=5000, debug=False)

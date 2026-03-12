@@ -1,0 +1,5 @@
+from trading_bot_analysis import analyze_crypto
+
+print("🔍 BTC Analiz Ediliyor...")
+btc = analyze_crypto('BTC/USDT', '1h')
+print("✅ TAMAMLANDI!")
