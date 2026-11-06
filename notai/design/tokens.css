@@ -1,0 +1,342 @@
+/* ÜRETİLMİŞ DOSYA — ELLE DÜZENLEMEYİN.
+ * Kaynak: design/tokens.json · Üretici: tokens.json → CSS (kurallar: design/guidelines.md §2).
+ * Değişiklik tokens.json'da yapılır, sonra bu dosya yeniden üretilir. */
+
+:root {
+  color-scheme: light;
+  --color-neutral-0: #FFFFFF;
+  --color-neutral-50: #FAF8F5;
+  --color-neutral-100: #F3F0EB;
+  --color-neutral-200: #E7E2DA;
+  --color-neutral-300: #D5CEC3;
+  --color-neutral-400: #B3AA9C;
+  --color-neutral-500: #8E8576;
+  --color-neutral-600: #6F675A;
+  --color-neutral-700: #554F45;
+  --color-neutral-800: #3A3530;
+  --color-neutral-900: #26231F;
+  --color-neutral-950: #171512;
+  --font-family-base: "Manrope", system-ui, -apple-system, "Segoe UI", "Roboto", "Noto Sans", sans-serif;
+  --font-weight-regular: 400;
+  --font-weight-medium: 500;
+  --font-weight-semibold: 600;
+  --font-weight-bold: 700;
+  --font-size-xs: 12px;
+  --font-size-sm: 14px;
+  --font-size-md: 16px;
+  --font-size-lg: 19px;
+  --font-size-xl: 23px;
+  --font-size-2xl: 28px;
+  --font-line-height-xs: 16px;
+  --font-line-height-sm: 20px;
+  --font-line-height-md: 24px;
+  --font-line-height-lg: 28px;
+  --font-line-height-xl: 32px;
+  --font-line-height-2xl: 36px;
+  --font-line-height-tight: 1.25;
+  --font-line-height-body: 1.5;
+  --font-letter-spacing-tight: -0.01em;
+  --font-letter-spacing-normal: 0;
+  --font-letter-spacing-caps: 0.02em;
+  --font-feature-tabular: tabular-nums;
+  --space-0: 0px;
+  --space-1: 4px;
+  --space-2: 8px;
+  --space-3: 12px;
+  --space-4: 16px;
+  --space-5: 20px;
+  --space-6: 24px;
+  --space-8: 32px;
+  --space-10: 40px;
+  --space-12: 48px;
+  --space-16: 64px;
+  --radius-sm: 8px;
+  --radius-md: 12px;
+  --radius-lg: 16px;
+  --radius-full: 9999px;
+  --border-width-hairline: 1px;
+  --border-width-focus: 2px;
+  --border-width-focus-offset: 2px;
+  --border-style-suggested: dashed;
+  --border-style-accepted: solid;
+  --size-touch-min: 44px;
+  --size-mic: 48px;
+  --size-input: 48px;
+  --size-composer: 64px;
+  --size-tabbar: 64px;
+  --size-topbar: 56px;
+  --size-topic-icon: 40px;
+  --size-chip: 32px;
+  --size-dot: 8px;
+  --size-gutter: 16px;
+  --size-tile: 56px;
+  --size-handle-width: 36px;
+  --size-handle-height: 4px;
+  --size-tab-pill-width: 56px;
+  --size-tab-pill-height: 32px;
+  --size-attach-panel-min: 280px;
+  --size-voice-strip-min: 120px;
+  --size-bubble-max: 0.86;
+  --size-sheet-peek: 0.55;
+  --size-sheet-full: 0.92;
+  --size-phone-width: 412px;
+  --size-phone-height: 915px;
+  --size-phone-status-bar: 32px;
+  --size-phone-nav-bar: 24px;
+  --size-phone-radius: 36px;
+  --icon-size-xs: 16px;
+  --icon-size-sm: 20px;
+  --icon-size-md: 24px;
+  --icon-stroke: 1.5;
+  --opacity-disabled: 0.4;
+  --motion-duration-fade: 120ms;
+  --motion-duration-fast: 160ms;
+  --motion-duration-close: 220ms;
+  --motion-delay-content: 60ms;
+  --motion-delay-chips: 300ms;
+  --motion-delay-chip-merge: 1000ms;
+  --motion-stagger-chip: 40ms;
+  --motion-stagger-tile: 20ms;
+  --motion-easing-out: cubic-bezier(0.2, 0.8, 0.2, 1);
+  --motion-easing-standard: cubic-bezier(0.2, 0, 0, 1);
+  --motion-easing-in: cubic-bezier(0.4, 0, 1, 1);
+  --motion-easing-linear: cubic-bezier(0, 0, 1, 1);
+  --motion-spring-panel-easing: linear(0, 0.035, 0.126, 0.234, 0.35, 0.465, 0.581, 0.675, 0.755, 0.827, 0.88, 0.921, 0.955, 0.978, 0.994, 1.004, 1.011, 1.015, 1.016, 1.016, 1.015, 1.013, 1.011, 1.009, 1.007, 1.006, 1.004, 1.003, 1.002, 1.001, 1);
+  --motion-spring-panel-duration: 370ms;
+  --motion-spring-panel-stiffness: 520;
+  --motion-spring-panel-damping: 36;
+  --motion-spring-panel-mass: 1;
+  --motion-spring-panel-overshoot: 0.016;
+  --motion-spring-small-easing: linear(0, 0.057, 0.188, 0.354, 0.539, 0.697, 0.83, 0.935, 1.009, 1.057, 1.082, 1.091, 1.087, 1.075, 1.06, 1.045, 1.03, 1.017, 1.007, 1, 0.995, 0.993, 0.992, 0.992, 0.993, 0.994, 0.996, 0.997, 0.998, 0.999, 1);
+  --motion-spring-small-duration: 424ms;
+  --motion-spring-small-stiffness: 620;
+  --motion-spring-small-damping: 30;
+  --motion-spring-small-mass: 1;
+  --motion-spring-small-overshoot: 0.091;
+  --motion-reduced-duration: 120ms; /* {motion.duration.fade} */
+  --motion-reduced-easing: cubic-bezier(0.2, 0.8, 0.2, 1); /* {motion.easing.out} */
+  --z-base: 0;
+  --z-raised: 1;
+  --z-sticky: 10;
+  --z-tabbar: 20;
+  --z-panel: 30;
+  --z-scrim: 40;
+  --z-sheet: 50;
+  --z-menu: 60;
+  --z-toast: 70;
+
+  /* Açık tema (varsayılan) */
+  --color-bg: #FAF8F5; /* {color.neutral.50} */
+  --color-surface: #FFFFFF; /* {color.neutral.0} */
+  --color-surface-raised: #FFFFFF; /* {color.neutral.0} */
+  --color-surface-sunken: #F3F0EB; /* {color.neutral.100} */
+  --color-text: #26231F; /* {color.neutral.900} */
+  --color-text-muted: #6F675A; /* {color.neutral.600} */
+  --color-text-subtle: #8E8576; /* {color.neutral.500} */
+  --color-border: #E7E2DA; /* {color.neutral.200} */
+  --color-border-strong: #8E8576; /* {color.neutral.500} */
+  --color-accent: #26231F; /* {color.neutral.900} */
+  --color-accent-pressed: #3A3530; /* {color.neutral.800} */
+  --color-on-accent: #FAF8F5; /* {color.neutral.50} */
+  --color-focus-ring: #26231F; /* {color.neutral.900} */
+  --color-scrim: #17151252;
+  --color-bubble: #FFFFFF; /* {color.theme.light.surface} */
+  --color-bubble-text: #26231F; /* {color.theme.light.text} */
+  --color-bubble-border: #E7E2DA; /* {color.theme.light.border} */
+  --color-meta: #6F675A; /* {color.theme.light.text-muted} */
+  --color-chip-bg: #FFFFFF00;
+  --color-chip-bg-pressed: #F3F0EB; /* {color.neutral.100} */
+  --color-chip-border: #8E8576; /* {color.neutral.500} */
+  --color-chip-text: #554F45; /* {color.neutral.700} */
+  --color-unprocessed-dot: #3A3530; /* {color.neutral.800} */
+  --color-badge-bg: #26231F; /* {color.theme.light.accent} */
+  --color-badge-text: #FAF8F5; /* {color.theme.light.on-accent} */
+  --color-mic-bg: #26231F; /* {color.theme.light.accent} */
+  --color-mic-icon: #FAF8F5; /* {color.theme.light.on-accent} */
+  --color-input-bg: #FFFFFF; /* {color.theme.light.surface} */
+  --color-input-border: #8E8576; /* {color.theme.light.border-strong} */
+  --color-placeholder: #6F675A; /* {color.theme.light.text-muted} */
+  --color-tab-active: #26231F; /* {color.neutral.900} */
+  --color-tab-idle: #6F675A; /* {color.neutral.600} */
+  --color-tab-indicator: #E7E2DA; /* {color.neutral.200} */
+  --color-segment-track: #F3F0EB; /* {color.theme.light.surface-sunken} */
+  --color-segment-thumb: #FFFFFF; /* {color.theme.light.surface} */
+  --color-segment-thumb-border: #8E8576; /* {color.theme.light.border-strong} */
+  --color-segment-text: #6F675A; /* {color.theme.light.text-muted} */
+  --color-segment-text-selected: #26231F; /* {color.theme.light.text} */
+  --color-sheet-bg: #FFFFFF; /* {color.theme.light.surface-raised} */
+  --color-sheet-handle: #8E8576; /* {color.theme.light.border-strong} */
+  --color-panel-bg: #FFFFFF; /* {color.theme.light.surface} */
+  --color-tile-bg: #F3F0EB; /* {color.theme.light.surface-sunken} */
+  --color-plan-bg: #F3F0EB; /* {color.theme.light.surface-sunken} */
+  --color-plan-border: #E7E2DA; /* {color.theme.light.border} */
+  --color-voice-live: #26231F; /* {color.theme.light.text} */
+  --color-voice-settled: #6F675A; /* {color.theme.light.text-muted} */
+  --color-accept: #3F6B3A; /* {color.semantic.light.success.fg} */
+  --color-dismiss: #6F675A; /* {color.theme.light.text-muted} */
+  --color-success: #3F6B3A; /* {color.semantic.light.success.fg} */
+  --color-success-bg: #E8EFE3; /* {color.semantic.light.success.bg} */
+  --color-success-border: #658961; /* {color.semantic.light.success.border} */
+  --color-warning: #855512; /* {color.semantic.light.warning.fg} */
+  --color-warning-bg: #F6EBD9; /* {color.semantic.light.warning.bg} */
+  --color-warning-border: #9D7741; /* {color.semantic.light.warning.border} */
+  --color-error: #A33A2C; /* {color.semantic.light.error.fg} */
+  --color-error-bg: #F7E3DF; /* {color.semantic.light.error.bg} */
+  --color-error-border: #B56156; /* {color.semantic.light.error.border} */
+  --color-info: #2F5F7A; /* {color.semantic.light.info.fg} */
+  --color-info-bg: #E1ECF2; /* {color.semantic.light.info.bg} */
+  --color-info-border: #597F95; /* {color.semantic.light.info.border} */
+  --shadow-raised: 0px 1px 2px 0px #26231F0F;
+  --shadow-floating: 0px 4px 16px 0px #26231F14;
+  --shadow-sheet: 0px -8px 32px 0px #26231F24;
+}
+
+/* Koyu tema: sistem ayarı (kullanıcı "Açık" seçmediyse) */
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    color-scheme: dark;
+    --color-bg: #171512; /* {color.neutral.950} */
+    --color-surface: #26231F; /* {color.neutral.900} */
+    --color-surface-raised: #26231F; /* {color.neutral.900} */
+    --color-surface-sunken: #3A3530; /* {color.neutral.800} */
+    --color-text: #F3F0EB; /* {color.neutral.100} */
+    --color-text-muted: #B3AA9C; /* {color.neutral.400} */
+    --color-text-subtle: #8E8576; /* {color.neutral.500} */
+    --color-border: #3A3530; /* {color.neutral.800} */
+    --color-border-strong: #8E8576; /* {color.neutral.500} */
+    --color-accent: #F3F0EB; /* {color.neutral.100} */
+    --color-accent-pressed: #E7E2DA; /* {color.neutral.200} */
+    --color-on-accent: #171512; /* {color.neutral.950} */
+    --color-focus-ring: #F3F0EB; /* {color.neutral.100} */
+    --color-scrim: #0000008F;
+    --color-bubble: #26231F; /* {color.theme.dark.surface} */
+    --color-bubble-text: #F3F0EB; /* {color.theme.dark.text} */
+    --color-bubble-border: #3A3530; /* {color.theme.dark.border} */
+    --color-meta: #B3AA9C; /* {color.theme.dark.text-muted} */
+    --color-chip-bg: #00000000;
+    --color-chip-bg-pressed: #3A3530; /* {color.neutral.800} */
+    --color-chip-border: #8E8576; /* {color.neutral.500} */
+    --color-chip-text: #D5CEC3; /* {color.neutral.300} */
+    --color-unprocessed-dot: #E7E2DA; /* {color.neutral.200} */
+    --color-badge-bg: #F3F0EB; /* {color.theme.dark.accent} */
+    --color-badge-text: #171512; /* {color.theme.dark.on-accent} */
+    --color-mic-bg: #F3F0EB; /* {color.theme.dark.accent} */
+    --color-mic-icon: #171512; /* {color.theme.dark.on-accent} */
+    --color-input-bg: #26231F; /* {color.theme.dark.surface} */
+    --color-input-border: #8E8576; /* {color.theme.dark.border-strong} */
+    --color-placeholder: #B3AA9C; /* {color.theme.dark.text-muted} */
+    --color-tab-active: #FAF8F5; /* {color.neutral.50} */
+    --color-tab-idle: #B3AA9C; /* {color.neutral.400} */
+    --color-tab-indicator: #3A3530; /* {color.neutral.800} */
+    --color-segment-track: #3A3530; /* {color.theme.dark.surface-sunken} */
+    --color-segment-thumb: #26231F; /* {color.theme.dark.surface} */
+    --color-segment-thumb-border: #8E8576; /* {color.theme.dark.border-strong} */
+    --color-segment-text: #B3AA9C; /* {color.theme.dark.text-muted} */
+    --color-segment-text-selected: #F3F0EB; /* {color.theme.dark.text} */
+    --color-sheet-bg: #26231F; /* {color.theme.dark.surface-raised} */
+    --color-sheet-handle: #8E8576; /* {color.theme.dark.border-strong} */
+    --color-panel-bg: #26231F; /* {color.theme.dark.surface} */
+    --color-tile-bg: #3A3530; /* {color.theme.dark.surface-sunken} */
+    --color-plan-bg: #3A3530; /* {color.theme.dark.surface-sunken} */
+    --color-plan-border: #3A3530; /* {color.theme.dark.border} */
+    --color-voice-live: #F3F0EB; /* {color.theme.dark.text} */
+    --color-voice-settled: #B3AA9C; /* {color.theme.dark.text-muted} */
+    --color-accept: #9CC48F; /* {color.semantic.dark.success.fg} */
+    --color-dismiss: #B3AA9C; /* {color.theme.dark.text-muted} */
+    --color-success: #9CC48F; /* {color.semantic.dark.success.fg} */
+    --color-success-bg: #1F2A1C; /* {color.semantic.dark.success.bg} */
+    --color-success-border: #6D8964; /* {color.semantic.dark.success.border} */
+    --color-warning: #E0B46A; /* {color.semantic.dark.warning.fg} */
+    --color-warning-bg: #2E2414; /* {color.semantic.dark.warning.bg} */
+    --color-warning-border: #9D7E4A; /* {color.semantic.dark.warning.border} */
+    --color-error: #F09A8B; /* {color.semantic.dark.error.fg} */
+    --color-error-bg: #33191A; /* {color.semantic.dark.error.bg} */
+    --color-error-border: #A86C61; /* {color.semantic.dark.error.border} */
+    --color-info: #8FC0DB; /* {color.semantic.dark.info.fg} */
+    --color-info-bg: #172630; /* {color.semantic.dark.info.bg} */
+    --color-info-border: #648699; /* {color.semantic.dark.info.border} */
+    --shadow-raised: inset 0px 1px 0px 0px #F3F0EB0F;
+    --shadow-floating: inset 0px 1px 0px 0px #F3F0EB0F, 0px 8px 24px 0px #00000066;
+    --shadow-sheet: 0px -8px 32px 0px #00000080;
+  }
+}
+
+/* Koyu tema: kullanıcı Ayarlar'da "Koyu" seçti */
+:root[data-theme="dark"] {
+  color-scheme: dark;
+  --color-bg: #171512; /* {color.neutral.950} */
+  --color-surface: #26231F; /* {color.neutral.900} */
+  --color-surface-raised: #26231F; /* {color.neutral.900} */
+  --color-surface-sunken: #3A3530; /* {color.neutral.800} */
+  --color-text: #F3F0EB; /* {color.neutral.100} */
+  --color-text-muted: #B3AA9C; /* {color.neutral.400} */
+  --color-text-subtle: #8E8576; /* {color.neutral.500} */
+  --color-border: #3A3530; /* {color.neutral.800} */
+  --color-border-strong: #8E8576; /* {color.neutral.500} */
+  --color-accent: #F3F0EB; /* {color.neutral.100} */
+  --color-accent-pressed: #E7E2DA; /* {color.neutral.200} */
+  --color-on-accent: #171512; /* {color.neutral.950} */
+  --color-focus-ring: #F3F0EB; /* {color.neutral.100} */
+  --color-scrim: #0000008F;
+  --color-bubble: #26231F; /* {color.theme.dark.surface} */
+  --color-bubble-text: #F3F0EB; /* {color.theme.dark.text} */
+  --color-bubble-border: #3A3530; /* {color.theme.dark.border} */
+  --color-meta: #B3AA9C; /* {color.theme.dark.text-muted} */
+  --color-chip-bg: #00000000;
+  --color-chip-bg-pressed: #3A3530; /* {color.neutral.800} */
+  --color-chip-border: #8E8576; /* {color.neutral.500} */
+  --color-chip-text: #D5CEC3; /* {color.neutral.300} */
+  --color-unprocessed-dot: #E7E2DA; /* {color.neutral.200} */
+  --color-badge-bg: #F3F0EB; /* {color.theme.dark.accent} */
+  --color-badge-text: #171512; /* {color.theme.dark.on-accent} */
+  --color-mic-bg: #F3F0EB; /* {color.theme.dark.accent} */
+  --color-mic-icon: #171512; /* {color.theme.dark.on-accent} */
+  --color-input-bg: #26231F; /* {color.theme.dark.surface} */
+  --color-input-border: #8E8576; /* {color.theme.dark.border-strong} */
+  --color-placeholder: #B3AA9C; /* {color.theme.dark.text-muted} */
+  --color-tab-active: #FAF8F5; /* {color.neutral.50} */
+  --color-tab-idle: #B3AA9C; /* {color.neutral.400} */
+  --color-tab-indicator: #3A3530; /* {color.neutral.800} */
+  --color-segment-track: #3A3530; /* {color.theme.dark.surface-sunken} */
+  --color-segment-thumb: #26231F; /* {color.theme.dark.surface} */
+  --color-segment-thumb-border: #8E8576; /* {color.theme.dark.border-strong} */
+  --color-segment-text: #B3AA9C; /* {color.theme.dark.text-muted} */
+  --color-segment-text-selected: #F3F0EB; /* {color.theme.dark.text} */
+  --color-sheet-bg: #26231F; /* {color.theme.dark.surface-raised} */
+  --color-sheet-handle: #8E8576; /* {color.theme.dark.border-strong} */
+  --color-panel-bg: #26231F; /* {color.theme.dark.surface} */
+  --color-tile-bg: #3A3530; /* {color.theme.dark.surface-sunken} */
+  --color-plan-bg: #3A3530; /* {color.theme.dark.surface-sunken} */
+  --color-plan-border: #3A3530; /* {color.theme.dark.border} */
+  --color-voice-live: #F3F0EB; /* {color.theme.dark.text} */
+  --color-voice-settled: #B3AA9C; /* {color.theme.dark.text-muted} */
+  --color-accept: #9CC48F; /* {color.semantic.dark.success.fg} */
+  --color-dismiss: #B3AA9C; /* {color.theme.dark.text-muted} */
+  --color-success: #9CC48F; /* {color.semantic.dark.success.fg} */
+  --color-success-bg: #1F2A1C; /* {color.semantic.dark.success.bg} */
+  --color-success-border: #6D8964; /* {color.semantic.dark.success.border} */
+  --color-warning: #E0B46A; /* {color.semantic.dark.warning.fg} */
+  --color-warning-bg: #2E2414; /* {color.semantic.dark.warning.bg} */
+  --color-warning-border: #9D7E4A; /* {color.semantic.dark.warning.border} */
+  --color-error: #F09A8B; /* {color.semantic.dark.error.fg} */
+  --color-error-bg: #33191A; /* {color.semantic.dark.error.bg} */
+  --color-error-border: #A86C61; /* {color.semantic.dark.error.border} */
+  --color-info: #8FC0DB; /* {color.semantic.dark.info.fg} */
+  --color-info-bg: #172630; /* {color.semantic.dark.info.bg} */
+  --color-info-border: #648699; /* {color.semantic.dark.info.border} */
+  --shadow-raised: inset 0px 1px 0px 0px #F3F0EB0F;
+  --shadow-floating: inset 0px 1px 0px 0px #F3F0EB0F, 0px 8px 24px 0px #00000066;
+  --shadow-sheet: 0px -8px 32px 0px #00000080;
+}
+
+/* Azaltılmış hareket: yaylar → kısa opacity geçişi (transform'ları bileşen CSS'i kapatır) */
+@media (prefers-reduced-motion: reduce) {
+  :root {
+    --motion-stagger-chip: 0ms;
+    --motion-stagger-tile: 0ms;
+    --motion-spring-panel-easing: cubic-bezier(0.2, 0.8, 0.2, 1);
+    --motion-spring-panel-duration: 120ms;
+    --motion-spring-small-easing: cubic-bezier(0.2, 0.8, 0.2, 1);
+    --motion-spring-small-duration: 120ms;
+  }
+}
