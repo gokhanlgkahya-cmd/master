@@ -60,3 +60,11 @@ Her dilim: derlenir + `cargo fmt --check` + `cargo clippy --all-targets -- -D wa
 1. AI sağlayıcısı varsayılanı: Claude API mi, ev sunucusundaki Gemma mı? (Kod ikisini de destekliyor; varsayılan: yerel Gemma, yedek Claude.)
 2. Sabah planı saati 08:00 uygun mu?
 3. WhatsApp yakalaması için MacroDroid akışı mı, n8n üzerinden mi?
+
+## 5. Faz durumu
+| Faz | Durum | Not |
+|---|---|---|
+| Faz 0 | ✅ | design/brief.md (+ Revizyon 1: WhatsApp kurgusu) |
+| Faz 1 | ✅ (otonom onay) | design/decision.md (A tabanlı karışım), tokens.json/css, guidelines.md, components.html, screens/01–14, review-final.md (ort. 8,1). "Tasarım onaylandı" kararı `/goal tüm fazları işle` talimatıyla Claude tarafından verildi; Gökhan'ın sonradan gözden geçirmesi beklenir. |
+| Faz 2 | ✅ (otonom onay) | Bu belge. Açık sorular §4'te. |
+| Faz 3 | ⏳ | Dilimler §2 sırasıyla; her dilimin durumu `docs/PROGRESS.md`'de. |
