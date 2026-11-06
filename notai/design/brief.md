@@ -1,6 +1,8 @@
 # NotAI — Tasarım Brief'i (Faz 0 çıktısı)
 
-> Tarih: 2026-11-06 · Kaynak: Gökhan ile 4 soru turu + 1 netleştirme turu (AskUserQuestion)
+> Tarih: 2026-11-06 · Kaynak: Gökhan ile 4 soru turu + 1 netleştirme turu + Revizyon 1 (WhatsApp kurgusu)
+>
+> ⚠️ **Revizyon 1 (aşağıda) Tur 2'deki sekme ve Gelen Kutusu kararlarının yerine geçer.**
 
 ## Tur 1 — Karakter
 | Soru | Cevap | Tasarıma yansıması |
@@ -34,9 +36,45 @@
 | Alan/etiket ayrımı | **Tek renk, ikonla ayrım** | Nötr paletle uyumlu; alanlar (İş, Ev, Sağlık…) ikonla ayrılır. |
 | Sesli yakalama | **Küçük kayan panel + canlı metin** | Yazma çubuğunun üstünde açılan panel; konuşma anında metne döner, yapılandırılmış önizleme (Görev · Perşembe) altında. |
 
+## Revizyon 1 — Kurgu: WhatsApp iskeleti, NotAI görsel dili
+Gökhan 3 WhatsApp ekran görüntüsü paylaştı (sohbet listesi, sohbet akışı, ataç menüsü) ve şunu istedi:
+**"Kurgu olarak WhatsApp'ı kullanalım, tasarım dili sorulardaki gibi olsun."**
+
+### Yapı eşlemesi
+| WhatsApp | NotAI |
+|---|---|
+| Sohbet listesi (ana ekran) | **Ana ekran:** en üstte sabitli **Ana Günlük**, altında **konular** (PARA proje/alanları: GemOlive, Ev, Sağlık…). Her satır: ikon · ad · son kayıt önizlemesi · saat. |
+| Sohbet ekranı | **Akış ekranı** (Ana Günlük veya bir konu): gün ayraçları (Perşembe / Dün / Bugün), en yeni en altta, açılışta en alta kaydırılmış, altta sabit yazma çubuğu + ataç + kamera + mikrofon. |
+| Ataç menüsü (alttan panel) | **Ekleme paneli:** Fotoğraf · Kamera · Belge · Konum · Kişi · Görev · Hatırlatma · Etkinlik · Liste. |
+| İlet oku ↪ | **Konuya taşı/gönder** eylemi. |
+| Tümü/Okunmamış/Favoriler çipleri | Tümü · Sabitlenenler · (konu türüne göre: Projeler / Alanlar / Kaynaklar) — tasarımcıya bırakıldı. |
+| Alt sekmeler | **5 sekme:** Günlük/Konular · Görevler · Takvim · Hatırlatmalar · Ara/Sor (notlara soru sorma). |
+
+### Akış kuralları
+- **Ana Günlük = günlük log.** Her kayıt (nereye girilirse girilsin) burada kronolojik görünür.
+- **Ana Günlük'e girilen kayıt** → AI kaydın altına soluk çip önerir (ör. "→ GemOlive", "Görev · Perşembe"); kabul edilince kayıt o konuda da görünür.
+- **Doğrudan konuya girilen kayıt** → Ana Günlük'te de kendi saatinde, küçük konu etiketiyle görünür.
+- Veri modeli açısından: tek Entry akışı; konu = Area/Proje filtresi (docs/ARCHITECTURE.md ile uyumlu).
+
+### Gelen Kutusu
+- Ayrı sekme **yok**. İşlenmemiş (AI'ın henüz sınıflandırmadığı / kullanıcının karar vermediği) kayıtlar **Ana Günlük'te işaretle** (nokta/rozet) görünür. Ana ekranda Ana Günlük satırında işlenmemiş sayısı rozeti olabilir.
+
+### Değişmeyenler (görsel dil)
+Nötr palet, ferah yoğunluk, grotesk sans, orta köşe (8–12px), belirgin yaylı hareket, açık/koyu/sistem seçimi, kayıt altında AI çipi, alanlar ikonla ayrılır, sesli kayıt = yazma çubuğu üstünde küçük panel + canlı metin, sabah planı = bildirim + Ana Günlük/Bugün üstünde kart.
+
+### Kopya sınırı
+WhatsApp'ın **düzen ve etkileşim kalıbı** alınır; yeşil marka rengi, duvar kâğıdı deseni, ikon seti, balon kuyruğu şekli, logo/ad **alınmaz**.
+
+### Faz 1 prototip ekranları (DESIGN_PROCESS listesinin bu kurguya uyarlanmış hali)
+1. Ana ekran (Ana Günlük + konular listesi, 5 sekmeli alt çubuk)
+2. Ana Günlük akışı (gün ayraçları, AI çipleri, işlenmemiş işareti, sabah planı kartı, sabit yazma çubuğu)
+3. Ekleme (ataç) paneli
+4. Sesli yakalama paneli
+5. Not/kayıt detayı (açılır pencere tipi her yönde farklı denenir)
+
 ## Tasarımcılar için özet
 - **Ruh:** Nötr renkli, ferah, grotesk yazılı, orta köşeli; ama hareketi canlı (yaylı).
-- **Merkez kalıp:** WhatsApp benzeri günlük akış + altta sabit yazma çubuğu + kayıt altında AI çipleri.
-- **Sekmeler:** Bugün · Gelen Kutusu · Görevler · Takvim (alt çubuk).
-- **Serbest bırakılanlar:** Açılır pencere tipi, ikincil bölümlere (PARA, Arama/Sohbet, Haftalık GG) erişim yolu.
+- **Merkez kalıp:** WhatsApp iskeleti — ana ekranda sabitli Ana Günlük + konu listesi; akışta en yeni en altta, altta sabit yazma çubuğu, kayıt altında AI çipleri.
+- **Sekmeler (alt çubuk, 5):** Günlük/Konular · Görevler · Takvim · Hatırlatmalar · Ara/Sor.
+- **Serbest bırakılanlar:** Not detayı açılır pencere tipi, ana ekrandaki filtre çipleri, Haftalık Gözden Geçirme'ye erişim yolu.
 - **Zorunlular:** Açık + koyu tema, WCAG AA, ≥44px dokunma hedefi, gerçek Türkçe içerik, marka/ekran kopyası yok.
