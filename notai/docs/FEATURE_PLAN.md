@@ -50,7 +50,7 @@ Her dilim: derlenir + `cargo fmt --check` + `cargo clippy --all-targets -- -D wa
 
 ### 3.4 Görevler ve sabah planı
 - Öncelik: Düşük / Normal / Yüksek. Tarih isteğe bağlı; saat isteğe bağlı.
-- Sabah planı (varsayılan 08:00, Europe/Istanbul): geciken görevler → bugünkü görevler → yüksek öncelikli tarihsizler; en fazla 5 madde.
+- Sabah planı (varsayılan 08:00, Europe/Istanbul): geciken görevler → bugünkü görevler → yüksek öncelikli tarihsizler; **en fazla 3 madde** (ferah yoğunluk; design-critic son tur kararı ile eşitlendi). Kalanlar "+N görev daha" bağlantısıyla Görevler sekmesine gider.
 
 ### 3.5 Silme ve veri güvenliği
 - "Sil" = Çöp kutusu (30 gün), "Arşivle" = Arşiv. Kalıcı silme yalnız çöp kutusundan, ayrı onayla.
