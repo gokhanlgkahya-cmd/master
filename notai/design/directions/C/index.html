@@ -1,0 +1,384 @@
+<!doctype html>
+<html lang="tr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>NotAI · Yön C · Saf Mürekkep</title>
+<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fragment+Mono&family=Inter:wght@400;500;600;700&family=Schibsted+Grotesk:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<style>
+:root{
+  --neutral-50:#FAFAFA;--neutral-100:#F4F4F4;--neutral-200:#E6E6E6;--neutral-300:#D1D1D1;--neutral-400:#A3A3A3;--neutral-500:#767676;
+  --neutral-600:#5C5C5C;--neutral-700:#474747;--neutral-800:#2E2E2E;--neutral-900:#171717;--neutral-950:#0A0A0A;
+  --font-heading:"Schibsted Grotesk","Inter",sans-serif;--font-body:"Inter",system-ui,sans-serif;--font-mono:"Fragment Mono",ui-monospace,monospace;
+  --text-xs:13px;--text-sm:15px;--text-md:17px;--text-lg:21px;--text-xl:27px;--text-2xl:34px;
+  --leading-tight:1.15;--leading-body:1.5;
+  --weight-regular:400;--weight-medium:500;--weight-semibold:600;--weight-bold:800;
+  --tracking-tight:-0.025em;--tracking-caps:0.04em;
+  --space-1:4px;--space-2:8px;--space-3:12px;--space-4:16px;--space-5:20px;--space-6:24px;--space-8:32px;--space-10:40px;--space-12:48px;
+  --radius-sm:8px;--radius-md:10px;--radius-lg:12px;--radius-pill:999px;
+  --ease-spring-panel:linear(0,0.035,0.112,0.218,0.327,0.442,0.544,0.641,0.72,0.791,0.846,0.894,0.928,0.956,0.975,0.99,1,1.006,1.01,1.012,1.012,1.012,1.011,1.01,1.008,1.007,1.006,1.004,1.003,1.003,1);
+  --dur-spring-panel:466ms;
+  --ease-spring-pop:linear(0,0.083,0.274,0.508,0.735,0.915,1.053,1.135,1.169,1.166,1.139,1.101,1.061,1.025,0.998,0.982,0.973,0.971,0.974,0.98,0.987,0.993,0.999,1.002,1.004,1.005,1.005,1.004,1.003,1.002,1);
+  --dur-spring-pop:657ms;
+  --ease-out:cubic-bezier(.2,.8,.2,1);--dur-fade:120ms;
+  --size-touch:44px;--size-tabbar:68px;--size-composer:64px;--size-topic-icon:44px;
+  --size-status:32px;--size-nav:24px;
+  
+  --color-bg:#F4F4F4;--color-surface:#FFFFFF;--color-surface-raised:#FFFFFF;--color-surface-sunken:#F4F4F4;
+  --color-text:#0A0A0A;--color-text-muted:#5C5C5C;--color-border:#E6E6E6;--color-border-strong:#767676;
+  --color-ink:#0A0A0A;--color-on-ink:#FFFFFF;--color-focus:#0A0A0A;
+  --color-chip-bg:#FFFFFF;--color-chip-text:#5C5C5C;--color-chip-border:#D1D1D1;
+  --color-unprocessed:#0A0A0A;--color-scrim:rgba(0,0,0,.48);
+  --color-tab-active:#FFFFFF;--color-tab-idle:#5C5C5C;--color-tab-indicator:#0A0A0A;
+  --color-success:#157A3B;--color-success-bg:#E2F6E8;--color-warning:#8F5400;--color-warning-bg:#FFF1D6;
+  --color-error:#C42A20;--color-error-bg:#FFE5E2;--color-info:#1B5AC7;--color-info-bg:#E3ECFF;
+  --shadow-1:none;--shadow-2:0 12px 32px rgba(0,0,0,.16);--shadow-sheet:0 -12px 40px rgba(0,0,0,.18);
+  /* C'ye özgü ek değişkenler */
+  --color-card-border:transparent;--color-detail-bg:#FFFFFF;
+  --inv-bg:#0A0A0A;--inv-text:#FFFFFF;--inv-muted:#A3A3A3;--inv-border:#0A0A0A;--inv-soft:rgba(255,255,255,.12);
+  --inv-btn-bg:#FFFFFF;--inv-btn-text:#0A0A0A;--inv-error:#FF7A70;--inv-warning:#FFC14D;
+  --page-bg:#E6E6E6;--phone-border:#A3A3A3;
+}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){
+  --color-bg:#000000;--color-surface:#171717;--color-surface-raised:#171717;--color-surface-sunken:#171717;
+  --color-text:#FAFAFA;--color-text-muted:#A3A3A3;--color-border:#2E2E2E;--color-border-strong:#767676;
+  --color-ink:#FAFAFA;--color-on-ink:#0A0A0A;--color-focus:#FAFAFA;
+  --color-chip-bg:#171717;--color-chip-text:#A3A3A3;--color-chip-border:#474747;
+  --color-unprocessed:#FAFAFA;--color-scrim:rgba(0,0,0,.64);
+  --color-tab-active:#0A0A0A;--color-tab-idle:#A3A3A3;--color-tab-indicator:#FAFAFA;
+  --color-success:#5BD68A;--color-success-bg:#0B2414;--color-warning:#FFC14D;--color-warning-bg:#2A1D00;
+  --color-error:#FF7A70;--color-error-bg:#330F0C;--color-info:#7EA8FF;--color-info-bg:#0D1A38;
+  --shadow-1:none;--shadow-2:none;--shadow-sheet:none;
+  --color-card-border:#2E2E2E;--color-detail-bg:#000000;
+  --inv-bg:#171717;--inv-text:#FAFAFA;--inv-muted:#A3A3A3;--inv-border:#FAFAFA;--inv-soft:rgba(255,255,255,.1);
+  --inv-btn-bg:#FAFAFA;--inv-btn-text:#0A0A0A;--inv-error:#FF7A70;--inv-warning:#FFC14D;
+  --page-bg:#121212;--phone-border:#2E2E2E;}}
+:root[data-theme="dark"]{
+  --color-bg:#000000;--color-surface:#171717;--color-surface-raised:#171717;--color-surface-sunken:#171717;
+  --color-text:#FAFAFA;--color-text-muted:#A3A3A3;--color-border:#2E2E2E;--color-border-strong:#767676;
+  --color-ink:#FAFAFA;--color-on-ink:#0A0A0A;--color-focus:#FAFAFA;
+  --color-chip-bg:#171717;--color-chip-text:#A3A3A3;--color-chip-border:#474747;
+  --color-unprocessed:#FAFAFA;--color-scrim:rgba(0,0,0,.64);
+  --color-tab-active:#0A0A0A;--color-tab-idle:#A3A3A3;--color-tab-indicator:#FAFAFA;
+  --color-success:#5BD68A;--color-success-bg:#0B2414;--color-warning:#FFC14D;--color-warning-bg:#2A1D00;
+  --color-error:#FF7A70;--color-error-bg:#330F0C;--color-info:#7EA8FF;--color-info-bg:#0D1A38;
+  --shadow-1:none;--shadow-2:none;--shadow-sheet:none;
+  --color-card-border:#2E2E2E;--color-detail-bg:#000000;
+  --inv-bg:#171717;--inv-text:#FAFAFA;--inv-muted:#A3A3A3;--inv-border:#FAFAFA;--inv-soft:rgba(255,255,255,.1);
+  --inv-btn-bg:#FAFAFA;--inv-btn-text:#0A0A0A;--inv-error:#FF7A70;--inv-warning:#FFC14D;
+  --page-bg:#121212;--phone-border:#2E2E2E;}
+:root[data-theme="light"]{
+  --color-bg:#F4F4F4;--color-surface:#FFFFFF;--color-surface-raised:#FFFFFF;--color-surface-sunken:#F4F4F4;
+  --color-text:#0A0A0A;--color-text-muted:#5C5C5C;--color-border:#E6E6E6;--color-border-strong:#767676;
+  --color-ink:#0A0A0A;--color-on-ink:#FFFFFF;--color-focus:#0A0A0A;
+  --color-chip-bg:#FFFFFF;--color-chip-text:#5C5C5C;--color-chip-border:#D1D1D1;
+  --color-unprocessed:#0A0A0A;--color-scrim:rgba(0,0,0,.48);
+  --color-tab-active:#FFFFFF;--color-tab-idle:#5C5C5C;--color-tab-indicator:#0A0A0A;
+  --color-success:#157A3B;--color-success-bg:#E2F6E8;--color-warning:#8F5400;--color-warning-bg:#FFF1D6;
+  --color-error:#C42A20;--color-error-bg:#FFE5E2;--color-info:#1B5AC7;--color-info-bg:#E3ECFF;
+  --shadow-1:none;--shadow-2:0 12px 32px rgba(0,0,0,.16);--shadow-sheet:0 -12px 40px rgba(0,0,0,.18);
+  /* C'ye özgü ek değişkenler */
+  --color-card-border:transparent;--color-detail-bg:#FFFFFF;
+  --inv-bg:#0A0A0A;--inv-text:#FFFFFF;--inv-muted:#A3A3A3;--inv-border:#0A0A0A;--inv-soft:rgba(255,255,255,.12);
+  --inv-btn-bg:#FFFFFF;--inv-btn-text:#0A0A0A;--inv-error:#FF7A70;--inv-warning:#FFC14D;
+  --page-bg:#E6E6E6;--phone-border:#A3A3A3;}
+@media (prefers-reduced-motion:reduce){
+  :root{--ease-spring-panel:ease-out;--ease-spring-pop:ease-out;--dur-spring-panel:var(--dur-fade);--dur-spring-pop:var(--dur-fade)}
+  *{animation-name:none!important}
+}
+
+*{box-sizing:border-box;margin:0}
+html{-webkit-text-size-adjust:100%}
+body{background:var(--page-bg);color:var(--color-text);font-family:var(--font-body);font-size:var(--text-md);line-height:var(--leading-body);padding:var(--space-8);min-width:max-content}
+button{font:inherit;color:inherit;background:none;border:0;padding:0;cursor:pointer}
+.i{width:24px;height:24px;fill:none;stroke:currentColor;stroke-width:1.75;stroke-linecap:round;stroke-linejoin:round;flex:none}
+.i.sm{width:20px;height:20px}
+.spark{width:15px;height:15px;flex:none}
+
+.row-phones{display:flex;flex-wrap:nowrap;gap:var(--space-10);align-items:flex-start}
+.slot{flex:none;width:412px}
+.screen-name{font:600 var(--text-sm)/1.2 var(--font-body);color:var(--color-text-muted);margin:0 0 var(--space-3) var(--space-1);letter-spacing:var(--tracking-caps)}
+.screen-name b{color:var(--color-text);font-weight:700;margin-right:6px}
+
+.phone{position:relative;width:412px;height:915px;border-radius:28px;overflow:hidden;background:var(--color-bg);border:1px solid var(--phone-border);display:flex;flex-direction:column;isolation:isolate}
+.status{height:var(--size-status);flex:none;display:flex;align-items:center;justify-content:space-between;padding:0 var(--space-6);font:500 var(--text-xs)/1 var(--font-body);color:var(--color-text);font-variant-numeric:tabular-nums;position:relative;z-index:30}
+.status .sys{display:flex;gap:6px;align-items:center}
+.status .bat{width:22px;height:11px;border:1.5px solid currentColor;border-radius:3px;position:relative}
+.status .bat::after{content:"";position:absolute;inset:1.5px;right:5px;background:currentColor;border-radius:1px}
+.status .sig{width:14px;height:11px;background:linear-gradient(currentColor,currentColor) left bottom/3px 4px no-repeat,linear-gradient(currentColor,currentColor) 4px bottom/3px 7px no-repeat,linear-gradient(currentColor,currentColor) 8px bottom/3px 9px no-repeat,linear-gradient(currentColor,currentColor) 12px bottom/2px 11px no-repeat}
+.navbar{height:var(--size-nav);flex:none;display:flex;align-items:center;justify-content:center;position:relative;z-index:40}
+.navbar::after{content:"";width:108px;height:4px;border-radius:2px;background:var(--color-text)}
+.body{flex:1;min-height:0;display:flex;flex-direction:column;position:relative}
+
+/* Üst çubuk */
+.topbar{height:56px;flex:none;display:flex;align-items:center;gap:var(--space-1);padding:0 var(--space-2);background:var(--color-bg);border-bottom:1px solid var(--color-border)}
+.btn-icon{width:var(--size-touch);height:var(--size-touch);display:grid;place-items:center;border-radius:var(--radius-sm);flex:none}
+.topbar .t-icon{width:36px;height:36px;border-radius:var(--radius-sm);background:var(--color-ink);color:var(--color-on-ink);display:grid;place-items:center;margin-left:var(--space-1)}
+.topbar .t-title{flex:1;min-width:0;padding-left:var(--space-2)}
+.t-title strong{display:block;font:800 var(--text-md)/1.15 var(--font-heading);letter-spacing:var(--tracking-tight)}
+.t-title small{display:block;font:500 var(--text-xs)/1.2 var(--font-body);color:var(--color-text-muted)}
+
+/* Ana ekran */
+.home-head{padding:var(--space-2) var(--space-4) 0 var(--space-4);display:flex;align-items:center;justify-content:space-between;height:56px;flex:none}
+.home-head h1{font:800 var(--text-2xl)/var(--leading-tight) var(--font-heading);letter-spacing:var(--tracking-tight)}
+.home-head .btn-icon{margin-right:-10px}
+.ftabs{display:flex;gap:var(--space-5);padding:0 var(--space-4);height:44px;flex:none;border-bottom:1px solid var(--color-border)}
+.ftab{height:44px;display:flex;align-items:center;font:500 var(--text-sm)/1 var(--font-body);color:var(--color-text-muted);position:relative}
+.ftab[aria-selected=true]{color:var(--color-text);font-weight:800}
+.ftab[aria-selected=true]::after{content:"";position:absolute;left:0;right:0;bottom:-1px;height:2px;background:var(--color-ink)}
+.topics{flex:1;min-height:0;overflow:hidden}
+.topic{display:flex;align-items:center;gap:var(--space-3);height:60px;padding:0 var(--space-4);position:relative}
+.topic.pinned{height:68px;background:var(--color-surface);border-bottom:1px solid var(--color-border-strong)}
+.topic .ti{width:var(--size-topic-icon);height:var(--size-topic-icon);border-radius:var(--radius-md);background:var(--color-surface);border:1px solid var(--color-border);display:grid;place-items:center;flex:none;color:var(--color-text)}
+.topic.pinned .ti{background:var(--color-ink);color:var(--color-on-ink);border-color:var(--color-ink)}
+.topic .tx{flex:1;min-width:0}
+.topic .nm{font:700 var(--text-md)/1.25 var(--font-heading);letter-spacing:-0.01em;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.topic .pv{font:400 var(--text-sm)/1.35 var(--font-body);color:var(--color-text-muted);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.topic .meta{flex:none;display:flex;flex-direction:column;align-items:flex-end;gap:4px;min-width:52px}
+.topic .tm{font:400 var(--text-xs)/1 var(--font-mono);color:var(--color-text-muted);font-variant-numeric:tabular-nums;display:flex;gap:4px;align-items:center}
+.badge{min-width:22px;height:22px;padding:0 6px;border-radius:999px;background:var(--color-ink);color:var(--color-on-ink);font:700 var(--text-xs)/22px var(--font-body);text-align:center;font-variant-numeric:tabular-nums;animation:pop var(--dur-spring-pop) var(--ease-spring-pop) both}
+@keyframes pop{from{transform:scale(.6)}to{transform:scale(1)}}
+
+/* Yazma çubuğu */
+.composer{height:var(--size-composer);flex:none;display:flex;align-items:center;gap:var(--space-1);padding:0 var(--space-2);background:var(--color-surface);border-top:1px solid var(--color-border);position:relative;z-index:5}
+.composer .field{flex:1;min-width:0;height:44px;border:1px solid var(--color-border-strong);border-radius:var(--radius-lg);background:var(--color-bg);display:flex;align-items:center;padding:0 var(--space-3);font:400 var(--text-md)/1 var(--font-body);color:var(--color-text-muted);white-space:nowrap;overflow:hidden}
+.composer .mic{background:var(--color-ink);color:var(--color-on-ink);border-radius:999px}
+
+/* Sekme çubuğu */
+.tabbar{height:var(--size-tabbar);flex:none;display:flex;align-items:center;justify-content:space-between;padding:0 var(--space-3);background:var(--color-surface);border-top:1px solid var(--color-border)}
+.tab{height:48px;min-width:52px;display:grid;place-items:center;color:var(--color-tab-idle);border-radius:999px}
+.tab[aria-current=page]{display:flex;align-items:center;gap:var(--space-2);padding:0 var(--space-4) 0 var(--space-3);background:var(--color-tab-indicator);color:var(--color-tab-active);font:600 var(--text-sm)/1 var(--font-body);animation:pop var(--dur-spring-pop) var(--ease-spring-pop) both}
+
+/* Akış */
+.flow{flex:1;min-height:0;overflow-y:auto;scrollbar-width:none;padding:6px var(--space-4) 8px;display:flex;flex-direction:column;gap:8px}
+.flow::-webkit-scrollbar{display:none}
+.flow>*{flex:none}
+.day{display:flex;align-items:baseline;gap:var(--space-2);padding:4px 2px 0}
+.day h3{font:800 var(--text-xl)/1.1 var(--font-heading);letter-spacing:var(--tracking-tight)}
+.day span{font:500 var(--text-xs)/1 var(--font-body);color:var(--color-text-muted)}
+.card{position:relative;overflow:hidden;background:var(--color-surface);border:1px solid var(--color-card-border);border-radius:var(--radius-md);padding:10px var(--space-4) 10px var(--space-4)}
+.card.unp{padding-left:calc(var(--space-4) + 3px)}
+.card.unp::before{content:"";position:absolute;left:0;top:0;bottom:0;width:3px;background:var(--color-unprocessed)}
+.card.unp::after{content:"";position:absolute;top:14px;right:14px;width:8px;height:8px;border-radius:50%;background:var(--color-unprocessed)}
+.cm{display:flex;align-items:center;gap:var(--space-2);margin-bottom:2px;min-height:16px}
+.cm time{font:400 var(--text-xs)/1 var(--font-mono);color:var(--color-text-muted);font-variant-numeric:tabular-nums}
+.tag{display:inline-flex;align-items:center;gap:4px;font:600 var(--text-xs)/1 var(--font-body);color:var(--color-text);min-width:0}
+.tag .i{width:14px;height:14px}
+.card p{font:400 var(--text-md)/1.36 var(--font-body)}
+.chips{display:flex;flex-wrap:wrap;gap:6px;margin-top:6px}
+.chip{position:relative;display:inline-flex;align-items:center;gap:6px;height:32px;padding:0 8px;border:1px solid var(--color-chip-border);background:var(--color-chip-bg);color:var(--color-chip-text);border-radius:var(--radius-sm);font:500 14px/1 var(--font-body);white-space:nowrap}
+.chip::before{content:"";position:absolute;left:0;right:0;top:-6px;bottom:-6px}
+.chip.x{padding:0;width:24px;height:24px;justify-content:center;position:absolute;top:3px;right:28px}
+.chip.x::before{inset:-10px;top:-10px;bottom:-10px}
+.chip.x .i{width:14px;height:14px}
+.chip.fresh{animation:pop var(--dur-spring-pop) var(--ease-spring-pop) both}
+.wave{display:flex;align-items:center;gap:3px;height:28px;margin-bottom:var(--space-1)}
+.wave i{display:block;width:3px;border-radius:2px;background:var(--color-ink)}
+.wave b{font:400 var(--text-xs)/1 var(--font-mono);color:var(--color-text-muted);margin-left:var(--space-2)}
+.photo{display:flex;gap:var(--space-3);align-items:center}
+.photo .ph{width:64px;height:48px;border-radius:var(--radius-sm);background:var(--color-border);border:1px solid var(--color-border-strong);display:grid;place-items:center;color:var(--color-text-muted);flex:none}
+.photo small{display:block;font:400 var(--text-xs)/1.2 var(--font-mono);color:var(--color-text-muted)}
+/* Ters renkli kartlar */
+.inv{background:var(--inv-bg);color:var(--inv-text);border:1px solid var(--inv-border);border-radius:var(--radius-md)}
+.plan{padding:10px var(--space-4)}
+.plan .ph{display:flex;align-items:center;gap:var(--space-3);margin-bottom:6px}
+.plan .big{font:800 30px/1 var(--font-heading);letter-spacing:var(--tracking-tight)}
+.plan .gr{font:500 var(--text-sm)/1.25 var(--font-body);color:var(--inv-muted)}
+.plan .gr b{display:block;font:400 var(--text-xs)/1.3 var(--font-mono);color:var(--inv-muted)}
+.plan ol{list-style:none;padding:0}
+.plan li{display:flex;justify-content:space-between;gap:var(--space-2);align-items:baseline;padding:2px 0;font:500 var(--text-sm)/1.3 var(--font-body);border-top:1px solid var(--inv-soft)}
+.plan li em{font-style:normal;font-weight:700;font-size:var(--text-xs);flex:none}
+.plan li em.late{color:var(--inv-error)}.plan li em.today{color:var(--inv-warning)}
+.plan .acts{display:flex;gap:var(--space-2);margin-top:6px}
+.btn{height:44px;padding:0 var(--space-4);border-radius:var(--radius-sm);font:700 var(--text-sm)/1 var(--font-body);display:inline-flex;align-items:center;justify-content:center;gap:var(--space-2)}
+.btn.fill{background:var(--color-ink);color:var(--color-on-ink)}
+.btn.inv-fill{background:var(--inv-btn-bg);color:var(--inv-btn-text)}
+.btn.inv-line{border:1px solid var(--inv-muted);color:var(--inv-text)}
+.btn.line{border:1px solid var(--color-border-strong)}
+
+/* Katmanlar */
+.scrim{position:absolute;inset:0;background:var(--color-scrim);z-index:20}
+.sheet{position:absolute;left:0;right:0;bottom:0;z-index:25;background:var(--color-surface);border-radius:var(--radius-lg) var(--radius-lg) 0 0;box-shadow:var(--shadow-sheet);padding:var(--space-2) var(--space-4) calc(var(--size-nav) + var(--space-3));border-top:1px solid var(--color-border);animation:rise var(--dur-spring-panel) var(--ease-spring-panel) both}
+@keyframes rise{from{transform:translateY(40px)}to{transform:none}}
+.grab{width:36px;height:4px;border-radius:2px;background:var(--color-border-strong);margin:0 auto var(--space-3)}
+.sec{font:700 var(--text-xs)/1 var(--font-body);text-transform:uppercase;letter-spacing:var(--tracking-caps);color:var(--color-text-muted);margin:var(--space-2) 0 var(--space-2)}
+.media{display:flex;justify-content:space-between;margin-bottom:var(--space-3)}
+.media button{width:64px;display:flex;flex-direction:column;align-items:center;gap:6px;font:500 var(--text-xs)/1.2 var(--font-body);min-height:var(--size-touch)}
+.media .mi{width:56px;height:56px;border-radius:var(--radius-md);background:var(--color-surface-sunken);border:1px solid var(--color-border);display:grid;place-items:center}
+.media .mi .i{width:28px;height:28px}
+.create button{display:flex;align-items:center;gap:var(--space-3);width:100%;height:60px;text-align:left;border-top:1px solid var(--color-border)}
+.create .ci{width:44px;height:44px;border-radius:var(--radius-md);background:var(--color-ink);color:var(--color-on-ink);display:grid;place-items:center;flex:none}
+.create b{display:block;font:700 var(--text-md)/1.2 var(--font-heading)}
+.create small{display:block;font:400 var(--text-sm)/1.3 var(--font-body);color:var(--color-text-muted)}
+
+.voice{position:absolute;left:var(--space-3);right:var(--space-3);bottom:calc(var(--size-nav) + var(--size-composer) + var(--space-3));z-index:25;padding:var(--space-4);box-shadow:var(--shadow-2);animation:rise var(--dur-spring-panel) var(--ease-spring-panel) both}
+.voice .vt{display:flex;align-items:center;justify-content:space-between;margin-bottom:var(--space-3)}
+.voice .rec{display:flex;align-items:center;gap:var(--space-2);font:600 var(--text-sm)/1 var(--font-body)}
+.voice .rec .bars{display:flex;align-items:center;gap:3px;height:22px}
+.voice .rec .bars i{width:3px;border-radius:2px;background:var(--inv-text)}
+.voice .cnt{font:400 var(--text-sm)/1 var(--font-mono);color:var(--inv-muted);font-variant-numeric:tabular-nums}
+.voice .live{font:500 var(--text-lg)/1.38 var(--font-body);letter-spacing:-0.01em}
+.voice .live s{color:var(--inv-muted);text-decoration-thickness:2px}
+.voice .live mark{background:var(--inv-btn-bg);color:var(--inv-btn-text);border-radius:4px;padding:0 4px}
+.voice .pvw{margin-top:var(--space-3);border:1px solid var(--inv-muted);border-radius:var(--radius-sm);padding:var(--space-3);background:var(--inv-soft)}
+.voice .pvw .k{font:400 var(--text-xs)/1 var(--font-mono);letter-spacing:var(--tracking-caps);color:var(--inv-muted);margin-bottom:6px}
+.voice .pvw strong{display:block;font:700 var(--text-md)/1.25 var(--font-heading);margin-bottom:4px}
+.voice .pvw div{font:500 var(--text-sm)/1.4 var(--font-body)}
+.voice .pvw s{color:var(--inv-muted)}
+.voice .hint{font:400 var(--text-xs)/1.2 var(--font-body);color:var(--inv-muted);margin:var(--space-3) 0}
+.voice .acts{display:flex;gap:var(--space-2)}
+.voice .acts .btn{flex:1}
+
+/* Detay */
+.detail{background:var(--color-detail-bg);animation:grow var(--dur-spring-panel) var(--ease-spring-panel) both}
+@keyframes grow{from{transform:scale(.97)}to{transform:none}}
+.d-scroll{flex:1;min-height:0;overflow:hidden;padding:0 var(--space-4)}
+.d-meta{display:flex;flex-wrap:wrap;gap:6px var(--space-2);align-items:center;font:500 var(--text-xs)/1.3 var(--font-body);color:var(--color-text-muted)}
+.d-meta .un{display:inline-flex;align-items:center;gap:6px;border:1.5px solid var(--color-ink);color:var(--color-text);border-radius:var(--radius-sm);padding:3px 7px;font-weight:700;text-transform:uppercase;letter-spacing:var(--tracking-caps)}
+.d-meta .un::before{content:"";width:8px;height:8px;border-radius:50%;background:var(--color-unprocessed)}
+.d-title{font:800 var(--text-2xl)/1.08 var(--font-heading);letter-spacing:var(--tracking-tight);margin:6px 0}
+.d-body{font:400 var(--text-md)/1.4 var(--font-body);color:var(--color-text)}
+.sugg{border-top:1px solid var(--color-border-strong)}
+.sg{display:flex;align-items:center;gap:var(--space-2);min-height:50px;border-bottom:1px solid var(--color-border);padding:4px 0}
+.sg .tx{flex:1;min-width:0}
+.sg small{display:flex;align-items:center;gap:4px;font:600 var(--text-xs)/1.2 var(--font-body);color:var(--color-text-muted)}
+.sg span{display:block;font:600 var(--text-sm)/1.3 var(--font-body)}
+.sg .btn{height:44px;padding:0 var(--space-3)}
+.sg .rej{width:44px;padding:0;border:1px solid var(--color-chip-border);color:var(--color-text)}
+.fields{display:grid;grid-template-columns:1fr 1fr;gap:0 var(--space-4)}
+.fields div{padding:6px 0;border-bottom:1px solid var(--color-border)}
+.fields small{display:block;font:400 var(--text-xs)/1.2 var(--font-body);color:var(--color-text-muted)}
+.fields b{display:block;font:600 var(--text-sm)/1.3 var(--font-body)}
+.link{display:flex;align-items:center;gap:var(--space-2);padding:6px 0;font:600 var(--text-sm)/1.3 var(--font-body)}
+.d-bar{flex:none;padding:var(--space-2) var(--space-4) var(--space-1);background:var(--color-detail-bg);border-top:1px solid var(--color-border)}
+.d-bar .btn{width:100%;height:52px;font-size:var(--text-md)}
+.d-sec{display:flex;justify-content:space-between;margin-top:var(--space-1)}
+.d-sec button{flex:1;height:48px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:2px;white-space:nowrap;font:600 var(--text-xs)/1 var(--font-body);color:var(--color-text-muted)}
+.d-sec button .i{width:18px;height:18px}
+.ghost{position:absolute;left:20px;right:20px;top:120px;height:300px;border-radius:6px;background:var(--color-surface);border:1px solid var(--color-border-strong);z-index:2}
+</style>
+</head>
+<body>
+<svg width="0" height="0" style="position:absolute" aria-hidden="true"><defs>
+<symbol id="i-spark" viewBox="0 0 24 24"><path d="M12 2c.8 5.2 4.8 9.2 10 10-5.2.8-9.2 4.8-10 10-.8-5.2-4.8-9.2-10-10 5.2-.8 9.2-4.8 10-10z" fill="currentColor"/></symbol>
+<symbol id="i-book" viewBox="0 0 24 24"><path d="M6 3h12v18H6a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2zM9 8h6M9 12h4"/></symbol>
+<symbol id="i-checksq" viewBox="0 0 24 24"><rect x="4" y="4" width="16" height="16" rx="3"/><path d="M8.5 12.5l2.5 2.5 4.5-5"/></symbol>
+<symbol id="i-calendar" viewBox="0 0 24 24"><rect x="4" y="5" width="16" height="16" rx="3"/><path d="M4 10h16M8 3v4M16 3v4"/></symbol>
+<symbol id="i-calcheck" viewBox="0 0 24 24"><rect x="4" y="5" width="16" height="16" rx="3"/><path d="M4 10h16M8 3v4M16 3v4M9 15.5l2 2 4-4"/></symbol>
+<symbol id="i-bell" viewBox="0 0 24 24"><path d="M6 17v-6a6 6 0 0 1 12 0v6l1.5 2h-15zM10 21h4"/></symbol>
+<symbol id="i-search" viewBox="0 0 24 24"><circle cx="11" cy="11" r="6.5"/><path d="M16 16l4.5 4.5"/></symbol>
+<symbol id="i-back" viewBox="0 0 24 24"><path d="M19 12H5M11 6l-6 6 6 6"/></symbol>
+<symbol id="i-dots" viewBox="0 0 24 24"><circle cx="5" cy="12" r="1.3" fill="currentColor"/><circle cx="12" cy="12" r="1.3" fill="currentColor"/><circle cx="19" cy="12" r="1.3" fill="currentColor"/></symbol>
+<symbol id="i-clip" viewBox="0 0 24 24"><path d="M15 7l-6.5 6.5a1.5 1.5 0 0 0 3 3l6.5-6.5a3 3 0 0 0-6-6l-6.5 6.5a4.5 4.5 0 0 0 9 9l6.5-6.5"/></symbol>
+<symbol id="i-plus" viewBox="0 0 24 24"><path d="M12 5v14M5 12h14"/></symbol>
+<symbol id="i-camera" viewBox="0 0 24 24"><path d="M5 8h2l1.5-2h7L17 8h2a1 1 0 0 1 1 1v9a1 1 0 0 1-1 1H5a1 1 0 0 1-1-1V9a1 1 0 0 1 1-1z"/><circle cx="12" cy="13" r="3"/></symbol>
+<symbol id="i-mic" viewBox="0 0 24 24"><rect x="9" y="3" width="6" height="11" rx="3"/><path d="M6 11a6 6 0 0 0 12 0M12 17v4"/></symbol>
+<symbol id="i-stop" viewBox="0 0 24 24"><rect x="7" y="7" width="10" height="10" rx="2" fill="currentColor"/></symbol>
+<symbol id="i-send" viewBox="0 0 24 24"><path d="M4 12l16-8-6 16-3-7z"/></symbol>
+<symbol id="i-image" viewBox="0 0 24 24"><rect x="4" y="5" width="16" height="14" rx="2"/><circle cx="9" cy="10" r="1.5"/><path d="M4 17l5-4 4 3 3-2 4 3"/></symbol>
+<symbol id="i-file" viewBox="0 0 24 24"><path d="M7 3h7l5 5v13H7zM14 3v5h5"/></symbol>
+<symbol id="i-pinmap" viewBox="0 0 24 24"><path d="M12 21s-6-5.5-6-10a6 6 0 0 1 12 0c0 4.5-6 10-6 10z"/><circle cx="12" cy="11" r="2"/></symbol>
+<symbol id="i-user" viewBox="0 0 24 24"><circle cx="12" cy="8" r="4"/><path d="M5 20a7 7 0 0 1 14 0"/></symbol>
+<symbol id="i-list" viewBox="0 0 24 24"><path d="M9 6h11M9 12h11M9 18h11M4 6h.01M4 12h.01M4 18h.01"/></symbol>
+<symbol id="i-x" viewBox="0 0 24 24"><path d="M6 6l12 12M18 6L6 18"/></symbol>
+<symbol id="i-check" viewBox="0 0 24 24"><path d="M5 12.5l4.5 4.5L19 7"/></symbol>
+<symbol id="i-droplet" viewBox="0 0 24 24"><path d="M12 3s6 6.5 6 11a6 6 0 0 1-12 0c0-4.5 6-11 6-11z"/></symbol>
+<symbol id="i-flask" viewBox="0 0 24 24"><path d="M9 3h6M10 3v6l-5 9a2 2 0 0 0 1.8 3h10.4a2 2 0 0 0 1.8-3l-5-9V3M7.5 15h9"/></symbol>
+<symbol id="i-database" viewBox="0 0 24 24"><ellipse cx="12" cy="6" rx="7" ry="3"/><path d="M5 6v6c0 1.7 3.1 3 7 3s7-1.3 7-3V6M5 12v6c0 1.7 3.1 3 7 3s7-1.3 7-3v-6"/></symbol>
+<symbol id="i-home" viewBox="0 0 24 24"><path d="M4 11l8-7 8 7M6 10v10h12V10M10 20v-5h4v5"/></symbol>
+<symbol id="i-heart" viewBox="0 0 24 24"><path d="M12 20s-8-5-8-11a4.5 4.5 0 0 1 8-2.5A4.5 4.5 0 0 1 20 9c0 6-8 11-8 11z"/></symbol>
+<symbol id="i-server" viewBox="0 0 24 24"><rect x="4" y="4" width="16" height="6" rx="2"/><rect x="4" y="14" width="16" height="6" rx="2"/><path d="M8 7h.01M8 17h.01"/></symbol>
+<symbol id="i-bookopen" viewBox="0 0 24 24"><path d="M3 5.5c2-1 5.5-1 9 1 3.5-2 7-2 9-1V19c-2-1-5.5-1-9 1-3.5-2-7-2-9-1zM12 6.5V20"/></symbol>
+<symbol id="i-chart" viewBox="0 0 24 24"><path d="M4 20V4M4 20h16M8 16v-4M12 16V8M16 16v-6"/></symbol>
+<symbol id="i-pin" viewBox="0 0 24 24"><path d="M9 4h6l-1 6 3 3H7l3-3zM12 13v7"/></symbol>
+<symbol id="i-share" viewBox="0 0 24 24"><path d="M12 4v11M7 9l5-5 5 5M5 14v6h14v-6"/></symbol>
+<symbol id="i-archive" viewBox="0 0 24 24"><path d="M4 5h16v4H4zM6 9v10h12V9M10 13h4"/></symbol>
+<symbol id="i-folder" viewBox="0 0 24 24"><path d="M4 7a1 1 0 0 1 1-1h4l2 2h8a1 1 0 0 1 1 1v9a1 1 0 0 1-1 1H5a1 1 0 0 1-1-1zM11 13h5M14 11l2 2-2 2"/></symbol>
+</defs></svg>
+<main class="row-phones">
+<section class="slot"><h2 class="screen-name"><b>1</b>Ana ekran</h2><div class="phone "><div class="status"><span>12:06</span><span class="sys"><i class="sig"></i><span>5G</span><i class="bat"></i></span></div><div class="body">
+<header class="home-head"><h1>Günlük</h1><button class="btn-icon" aria-label="Menü"><svg class="i " aria-hidden="true"><use href="#i-dots"/></svg></button></header>
+<div class="ftabs" role="tablist"><button class="ftab" role="tab" aria-selected="true">Tümü</button><button class="ftab" role="tab" aria-selected="false">Projeler</button><button class="ftab" role="tab" aria-selected="false">Alanlar</button><button class="ftab" role="tab" aria-selected="false">Kaynaklar</button></div>
+<div class="topics"><div class="topic pinned"><div class="ti"><svg class="i " aria-hidden="true"><use href="#i-book"/></svg></div><div class="tx"><div class="nm">Ana Günlük</div><div class="pv">Pazar gözden geçirmede iş–ev dengesini konuş.</div></div><div class="meta"><span class="tm"><svg class="i sm" style="width:14px;height:14px" aria-hidden="true"><use href="#i-pin"/></svg>12:05</span><span class="badge" aria-label="4 işlenmemiş kayıt">4</span></div></div><div class="topic "><div class="ti"><svg class="i " aria-hidden="true"><use href="#i-droplet"/></svg></div><div class="tx"><div class="nm">GemOlive</div><div class="pv">Ambalaj faturası · 1.850 ₺</div></div><div class="meta"><span class="tm">10:47</span></div></div><div class="topic "><div class="ti"><svg class="i " aria-hidden="true"><use href="#i-flask"/></svg></div><div class="tx"><div class="nm">Kostik tedarik</div><div class="pv">Ayhan Kimya teklifi: NaOH %99, 25 kg torba</div></div><div class="meta"><span class="tm">09:12</span></div></div><div class="topic "><div class="ti"><svg class="i " aria-hidden="true"><use href="#i-database"/></svg></div><div class="tx"><div class="nm">Logo ERP geçişi</div><div class="pv">Stok kartı aktarımı: 1.240 kalem, 37 hatalı</div></div><div class="meta"><span class="tm">Dün</span></div></div><div class="topic "><div class="ti"><svg class="i " aria-hidden="true"><use href="#i-home"/></svg></div><div class="tx"><div class="nm">Ev</div><div class="pv">Kombi bakımı – 14 Kasım Cumartesi</div></div><div class="meta"><span class="tm">Dün</span></div></div><div class="topic "><div class="ti"><svg class="i " aria-hidden="true"><use href="#i-heart"/></svg></div><div class="tx"><div class="nm">Sağlık</div><div class="pv">Tansiyon 12/8 · sabah yürüyüşü 35 dk</div></div><div class="meta"><span class="tm">Dün</span></div></div><div class="topic "><div class="ti"><svg class="i " aria-hidden="true"><use href="#i-server"/></svg></div><div class="tx"><div class="nm">Ev sunucusu (S24)</div><div class="pv">n8n: WhatsApp → NotAI webhook akışı çalıştı</div></div><div class="meta"><span class="tm">Çarşamba</span></div></div><div class="topic "><div class="ti"><svg class="i " aria-hidden="true"><use href="#i-bookopen"/></svg></div><div class="tx"><div class="nm">Okuma notları</div><div class="pv">Ohno, Toyota Üretim Sistemi – s. 84, “muda”</div></div><div class="meta"><span class="tm">Çarşamba</span></div></div><div class="topic "><div class="ti"><svg class="i " aria-hidden="true"><use href="#i-chart"/></svg></div><div class="tx"><div class="nm">Değer akışı haritalandırması</div><div class="pv">Çevrim süresi 42 sn, takt süresi 55 sn</div></div><div class="meta"><span class="tm">2 Kasım</span></div></div><div class="topic "><div class="ti"><svg class="i " aria-hidden="true"><use href="#i-calcheck"/></svg></div><div class="tx"><div class="nm">Haftalık gözden geçirme</div><div class="pv">Geçen hafta: 14 görev bitti, 6 kayıt işlenmedi</div></div><div class="meta"><span class="tm">1 Kasım</span></div></div></div>
+<div class="composer"><button class="btn-icon" aria-label="Ekle"><svg class="i " aria-hidden="true"><use href="#i-clip"/></svg></button><div class="field">Ana Günlük’e yaz…</div><button class="btn-icon" aria-label="Kamera"><svg class="i " aria-hidden="true"><use href="#i-camera"/></svg></button><button class="btn-icon mic" aria-label="Sesli not"><svg class="i " aria-hidden="true"><use href="#i-mic"/></svg></button></div><nav class="tabbar" aria-label="Ana gezinme">
+ <button class="tab" aria-current="page"><svg class="i " aria-hidden="true"><use href="#i-book"/></svg><span>Günlük</span></button>
+ <button class="tab" aria-label="Görevler"><svg class="i " aria-hidden="true"><use href="#i-checksq"/></svg></button>
+ <button class="tab" aria-label="Takvim"><svg class="i " aria-hidden="true"><use href="#i-calendar"/></svg></button>
+ <button class="tab" aria-label="Hatırlatmalar"><svg class="i " aria-hidden="true"><use href="#i-bell"/></svg></button>
+ <button class="tab" aria-label="Ara / Sor"><svg class="i " aria-hidden="true"><use href="#i-search"/></svg></button></nav></div><div class="navbar"></div></div></section>
+<section class="slot"><h2 class="screen-name"><b>2</b>Ana Günlük akışı</h2><div class="phone "><div class="status"><span>12:06</span><span class="sys"><i class="sig"></i><span>5G</span><i class="bat"></i></span></div><div class="body"><div class="topbar"><button class="btn-icon" aria-label="Geri"><svg class="i " aria-hidden="true"><use href="#i-back"/></svg></button><div class="t-icon"><svg class="i sm" aria-hidden="true"><use href="#i-book"/></svg></div><div class="t-title"><strong>Ana Günlük</strong><small>4 işlenmemiş kayıt</small></div><button class="btn-icon" aria-label="Menü"><svg class="i " aria-hidden="true"><use href="#i-dots"/></svg></button></div><div class="flow">
+<div class="day"><h3>Çarşamba</h3><span>4 Kasım</span></div>
+<article class="card"><div class="cm"><time>18:42</time><span class="tag"><svg class="i " aria-hidden="true"><use href="#i-database"/></svg>Görev · Logo ERP geçişi</span></div><p>Logo’da stok kartlarının birim alanı boş geliyor, Murat Bey’e sor.</p></article>
+<article class="card"><div class="cm"><time>21:05</time><span class="tag"><svg class="i " aria-hidden="true"><use href="#i-droplet"/></svg>Görev · GemOlive</span></div><p>Lavanta uçucu yağı 2 kg kaldı, yeni sipariş ver.</p></article>
+<div class="day"><h3>Dün</h3><span>Perşembe, 5 Kasım</span></div>
+<article class="card"><div class="cm"><time>08:15</time><span class="tag"><svg class="i " aria-hidden="true"><use href="#i-home"/></svg>Ev · Hatırlatma 14 Kas 10:00</span></div><div class="wave"><svg class="i sm" aria-hidden="true"><use href="#i-mic"/></svg><i style="height:8px"></i><i style="height:14px"></i><i style="height:20px"></i><i style="height:12px"></i><i style="height:22px"></i><i style="height:10px"></i><i style="height:16px"></i><i style="height:24px"></i><i style="height:12px"></i><i style="height:8px"></i><i style="height:14px"></i><i style="height:18px"></i><i style="height:10px"></i><i style="height:6px"></i><b>0:12</b></div><p>Kombi bakımı için servisi ara, 14 Kasım cumartesi uygun.</p></article>
+<article class="card"><div class="cm"><time>13:30</time><span class="tag"><svg class="i " aria-hidden="true"><use href="#i-droplet"/></svg>GemOlive</span></div><p>Zeytinyağlı sabunda kür süresi 4–6 hafta. Raf etiketine üretim tarihi şart.</p></article>
+<article class="card"><div class="cm"><time>22:10</time><span class="tag"><svg class="i " aria-hidden="true"><use href="#i-bookopen"/></svg>Okuma notları</span></div><p>Ohno’nun 7 israf türünü haftalık gözden geçirmede özetle.</p></article>
+<div class="day"><h3>Bugün</h3><span>Cuma, 6 Kasım</span></div>
+<article class="card inv plan" aria-label="Sabah planı"><div class="ph"><span class="big">3 iş</span><span class="gr"><b>08:00 · SABAH PLANI</b>Günaydın Gökhan. Bugün öne çıkanlar:</span></div>
+<ol><li><span>1  Kostik tekliflerini karşılaştır</span><em class="late">1 gün gecikti</em></li><li><span>2  Logo: 37 hatalı stok kartını düzelt</span><em class="today">bugün</em></li><li><span>3  19:00 akşam yürüyüşü · Sağlık</span></li></ol>
+<div class="acts"><button class="btn inv-fill">Planı onayla</button><button class="btn inv-line">Düzenle</button></div></article>
+<article class="card unp"><div class="cm"><time>09:12</time><span class="sr" style="position:absolute;width:1px;height:1px;overflow:hidden">İşlenmedi</span></div><p>Kostik tedarikçisini ara – perşembe. 25 kg’lık torba fiyatını ve teslim süresini sor.</p><div class="chips"><span class="chip "><svg class="spark " viewBox="0 0 24 24" aria-hidden="true"><use href="#i-spark"/></svg>Görev · Perşembe 12 Kas</span><span class="chip "><svg class="spark " viewBox="0 0 24 24" aria-hidden="true"><use href="#i-spark"/></svg>→ Kostik tedarik</span><span class="chip "><svg class="spark " viewBox="0 0 24 24" aria-hidden="true"><use href="#i-spark"/></svg>Kişi: Ayhan Kimya</span></div><span class="chip x" aria-label="Önerileri reddet"><svg class="i " aria-hidden="true"><use href="#i-x"/></svg></span></article>
+<article class="card unp"><div class="cm"><time>10:47</time><span class="sr" style="position:absolute;width:1px;height:1px;overflow:hidden">İşlenmedi</span></div><div class="photo"><div class="ph"><svg class="i " aria-hidden="true"><use href="#i-image"/></svg></div><div><p>Ambalaj faturası</p><small>fatura.jpg</small></div></div><div class="chips"><span class="chip "><svg class="spark " viewBox="0 0 24 24" aria-hidden="true"><use href="#i-spark"/></svg>→ GemOlive</span><span class="chip "><svg class="spark " viewBox="0 0 24 24" aria-hidden="true"><use href="#i-spark"/></svg>Gider · 1.850 ₺</span></div></article>
+<article class="card unp"><div class="cm"><time>11:30</time></div><p>Şirket aracının muayenesi ne zamandı?</p><div class="chips"><span class="chip "><svg class="spark " viewBox="0 0 24 24" aria-hidden="true"><use href="#i-spark"/></svg>Ara/Sor’da sor</span><span class="chip "><svg class="spark " viewBox="0 0 24 24" aria-hidden="true"><use href="#i-spark"/></svg>Hatırlatma kur</span></div></article>
+<article class="card unp"><div class="cm"><time>12:05</time></div><p>Pazar gözden geçirmede iş–ev dengesini konuş.</p><div class="chips"><span class="chip fresh"><svg class="spark " viewBox="0 0 24 24" aria-hidden="true"><use href="#i-spark"/></svg>→ Haftalık gözden geçirme</span></div></article></div><div class="composer"><button class="btn-icon" aria-label="Ekle"><svg class="i " aria-hidden="true"><use href="#i-clip"/></svg></button><div class="field">Aklındakini yaz…</div><button class="btn-icon" aria-label="Kamera"><svg class="i " aria-hidden="true"><use href="#i-camera"/></svg></button><button class="btn-icon mic" aria-label="Sesli not"><svg class="i " aria-hidden="true"><use href="#i-mic"/></svg></button></div></div><div class="navbar"></div></div></section>
+<section class="slot"><h2 class="screen-name"><b>3</b>Ekleme paneli</h2><div class="phone "><div class="status"><span>12:06</span><span class="sys"><i class="sig"></i><span>5G</span><i class="bat"></i></span></div><div class="body"><div class="topbar"><button class="btn-icon" aria-label="Geri"><svg class="i " aria-hidden="true"><use href="#i-back"/></svg></button><div class="t-icon"><svg class="i sm" aria-hidden="true"><use href="#i-book"/></svg></div><div class="t-title"><strong>Ana Günlük</strong><small>4 işlenmemiş kayıt</small></div><button class="btn-icon" aria-label="Menü"><svg class="i " aria-hidden="true"><use href="#i-dots"/></svg></button></div><div class="flow">
+<div class="day"><h3>Çarşamba</h3><span>4 Kasım</span></div>
+<article class="card"><div class="cm"><time>18:42</time><span class="tag"><svg class="i " aria-hidden="true"><use href="#i-database"/></svg>Görev · Logo ERP geçişi</span></div><p>Logo’da stok kartlarının birim alanı boş geliyor, Murat Bey’e sor.</p></article>
+<article class="card"><div class="cm"><time>21:05</time><span class="tag"><svg class="i " aria-hidden="true"><use href="#i-droplet"/></svg>Görev · GemOlive</span></div><p>Lavanta uçucu yağı 2 kg kaldı, yeni sipariş ver.</p></article>
+<div class="day"><h3>Dün</h3><span>Perşembe, 5 Kasım</span></div>
+<article class="card"><div class="cm"><time>08:15</time><span class="tag"><svg class="i " aria-hidden="true"><use href="#i-home"/></svg>Ev · Hatırlatma 14 Kas 10:00</span></div><div class="wave"><svg class="i sm" aria-hidden="true"><use href="#i-mic"/></svg><i style="height:8px"></i><i style="height:14px"></i><i style="height:20px"></i><i style="height:12px"></i><i style="height:22px"></i><i style="height:10px"></i><i style="height:16px"></i><i style="height:24px"></i><i style="height:12px"></i><i style="height:8px"></i><i style="height:14px"></i><i style="height:18px"></i><i style="height:10px"></i><i style="height:6px"></i><b>0:12</b></div><p>Kombi bakımı için servisi ara, 14 Kasım cumartesi uygun.</p></article>
+<article class="card"><div class="cm"><time>13:30</time><span class="tag"><svg class="i " aria-hidden="true"><use href="#i-droplet"/></svg>GemOlive</span></div><p>Zeytinyağlı sabunda kür süresi 4–6 hafta. Raf etiketine üretim tarihi şart.</p></article>
+<article class="card"><div class="cm"><time>22:10</time><span class="tag"><svg class="i " aria-hidden="true"><use href="#i-bookopen"/></svg>Okuma notları</span></div><p>Ohno’nun 7 israf türünü haftalık gözden geçirmede özetle.</p></article>
+<div class="day"><h3>Bugün</h3><span>Cuma, 6 Kasım</span></div>
+<article class="card inv plan" aria-label="Sabah planı"><div class="ph"><span class="big">3 iş</span><span class="gr"><b>08:00 · SABAH PLANI</b>Günaydın Gökhan. Bugün öne çıkanlar:</span></div>
+<ol><li><span>1  Kostik tekliflerini karşılaştır</span><em class="late">1 gün gecikti</em></li><li><span>2  Logo: 37 hatalı stok kartını düzelt</span><em class="today">bugün</em></li><li><span>3  19:00 akşam yürüyüşü · Sağlık</span></li></ol>
+<div class="acts"><button class="btn inv-fill">Planı onayla</button><button class="btn inv-line">Düzenle</button></div></article>
+<article class="card unp"><div class="cm"><time>09:12</time><span class="sr" style="position:absolute;width:1px;height:1px;overflow:hidden">İşlenmedi</span></div><p>Kostik tedarikçisini ara – perşembe. 25 kg’lık torba fiyatını ve teslim süresini sor.</p><div class="chips"><span class="chip "><svg class="spark " viewBox="0 0 24 24" aria-hidden="true"><use href="#i-spark"/></svg>Görev · Perşembe 12 Kas</span><span class="chip "><svg class="spark " viewBox="0 0 24 24" aria-hidden="true"><use href="#i-spark"/></svg>→ Kostik tedarik</span><span class="chip "><svg class="spark " viewBox="0 0 24 24" aria-hidden="true"><use href="#i-spark"/></svg>Kişi: Ayhan Kimya</span></div><span class="chip x" aria-label="Önerileri reddet"><svg class="i " aria-hidden="true"><use href="#i-x"/></svg></span></article>
+<article class="card unp"><div class="cm"><time>10:47</time><span class="sr" style="position:absolute;width:1px;height:1px;overflow:hidden">İşlenmedi</span></div><div class="photo"><div class="ph"><svg class="i " aria-hidden="true"><use href="#i-image"/></svg></div><div><p>Ambalaj faturası</p><small>fatura.jpg</small></div></div><div class="chips"><span class="chip "><svg class="spark " viewBox="0 0 24 24" aria-hidden="true"><use href="#i-spark"/></svg>→ GemOlive</span><span class="chip "><svg class="spark " viewBox="0 0 24 24" aria-hidden="true"><use href="#i-spark"/></svg>Gider · 1.850 ₺</span></div></article>
+<article class="card unp"><div class="cm"><time>11:30</time></div><p>Şirket aracının muayenesi ne zamandı?</p><div class="chips"><span class="chip "><svg class="spark " viewBox="0 0 24 24" aria-hidden="true"><use href="#i-spark"/></svg>Ara/Sor’da sor</span><span class="chip "><svg class="spark " viewBox="0 0 24 24" aria-hidden="true"><use href="#i-spark"/></svg>Hatırlatma kur</span></div></article>
+<article class="card unp"><div class="cm"><time>12:05</time></div><p>Pazar gözden geçirmede iş–ev dengesini konuş.</p><div class="chips"><span class="chip fresh"><svg class="spark " viewBox="0 0 24 24" aria-hidden="true"><use href="#i-spark"/></svg>→ Haftalık gözden geçirme</span></div></article></div><div class="composer"><button class="btn-icon" aria-label="Ekle"><svg class="i " aria-hidden="true"><use href="#i-clip"/></svg></button><div class="field">Aklındakini yaz…</div><button class="btn-icon" aria-label="Kamera"><svg class="i " aria-hidden="true"><use href="#i-camera"/></svg></button><button class="btn-icon mic" aria-label="Sesli not"><svg class="i " aria-hidden="true"><use href="#i-mic"/></svg></button></div><div class="scrim"></div><div class="sheet" role="dialog" aria-label="Ekle"><div class="grab"></div>
+<div class="sec">Ekle</div><div class="media"><button><span class="mi"><svg class="i " aria-hidden="true"><use href="#i-image"/></svg></span>Fotoğraf</button><button><span class="mi"><svg class="i " aria-hidden="true"><use href="#i-camera"/></svg></span>Kamera</button><button><span class="mi"><svg class="i " aria-hidden="true"><use href="#i-file"/></svg></span>Belge</button><button><span class="mi"><svg class="i " aria-hidden="true"><use href="#i-pinmap"/></svg></span>Konum</button><button><span class="mi"><svg class="i " aria-hidden="true"><use href="#i-user"/></svg></span>Kişi</button></div>
+<div class="sec">Oluştur</div><div class="create"><button><span class="ci"><svg class="i " aria-hidden="true"><use href="#i-checksq"/></svg></span><span><b>Görev</b><small>Görev — tarih ve öncelikle</small></span></button><button><span class="ci"><svg class="i " aria-hidden="true"><use href="#i-bell"/></svg></span><span><b>Hatırlatma</b><small>Hatırlatma — zamanı gelince haber ver</small></span></button><button><span class="ci"><svg class="i " aria-hidden="true"><use href="#i-calendar"/></svg></span><span><b>Etkinlik</b><small>Etkinlik — takvime saatiyle ekle</small></span></button><button><span class="ci"><svg class="i " aria-hidden="true"><use href="#i-list"/></svg></span><span><b>Liste</b><small>Liste — maddeli kontrol listesi</small></span></button></div></div></div><div class="navbar"></div></div></section>
+<section class="slot"><h2 class="screen-name"><b>4</b>Sesli yakalama</h2><div class="phone "><div class="status"><span>12:06</span><span class="sys"><i class="sig"></i><span>5G</span><i class="bat"></i></span></div><div class="body"><div class="topbar"><button class="btn-icon" aria-label="Geri"><svg class="i " aria-hidden="true"><use href="#i-back"/></svg></button><div class="t-icon"><svg class="i sm" aria-hidden="true"><use href="#i-book"/></svg></div><div class="t-title"><strong>Ana Günlük</strong><small>4 işlenmemiş kayıt</small></div><button class="btn-icon" aria-label="Menü"><svg class="i " aria-hidden="true"><use href="#i-dots"/></svg></button></div><div class="flow">
+<div class="day"><h3>Çarşamba</h3><span>4 Kasım</span></div>
+<article class="card"><div class="cm"><time>18:42</time><span class="tag"><svg class="i " aria-hidden="true"><use href="#i-database"/></svg>Görev · Logo ERP geçişi</span></div><p>Logo’da stok kartlarının birim alanı boş geliyor, Murat Bey’e sor.</p></article>
+<article class="card"><div class="cm"><time>21:05</time><span class="tag"><svg class="i " aria-hidden="true"><use href="#i-droplet"/></svg>Görev · GemOlive</span></div><p>Lavanta uçucu yağı 2 kg kaldı, yeni sipariş ver.</p></article>
+<div class="day"><h3>Dün</h3><span>Perşembe, 5 Kasım</span></div>
+<article class="card"><div class="cm"><time>08:15</time><span class="tag"><svg class="i " aria-hidden="true"><use href="#i-home"/></svg>Ev · Hatırlatma 14 Kas 10:00</span></div><div class="wave"><svg class="i sm" aria-hidden="true"><use href="#i-mic"/></svg><i style="height:8px"></i><i style="height:14px"></i><i style="height:20px"></i><i style="height:12px"></i><i style="height:22px"></i><i style="height:10px"></i><i style="height:16px"></i><i style="height:24px"></i><i style="height:12px"></i><i style="height:8px"></i><i style="height:14px"></i><i style="height:18px"></i><i style="height:10px"></i><i style="height:6px"></i><b>0:12</b></div><p>Kombi bakımı için servisi ara, 14 Kasım cumartesi uygun.</p></article>
+<article class="card"><div class="cm"><time>13:30</time><span class="tag"><svg class="i " aria-hidden="true"><use href="#i-droplet"/></svg>GemOlive</span></div><p>Zeytinyağlı sabunda kür süresi 4–6 hafta. Raf etiketine üretim tarihi şart.</p></article>
+<article class="card"><div class="cm"><time>22:10</time><span class="tag"><svg class="i " aria-hidden="true"><use href="#i-bookopen"/></svg>Okuma notları</span></div><p>Ohno’nun 7 israf türünü haftalık gözden geçirmede özetle.</p></article>
+<div class="day"><h3>Bugün</h3><span>Cuma, 6 Kasım</span></div>
+<article class="card inv plan" aria-label="Sabah planı"><div class="ph"><span class="big">3 iş</span><span class="gr"><b>08:00 · SABAH PLANI</b>Günaydın Gökhan. Bugün öne çıkanlar:</span></div>
+<ol><li><span>1  Kostik tekliflerini karşılaştır</span><em class="late">1 gün gecikti</em></li><li><span>2  Logo: 37 hatalı stok kartını düzelt</span><em class="today">bugün</em></li><li><span>3  19:00 akşam yürüyüşü · Sağlık</span></li></ol>
+<div class="acts"><button class="btn inv-fill">Planı onayla</button><button class="btn inv-line">Düzenle</button></div></article>
+<article class="card unp"><div class="cm"><time>09:12</time><span class="sr" style="position:absolute;width:1px;height:1px;overflow:hidden">İşlenmedi</span></div><p>Kostik tedarikçisini ara – perşembe. 25 kg’lık torba fiyatını ve teslim süresini sor.</p><div class="chips"><span class="chip "><svg class="spark " viewBox="0 0 24 24" aria-hidden="true"><use href="#i-spark"/></svg>Görev · Perşembe 12 Kas</span><span class="chip "><svg class="spark " viewBox="0 0 24 24" aria-hidden="true"><use href="#i-spark"/></svg>→ Kostik tedarik</span><span class="chip "><svg class="spark " viewBox="0 0 24 24" aria-hidden="true"><use href="#i-spark"/></svg>Kişi: Ayhan Kimya</span></div><span class="chip x" aria-label="Önerileri reddet"><svg class="i " aria-hidden="true"><use href="#i-x"/></svg></span></article>
+<article class="card unp"><div class="cm"><time>10:47</time><span class="sr" style="position:absolute;width:1px;height:1px;overflow:hidden">İşlenmedi</span></div><div class="photo"><div class="ph"><svg class="i " aria-hidden="true"><use href="#i-image"/></svg></div><div><p>Ambalaj faturası</p><small>fatura.jpg</small></div></div><div class="chips"><span class="chip "><svg class="spark " viewBox="0 0 24 24" aria-hidden="true"><use href="#i-spark"/></svg>→ GemOlive</span><span class="chip "><svg class="spark " viewBox="0 0 24 24" aria-hidden="true"><use href="#i-spark"/></svg>Gider · 1.850 ₺</span></div></article>
+<article class="card unp"><div class="cm"><time>11:30</time></div><p>Şirket aracının muayenesi ne zamandı?</p><div class="chips"><span class="chip "><svg class="spark " viewBox="0 0 24 24" aria-hidden="true"><use href="#i-spark"/></svg>Ara/Sor’da sor</span><span class="chip "><svg class="spark " viewBox="0 0 24 24" aria-hidden="true"><use href="#i-spark"/></svg>Hatırlatma kur</span></div></article>
+<article class="card unp"><div class="cm"><time>12:05</time></div><p>Pazar gözden geçirmede iş–ev dengesini konuş.</p><div class="chips"><span class="chip fresh"><svg class="spark " viewBox="0 0 24 24" aria-hidden="true"><use href="#i-spark"/></svg>→ Haftalık gözden geçirme</span></div></article></div><div class="composer"><button class="btn-icon" aria-label="Ekle"><svg class="i " aria-hidden="true"><use href="#i-clip"/></svg></button><div class="field">Dinleniyor…</div><button class="btn-icon" aria-label="Kamera"><svg class="i " aria-hidden="true"><use href="#i-camera"/></svg></button><button class="btn-icon mic" aria-label="Kaydı durdur"><svg class="i " aria-hidden="true"><use href="#i-stop"/></svg></button></div><div class="voice inv" role="dialog" aria-label="Sesli yakalama"><div class="vt"><span class="rec"><span class="bars"><i style="height:8px"></i><i style="height:14px"></i><i style="height:20px"></i><i style="height:12px"></i><i style="height:22px"></i><i style="height:16px"></i><i style="height:10px"></i><i style="height:18px"></i><i style="height:8px"></i></span>Dinleniyor</span><span class="cnt">0:07</span></div>
+<div class="live">Yarın sabah onda İzmir’deki kostik firmasını ara… yok, aslında <mark>perşembe</mark> yap.</div>
+<div class="pvw"><div class="k">GÖREV</div><strong>Kostik firmasını ara</strong><div><s>Yarın</s> <b>Perşembe 12 Kas</b> · 10:00 · → Kostik tedarik</div></div>
+<div class="hint">Düzeltmek için konuşmaya devam et</div><div class="acts"><button class="btn inv-line">İptal</button><button class="btn inv-fill">Gönder</button></div></div></div><div class="navbar"></div></div></section>
+<section class="slot"><h2 class="screen-name"><b>5</b>Not detayı (tam ekran)</h2><div class="phone "><div class="status"><span>12:06</span><span class="sys"><i class="sig"></i><span>5G</span><i class="bat"></i></span></div><div class="body detail">
+<div class="topbar" style="background:transparent;border-bottom:0;height:48px"><button class="btn-icon" aria-label="Geri"><svg class="i " aria-hidden="true"><use href="#i-back"/></svg></button><div style="flex:1"></div><button class="btn-icon" aria-label="Menü"><svg class="i " aria-hidden="true"><use href="#i-dots"/></svg></button></div>
+<div class="d-scroll">
+<div class="d-meta"><span>Ana Günlük</span><span>·</span><span>Bugün 09:12</span><span>·</span><span>Yazı</span><span class="un">İşlenmedi</span></div>
+<h2 class="d-title">Kostik tedarikçisini ara – perşembe</h2>
+<p class="d-body">25 kg’lık torba fiyatını ve teslim süresini sor. Geçen teklif 1.850 ₺ idi; İzmir deposundan teslim olursa nakliye düşer.</p>
+<div class="sec" style="margin-top:var(--space-3)">Öneriler</div>
+<div class="sugg"><div class="sg"><div class="tx"><small><svg class="spark " viewBox="0 0 24 24" aria-hidden="true"><use href="#i-spark"/></svg>Görev</small><span>Perşembe 12 Kasım 10:00</span></div><button class="btn fill">Kabul</button><button class="btn rej" aria-label="Reddet"><svg class="i sm" aria-hidden="true"><use href="#i-x"/></svg></button></div><div class="sg"><div class="tx"><small><svg class="spark " viewBox="0 0 24 24" aria-hidden="true"><use href="#i-spark"/></svg>Konu</small><span>→ Kostik tedarik</span></div><button class="btn fill">Kabul</button><button class="btn rej" aria-label="Reddet"><svg class="i sm" aria-hidden="true"><use href="#i-x"/></svg></button></div><div class="sg"><div class="tx"><small><svg class="spark " viewBox="0 0 24 24" aria-hidden="true"><use href="#i-spark"/></svg>Kişi</small><span>Ayhan Kimya – Selin Hanım</span></div><button class="btn fill">Kabul</button><button class="btn rej" aria-label="Reddet"><svg class="i sm" aria-hidden="true"><use href="#i-x"/></svg></button></div><div class="sg"><div class="tx"><small><svg class="spark " viewBox="0 0 24 24" aria-hidden="true"><use href="#i-spark"/></svg>Etiket</small><span>#tedarik</span></div><button class="btn fill">Kabul</button><button class="btn rej" aria-label="Reddet"><svg class="i sm" aria-hidden="true"><use href="#i-x"/></svg></button></div></div>
+<div class="sec" style="margin-top:var(--space-3)">Görev alanları</div>
+<div class="fields"><div><small>Tarih</small><b>Perşembe, 12 Kasım</b></div><div><small>Saat</small><b>10:00</b></div><div><small>Öncelik</small><b>Yüksek</b></div><div><small>Tekrar</small><b>Yok</b></div><div style="grid-column:span 2"><small>Hatırlatma</small><b>1 saat önce</b></div></div>
+<div class="sec" style="margin-top:var(--space-3)">Bağlantılı</div>
+<div class="link"><svg class="i sm" aria-hidden="true"><use href="#i-file"/></svg>Ayhan Kimya teklifi: NaOH %99 – Salı, 3 Kasım</div>
+</div>
+<div class="d-bar"><button class="btn fill">Görev olarak kaydet</button><div class="d-sec"><button><svg class="i " aria-hidden="true"><use href="#i-folder"/></svg>Konuya taşı</button><button><svg class="i " aria-hidden="true"><use href="#i-bell"/></svg>Hatırlat</button><button><svg class="i " aria-hidden="true"><use href="#i-share"/></svg>Paylaş</button><button><svg class="i " aria-hidden="true"><use href="#i-archive"/></svg>Arşivle</button></div></div>
+</div><div class="navbar"></div></div></section>
+</main>
+<script>
+/* Tek amaç: akışı açılışta en alta kaydır (#ust ile devre dışı). */
+if(location.hash!=='#ust'){document.querySelectorAll('.flow').forEach(function(f){f.scrollTop=f.scrollHeight;});}
+</script>
+</body>
+</html>
