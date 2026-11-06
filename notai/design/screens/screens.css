@@ -676,3 +676,4 @@ html[data-view="peek"] .sheet--full, html[data-view="full"] .sheet--peek { displ
 .lock__hint { display: flex; align-items: center; gap: var(--space-2); font-size: var(--font-size-sm); line-height: var(--font-line-height-sm); color: var(--color-meta); }
 .lock__bar { display: flex; justify-content: space-between; width: 100%; padding: 0 var(--space-4); }
 .lock__bar > span { width: var(--size-mic); height: var(--size-mic); display: flex; align-items: center; justify-content: center; border-radius: var(--radius-full); background: var(--color-surface); border: var(--border-width-hairline) solid var(--color-border); }
+html[data-view="shade"] .view-lock, html[data-view="lock"] .view-shade { display: none; }
