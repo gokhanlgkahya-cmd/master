@@ -1,0 +1,651 @@
+<!doctype html>
+<html lang="tr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>NotAI bileşen kütüphanesi</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700&amp;display=swap" rel="stylesheet">
+<link rel="stylesheet" href="tokens.css">
+<style>
+*{box-sizing:border-box}
+body{margin:0;background:var(--color-surface-sunken);color:var(--color-text);font:var(--font-weight-regular) var(--font-size-md)/var(--font-line-height-md) var(--font-family-base)}
+.page-head{padding:var(--space-8) var(--space-6) var(--space-4)}
+.page-head h1{margin:0;font-size:var(--font-size-2xl);line-height:var(--font-line-height-2xl);font-weight:var(--font-weight-bold);letter-spacing:var(--font-letter-spacing-tight)}
+.page-head p{margin:var(--space-1) 0 0;color:var(--color-text-muted);font-size:var(--font-size-sm);line-height:var(--font-line-height-sm)}
+.cols{display:grid;grid-template-columns:1fr 1fr;gap:var(--space-4);padding:0 var(--space-4) var(--space-8);align-items:start}
+.cols iframe{display:block;width:100%;height:var(--size-phone-height);border:var(--border-width-hairline) solid var(--color-border);border-radius:var(--radius-lg);background:var(--color-bg)}
+@media (max-width:900px){.cols{grid-template-columns:1fr}}
+</style>
+</head>
+<body>
+<header class="page-head"><h1>NotAI bileşen kütüphanesi</h1><p>Seçilen yön: Taş Defter karışımı · tokens.css · Manrope · her bileşen açık ve koyu temada, tüm durumlarıyla.</p></header>
+<main class="cols">
+<iframe id="f-light" title="Açık tema bileşenleri"></iframe>
+<iframe id="f-dark" title="Koyu tema bileşenleri"></iframe>
+</main>
+
+<template id="lib">
+<svg xmlns="http://www.w3.org/2000/svg" width="0" height="0" style="position:absolute" aria-hidden="true" focusable="false">
+<symbol id="i-journal" viewBox="0 0 24 24"><rect x="4" y="3" width="13" height="18" rx="2.5"/><path d="M8 8h5M8 12h3"/><path d="M14.5 19.5l.8-3 5.2-5.2 2.2 2.2-5.2 5.2z" transform="translate(-1 0)"/></symbol>
+<symbol id="i-tasks" viewBox="0 0 24 24"><rect x="4" y="4" width="16" height="16" rx="4"/><path d="M8.5 12.5l2.5 2.5 4.5-5.5"/></symbol>
+<symbol id="i-calendar" viewBox="0 0 24 24"><rect x="4" y="5" width="16" height="15" rx="3"/><path d="M4 10h16M8 3v4M16 3v4"/></symbol>
+<symbol id="i-bell" viewBox="0 0 24 24"><path d="M6 16v-5a6 6 0 0 1 12 0v5l1.5 2h-15z"/><path d="M10 21h4"/></symbol>
+<symbol id="i-search" viewBox="0 0 24 24"><circle cx="11" cy="11" r="6.5"/><path d="M16 16l4.5 4.5"/></symbol>
+<symbol id="i-sparkle" viewBox="0 0 24 24"><path d="M12 3c.6 5 4 8.4 9 9-5 .6-8.4 4-9 9-.6-5-4-8.4-9-9 5-.6 8.4-4 9-9z"/></symbol>
+<symbol id="i-clip" viewBox="0 0 24 24"><path d="M20 11.5l-7.8 7.8a4.5 4.5 0 0 1-6.4-6.4l8.2-8.2a3 3 0 0 1 4.2 4.2l-8.2 8.2a1.5 1.5 0 0 1-2.1-2.1l7.4-7.4"/></symbol>
+<symbol id="i-camera" viewBox="0 0 24 24"><path d="M4 8a2 2 0 0 1 2-2h2l1.5-2h5L16 6h2a2 2 0 0 1 2 2v9a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2z"/><circle cx="12" cy="12.5" r="3.5"/></symbol>
+<symbol id="i-mic" viewBox="0 0 24 24"><rect x="9" y="3" width="6" height="11" rx="3"/><path d="M5.5 11a6.5 6.5 0 0 0 13 0M12 17.5V21"/></symbol>
+<symbol id="i-send" viewBox="0 0 24 24"><path d="M12 19V5M6 11l6-6 6 6"/></symbol>
+<symbol id="i-stop" viewBox="0 0 24 24"><rect x="7" y="7" width="10" height="10" rx="2"/></symbol>
+<symbol id="i-x" viewBox="0 0 24 24"><path d="M6 6l12 12M18 6L6 18"/></symbol>
+<symbol id="i-check" viewBox="0 0 24 24"><path d="M5 12.5l4.5 4.5L19 7"/></symbol>
+<symbol id="i-plus" viewBox="0 0 24 24"><path d="M12 5v14M5 12h14"/></symbol>
+<symbol id="i-image" viewBox="0 0 24 24"><rect x="4" y="5" width="16" height="14" rx="3"/><circle cx="9" cy="10" r="1.5"/><path d="M4 17l5-4.5 4 3.5 3-2.5 4 3.5"/></symbol>
+<symbol id="i-file" viewBox="0 0 24 24"><path d="M7 3h7l5 5v11a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2z"/><path d="M14 3v5h5"/></symbol>
+<symbol id="i-pinmap" viewBox="0 0 24 24"><path d="M12 21s-6.5-5.7-6.5-11a6.5 6.5 0 0 1 13 0c0 5.3-6.5 11-6.5 11z"/><circle cx="12" cy="10" r="2.3"/></symbol>
+<symbol id="i-user" viewBox="0 0 24 24"><circle cx="12" cy="8.5" r="3.5"/><path d="M5 20c0-3.6 3-6 7-6s7 2.4 7 6"/></symbol>
+<symbol id="i-list" viewBox="0 0 24 24"><path d="M9 6h11M9 12h11M9 18h11M4.5 6h.01M4.5 12h.01M4.5 18h.01"/></symbol>
+<symbol id="i-clock" viewBox="0 0 24 24"><circle cx="12" cy="12" r="8.5"/><path d="M12 7.5V12l3 2"/></symbol>
+<symbol id="i-chev-r" viewBox="0 0 24 24"><path d="M9.5 5l7 7-7 7"/></symbol>
+<symbol id="i-chev-d" viewBox="0 0 24 24"><path d="M5 9.5l7 7 7-7"/></symbol>
+<symbol id="i-chev-l" viewBox="0 0 24 24"><path d="M14.5 5l-7 7 7 7"/></symbol>
+<symbol id="i-folder" viewBox="0 0 24 24"><path d="M4 7a2 2 0 0 1 2-2h4l2 2h6a2 2 0 0 1 2 2v8a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2z"/></symbol>
+<symbol id="i-brief" viewBox="0 0 24 24"><rect x="4" y="8" width="16" height="11" rx="2.5"/><path d="M9 8V6.5A1.5 1.5 0 0 1 10.5 5h3A1.5 1.5 0 0 1 15 6.5V8M4 13h16"/></symbol>
+<symbol id="i-home" viewBox="0 0 24 24"><path d="M4 11l8-7 8 7M6 9.5V19a1 1 0 0 0 1 1h10a1 1 0 0 0 1-1V9.5"/></symbol>
+<symbol id="i-heart" viewBox="0 0 24 24"><path d="M12 20s-7.5-4.6-7.5-10A4.3 4.3 0 0 1 12 7.5 4.3 4.3 0 0 1 19.5 10c0 5.4-7.5 10-7.5 10z"/></symbol>
+<symbol id="i-stack" viewBox="0 0 24 24"><path d="M12 4l8 4-8 4-8-4zM4 12l8 4 8-4M4 16l8 4 8-4"/></symbol>
+<symbol id="i-book" viewBox="0 0 24 24"><path d="M4 5.5C6 4.5 9 4.5 12 6c3-1.5 6-1.5 8-.5V18c-2-1-5-1-8 .5-3-1.5-6-1.5-8-.5z"/><path d="M12 6v12.5"/></symbol>
+<symbol id="i-warn" viewBox="0 0 24 24"><path d="M12 4l9 16H3z"/><path d="M12 10v4M12 17h.01"/></symbol>
+<symbol id="i-info" viewBox="0 0 24 24"><circle cx="12" cy="12" r="8.5"/><path d="M12 11v5M12 8h.01"/></symbol>
+<symbol id="i-err" viewBox="0 0 24 24"><circle cx="12" cy="12" r="8.5"/><path d="M12 7.5v5M12 16h.01"/></symbol>
+<symbol id="i-ok" viewBox="0 0 24 24"><circle cx="12" cy="12" r="8.5"/><path d="M8.5 12.2l2.5 2.5 4.5-5"/></symbol>
+<symbol id="i-trash" viewBox="0 0 24 24"><path d="M5 7h14M9 7V5h6v2M7 7l1 13h8l1-13"/></symbol>
+<symbol id="i-fwd" viewBox="0 0 24 24"><path d="M14 5l6 5-6 5M20 10H9a5 5 0 0 0-5 5v3"/></symbol>
+<symbol id="i-pushpin" viewBox="0 0 24 24"><path d="M9 4h6l-1 6 3 3H7l3-3zM12 13v7"/></symbol>
+<symbol id="i-signal" viewBox="0 0 24 24"><path d="M6 19v-4M12 19v-9M18 19V5"/></symbol>
+</svg>
+
+<style>
+*{box-sizing:border-box}
+html{background:var(--color-bg)}
+body{margin:0;padding:var(--space-6) var(--space-4) var(--space-16);background:var(--color-bg);color:var(--color-text);font:var(--font-weight-regular) var(--font-size-md)/var(--font-line-height-md) var(--font-family-base);overflow-wrap:break-word}
+button,input,select{font:inherit;color:inherit;margin:0}
+button{cursor:pointer}
+p{margin:0}
+:is(button,input,select,a,[tabindex]):focus-visible,.is-focus{outline:var(--border-width-focus) solid var(--color-focus-ring);outline-offset:var(--border-width-focus-offset)}
+.i{width:var(--icon-size-md);height:var(--icon-size-md);flex:none;stroke:currentColor;fill:none;stroke-width:var(--icon-stroke);stroke-linecap:round;stroke-linejoin:round}
+.i-sm{width:var(--icon-size-sm);height:var(--icon-size-sm)}
+.i-xs{width:var(--icon-size-xs);height:var(--icon-size-xs)}
+.i-lg{width:var(--space-8);height:var(--space-8)}
+.is-disabled,[disabled]{opacity:var(--opacity-disabled);cursor:not-allowed}
+
+/* sayfa iskeleti */
+.theme-head{display:flex;align-items:baseline;justify-content:space-between;gap:var(--space-4)}
+.theme-head h1{margin:0;font-size:var(--font-size-xl);line-height:var(--font-line-height-xl);font-weight:var(--font-weight-bold);letter-spacing:var(--font-letter-spacing-tight)}
+.theme-head span{font-size:var(--font-size-sm);line-height:var(--font-line-height-sm);color:var(--color-text-muted)}
+.sec{margin-top:var(--space-12)}
+.sec>h2{margin:0 0 var(--space-1);font-size:var(--font-size-lg);line-height:var(--font-line-height-lg);font-weight:var(--font-weight-semibold);letter-spacing:var(--font-letter-spacing-tight)}
+.note{margin:0 0 var(--space-4);font-size:var(--font-size-sm);line-height:var(--font-line-height-sm);color:var(--color-text-muted)}
+.stage{display:grid;gap:var(--space-5)}
+.lbl{margin:0 0 var(--space-2);font-size:var(--font-size-xs);line-height:var(--font-line-height-xs);font-weight:var(--font-weight-semibold);color:var(--color-text-muted)}
+.demo{width:100%;max-width:var(--size-phone-width)}
+.frame{background:var(--color-bg);border:var(--border-width-hairline) solid var(--color-border);border-radius:var(--radius-lg);overflow:hidden}
+.row{display:flex;flex-wrap:wrap;align-items:center;gap:var(--space-3)}
+.grid2{display:grid;grid-template-columns:repeat(auto-fit,minmax(calc(var(--size-phone-width) * 0.72),1fr));gap:var(--space-5)}
+
+/* butonlar */
+.btn{display:inline-flex;align-items:center;justify-content:center;gap:var(--space-2);min-height:var(--size-touch-min);padding:0 var(--space-5);border-radius:var(--radius-md);border:var(--border-width-hairline) solid transparent;background:transparent;font-size:var(--font-size-md);line-height:var(--font-line-height-md);font-weight:var(--font-weight-semibold);white-space:nowrap;transition:background var(--motion-duration-fast) var(--motion-easing-standard)}
+.btn-primary{background:var(--color-accent);color:var(--color-on-accent)}
+.btn-primary:active,.btn-primary.is-pressed{background:var(--color-accent-pressed)}
+.btn-secondary{background:var(--color-surface);border-color:var(--color-border-strong);color:var(--color-text)}
+.btn-secondary:active,.btn-secondary.is-pressed{background:var(--color-chip-bg-pressed)}
+.btn-text{padding:0 var(--space-3);color:var(--color-text)}
+.btn-text:active,.btn-text.is-pressed{background:var(--color-chip-bg-pressed)}
+.btn-danger{background:var(--color-error-bg);border-color:var(--color-error-border);color:var(--color-error)}
+.btn-danger:active,.btn-danger.is-pressed{background:var(--color-surface-sunken)}
+.btn-block{width:100%}
+.ib{display:inline-grid;place-items:center;width:var(--size-touch-min);height:var(--size-touch-min);border:0;border-radius:var(--radius-full);background:transparent;color:var(--color-text);flex:none}
+.ib:active,.ib.is-pressed{background:var(--color-chip-bg-pressed)}
+.ib-outline{border:var(--border-width-hairline) solid var(--color-border-strong)}
+.matrix{display:grid;grid-template-columns:repeat(4,1fr);gap:var(--space-3) var(--space-2);align-items:center;justify-items:start}
+.matrix .lbl{margin:0}
+
+/* sekme çubuğu */
+.tabbar{display:flex;height:var(--size-tabbar);background:var(--color-bg);border-top:var(--border-width-hairline) solid var(--color-border)}
+.tab{flex:1;min-width:0;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:var(--space-1);min-height:var(--size-touch-min);padding:0;border:0;background:none;color:var(--color-tab-idle);font-size:var(--font-size-xs);line-height:var(--font-line-height-xs);font-weight:var(--font-weight-medium)}
+.tab .pill{display:grid;place-items:center;width:var(--size-tab-pill-width);height:var(--size-tab-pill-height);border-radius:var(--radius-full);transition:background var(--motion-duration-fast) var(--motion-easing-standard)}
+.tab[aria-current="page"]{color:var(--color-tab-active);font-weight:var(--font-weight-bold)}
+.tab[aria-current="page"] .pill{background:var(--color-tab-indicator)}
+.tab:active .pill,.tab.is-pressed .pill{background:var(--color-chip-bg-pressed)}
+.tab:focus-visible,.tab.is-focus{outline-offset:calc(-1 * var(--border-width-focus))}
+
+/* uygulama başlığı */
+.appbar{display:flex;align-items:center;gap:var(--space-2);min-height:var(--size-topbar);padding:0 var(--space-2) 0 var(--space-4);background:var(--color-bg)}
+.appbar h3{margin:0;flex:1;font-size:var(--font-size-xl);line-height:var(--font-line-height-xl);font-weight:var(--font-weight-bold);letter-spacing:var(--font-letter-spacing-tight)}
+.appbar.flow-bar{padding-left:var(--space-1);border-bottom:var(--border-width-hairline) solid var(--color-border)}
+.appbar .who{flex:1;min-width:0;display:flex;align-items:center;gap:var(--space-3);background:none;border:0;padding:0;text-align:left;min-height:var(--size-touch-min)}
+.appbar .who b{display:block;font-size:var(--font-size-lg);line-height:var(--font-line-height-lg);font-weight:var(--font-weight-semibold);letter-spacing:var(--font-letter-spacing-tight)}
+.appbar .who small{display:block;font-size:var(--font-size-xs);line-height:var(--font-line-height-xs);color:var(--color-meta)}
+.ticon{display:grid;place-items:center;width:var(--size-topic-icon);height:var(--size-topic-icon);flex:none;border-radius:var(--radius-full);background:var(--color-tile-bg);color:var(--color-text)}
+
+/* bölmeli kontrol */
+.seg{display:flex;gap:var(--space-1);padding:var(--space-1);background:var(--color-segment-track);border-radius:var(--radius-md)}
+.seg button{flex:1;min-height:var(--size-touch-min);padding:0 var(--space-2);border:var(--border-width-hairline) solid transparent;border-radius:var(--radius-sm);background:transparent;color:var(--color-segment-text);font-size:var(--font-size-sm);line-height:var(--font-line-height-sm);font-weight:var(--font-weight-medium)}
+.seg button[aria-pressed="true"]{background:var(--color-segment-thumb);border-color:var(--color-segment-thumb-border);color:var(--color-segment-text-selected);font-weight:var(--font-weight-semibold)}
+.seg button:active:not([aria-pressed="true"]),.seg button.is-pressed{background:var(--color-chip-bg-pressed)}
+
+/* rozet ve etiketler */
+.badge{display:inline-grid;place-items:center;min-width:var(--space-5);height:var(--space-5);padding:0 var(--space-1);border-radius:var(--radius-full);background:var(--color-badge-bg);color:var(--color-badge-text);font-size:var(--font-size-xs);line-height:var(--font-line-height-xs);font-weight:var(--font-weight-semibold);font-variant-numeric:var(--font-feature-tabular)}
+.dot{display:block;width:var(--size-dot);height:var(--size-dot);border-radius:var(--radius-full);background:var(--color-unprocessed-dot)}
+.tag{display:inline-flex;align-items:center;gap:var(--space-1);padding:0 var(--space-2);height:var(--space-6);border-radius:var(--radius-full);border:var(--border-width-hairline) solid transparent;font-size:var(--font-size-xs);line-height:var(--font-line-height-xs);font-weight:var(--font-weight-semibold);white-space:nowrap}
+.tag-high,.tag-error{background:var(--color-error-bg);color:var(--color-error);border-color:var(--color-error-border)}
+.tag-mid,.tag-warning{background:var(--color-warning-bg);color:var(--color-warning);border-color:var(--color-warning-border)}
+.tag-low{background:var(--color-tile-bg);color:var(--color-text-muted);border-color:var(--color-border)}
+.tag-success{background:var(--color-success-bg);color:var(--color-success);border-color:var(--color-success-border)}
+.tag-info{background:var(--color-info-bg);color:var(--color-info);border-color:var(--color-info-border)}
+.tag-topic{background:var(--color-tile-bg);color:var(--color-text-muted);padding:0 var(--space-2) 0 var(--space-1)}
+.tabdot{position:relative}
+.tabdot .badge{position:absolute;top:calc(-1 * var(--space-1));right:calc(-1 * var(--space-2))}
+
+/* konu satırı */
+.topics{background:var(--color-bg)}
+.trow{display:flex;align-items:center;gap:var(--space-3);width:100%;min-height:calc(var(--size-touch-min) + var(--space-8));padding:var(--space-3) var(--space-4);border:0;background:transparent;text-align:left}
+.trow:active,.trow.is-pressed{background:var(--color-chip-bg-pressed)}
+.trow .mid{flex:1;min-width:0}
+.trow .mid b{display:block;font-size:var(--font-size-md);line-height:var(--font-line-height-md);font-weight:var(--font-weight-semibold)}
+.trow .mid span{display:block;overflow:hidden;white-space:nowrap;text-overflow:ellipsis;font-size:var(--font-size-sm);line-height:var(--font-line-height-sm);color:var(--color-text-muted)}
+.trow .end{display:flex;flex-direction:column;align-items:flex-end;gap:var(--space-1);flex:none;font-size:var(--font-size-xs);line-height:var(--font-line-height-xs);color:var(--color-meta);font-variant-numeric:var(--font-feature-tabular)}
+.trow .end .pinrow{display:flex;align-items:center;gap:var(--space-1)}
+.trow+.trow{border-top:var(--border-width-hairline) solid var(--color-border)}
+.trow.weekly .mid span{color:var(--color-meta)}
+
+/* gün ayracı */
+.daysep{display:flex;align-items:center;justify-content:center;margin:var(--space-6) 0}
+.daysep span{padding:var(--space-1) var(--space-3);border-radius:var(--radius-full);background:var(--color-tile-bg);color:var(--color-text-muted);font-size:var(--font-size-sm);line-height:var(--font-line-height-sm);font-weight:var(--font-weight-semibold)}
+
+/* akış ve kayıt balonu */
+.flow{padding:var(--space-2) var(--space-3) var(--space-4)}
+.entry{display:grid;grid-template-columns:var(--size-gutter) 1fr;column-gap:var(--space-1);margin-bottom:var(--space-4)}
+.entry.tight{margin-bottom:var(--space-2)}
+.gut{padding-top:calc(var(--font-line-height-xs) + var(--space-1) + var(--space-2) + (var(--font-line-height-md) - var(--size-dot)) / 2)}
+.col{justify-self:end;max-width:calc(var(--size-bubble-max) * 100%);min-width:0;display:flex;flex-direction:column;align-items:flex-end}
+.meta{display:flex;align-items:center;gap:var(--space-1);margin-bottom:var(--space-1);font-size:var(--font-size-xs);line-height:var(--font-line-height-xs);color:var(--color-meta);font-variant-numeric:var(--font-feature-tabular)}
+.bubble{padding:var(--space-2) var(--space-3);background:var(--color-bubble);color:var(--color-bubble-text);border:var(--border-width-hairline) solid var(--color-bubble-border);border-radius:var(--radius-md);box-shadow:var(--shadow-raised)}
+.bubble.is-pressed{background:var(--color-chip-bg-pressed)}
+.bubble .photo{display:grid;place-items:center;aspect-ratio:4/3;margin-bottom:var(--space-2);border-radius:var(--radius-sm);background:var(--color-tile-bg);color:var(--color-text-subtle);overflow:hidden}
+.bubble .photo svg{width:100%;display:block}
+.bubble .cap{font-size:var(--font-size-md);line-height:var(--font-line-height-md)}
+.bubble.has-photo{width:calc(var(--size-phone-width) * 0.55)}
+.entry .chips{margin-top:var(--space-3)}
+
+/* AI çipi */
+.chips{display:flex;flex-wrap:wrap;justify-content:flex-end;gap:var(--space-3) var(--space-2)}
+.chip{position:relative;display:inline-flex;align-items:center;height:var(--size-chip);border-radius:var(--radius-full);border:var(--border-width-hairline) var(--border-style-suggested) var(--color-chip-border);background:var(--color-chip-bg);color:var(--color-chip-text);font-size:var(--font-size-sm);line-height:var(--font-line-height-sm);font-weight:var(--font-weight-medium);white-space:nowrap;transition:background var(--motion-duration-fast) var(--motion-easing-standard)}
+.chip button{position:relative;display:inline-flex;align-items:center;gap:var(--space-1);height:100%;border:0;background:transparent;color:inherit;font:inherit;padding:0}
+.chip button::before{content:"";position:absolute;inset:calc((var(--size-chip) - var(--size-touch-min)) / 2) 0}
+.chip .body{padding:0 var(--space-2) 0 var(--space-3);border-radius:var(--radius-full) 0 0 var(--radius-full)}
+.chip .x{justify-content:center;width:var(--size-touch-min);margin-left:calc(-1 * var(--space-3));border-radius:0 var(--radius-full) var(--radius-full) 0;color:var(--color-dismiss)}
+.chip .x::before{inset:calc((var(--size-chip) - var(--size-touch-min)) / 2) 0}
+.chip.is-pressed,.chip:has(.body:active){background:var(--color-chip-bg-pressed)}
+.chip.accepted{border-style:var(--border-style-accepted)}
+.chip.accepted .body{padding-right:var(--space-3);border-radius:var(--radius-full)}
+.chip.accepted .ok,.chip.accepted .body .i{color:var(--color-accept)}
+.chip.accepted.pop{animation:pop var(--motion-spring-small-duration) var(--motion-spring-small-easing)}
+.chip.gone{opacity:0;transition:opacity var(--motion-duration-close) var(--motion-easing-out)}
+.chip.enter{animation:chipin var(--motion-spring-small-duration) var(--motion-spring-small-easing) both}
+.chip.enter:nth-child(2){animation-delay:var(--motion-stagger-chip)}
+.chip.enter:nth-child(3){animation-delay:calc(2 * var(--motion-stagger-chip))}
+@keyframes pop{0%{transform:scale(1)}45%{transform:scale(1.06)}100%{transform:scale(1)}}
+@keyframes chipin{from{opacity:0;transform:translateY(var(--space-2)) scale(.96)}to{opacity:1;transform:none}}
+.chip .body:focus-visible,.chip .x:focus-visible,.chip .body.is-focus{border-radius:var(--radius-full)}
+.chip .body.is-focus{outline-offset:calc(-1 * var(--border-width-focus))}
+
+/* sabah planı */
+.plan{padding:var(--space-4);background:var(--color-plan-bg);border:var(--border-width-hairline) solid var(--color-plan-border);border-radius:var(--radius-md)}
+.plan .eyebrow{display:flex;align-items:center;gap:var(--space-1);font-size:var(--font-size-xs);line-height:var(--font-line-height-xs);font-weight:var(--font-weight-semibold);color:var(--color-text-muted)}
+.plan h4{display:flex;align-items:baseline;gap:var(--space-2);margin:var(--space-2) 0 var(--space-3);font-size:var(--font-size-lg);line-height:var(--font-line-height-lg);font-weight:var(--font-weight-semibold);letter-spacing:var(--font-letter-spacing-tight)}
+.plan h4 .big{font-size:var(--font-size-2xl);line-height:var(--font-line-height-2xl);font-weight:var(--font-weight-bold);font-variant-numeric:var(--font-feature-tabular)}
+.plan ul{list-style:none;margin:0;padding:0}
+.plan li+li{border-top:var(--border-width-hairline) solid var(--color-plan-border)}
+.plan .acts{display:flex;align-items:center;gap:var(--space-2);margin-top:var(--space-3)}
+.late{color:var(--color-error);font-weight:var(--font-weight-semibold)}
+
+/* onay kutusu, anahtar */
+.check,.switch{display:flex;align-items:center;gap:var(--space-3);min-height:var(--size-touch-min);position:relative;cursor:pointer}
+.check input,.switch input{position:absolute;opacity:0;inset:0;width:100%;height:100%;margin:0;cursor:inherit}
+.check .txt{flex:1;min-width:0}
+.check .txt b{display:block;font-weight:var(--font-weight-regular);font-size:var(--font-size-md);line-height:var(--font-line-height-md)}
+.check .txt small{display:block;font-size:var(--font-size-xs);line-height:var(--font-line-height-xs);color:var(--color-meta)}
+.box{display:grid;place-items:center;width:var(--icon-size-md);height:var(--icon-size-md);flex:none;border:var(--border-width-focus) solid var(--color-input-border);border-radius:calc(var(--radius-sm) / 2);background:var(--color-input-bg);color:var(--color-on-accent)}
+.box .i{opacity:0;width:var(--icon-size-xs);height:var(--icon-size-xs);stroke-width:calc(var(--icon-stroke) * 1.5)}
+input:checked+.box{background:var(--color-accent);border-color:var(--color-accent)}
+input:checked+.box .i{opacity:1}
+input:focus-visible+.box,input:focus-visible+.track,.box.is-focus,.track.is-focus{outline:var(--border-width-focus) solid var(--color-focus-ring);outline-offset:var(--border-width-focus-offset)}
+.check:has(input:checked) .txt b.done{color:var(--color-text-muted);text-decoration:line-through}
+.track{position:relative;width:calc(var(--space-12) + var(--space-1));height:var(--space-8);flex:none;border-radius:var(--radius-full);background:var(--color-segment-track);border:var(--border-width-hairline) solid var(--color-input-border);transition:background var(--motion-duration-fast) var(--motion-easing-standard)}
+.track::after{content:"";position:absolute;top:50%;left:var(--space-1);width:var(--space-6);height:var(--space-6);margin-top:calc(-0.5 * var(--space-6));border-radius:var(--radius-full);background:var(--color-input-border);transition:transform var(--motion-spring-small-duration) var(--motion-spring-small-easing),background var(--motion-duration-fast) var(--motion-easing-standard)}
+input:checked+.track{background:var(--color-accent);border-color:var(--color-accent)}
+input:checked+.track::after{background:var(--color-on-accent);transform:translateX(var(--space-5))}
+
+/* yazma çubuğu */
+.composer{display:flex;align-items:center;gap:var(--space-1);min-height:var(--size-composer);padding:var(--space-2) var(--space-2);background:var(--color-bg);border-top:var(--border-width-hairline) solid var(--color-border)}
+.field-in{flex:1;min-width:0;display:flex;align-items:center;min-height:var(--size-input);padding:0 var(--space-3);background:var(--color-input-bg);border:var(--border-width-hairline) solid var(--color-input-border);border-radius:var(--radius-md);color:var(--color-text);overflow:hidden;white-space:nowrap}
+.field-in.ph{color:var(--color-placeholder)}
+.field-in.is-focus{outline:var(--border-width-focus) solid var(--color-focus-ring);outline-offset:calc(-1 * var(--border-width-focus))}
+.caret{display:inline-block;width:var(--border-width-focus);height:var(--font-line-height-md);margin-left:0;background:var(--color-text);animation:blink var(--motion-delay-chip-merge) steps(1) infinite}
+@keyframes blink{50%{opacity:0}}
+.mic{display:inline-grid;place-items:center;width:var(--size-mic);height:var(--size-mic);flex:none;border:0;border-radius:var(--radius-full);background:var(--color-mic-bg);color:var(--color-mic-icon)}
+.mic:active,.mic.is-pressed{background:var(--color-accent-pressed)}
+.voice{padding:var(--space-4);min-height:var(--size-voice-strip-min);background:var(--color-panel-bg);border-top:var(--border-width-hairline) solid var(--color-border);box-shadow:var(--shadow-floating)}
+.voice .live{margin:0 0 var(--space-3);font-size:var(--font-size-md);line-height:var(--font-line-height-md)}
+.voice .settled{color:var(--color-voice-settled)}
+.voice del{color:var(--color-voice-settled)}
+.voice .now{color:var(--color-voice-live);font-weight:var(--font-weight-semibold)}
+.pv{display:grid;gap:var(--space-1);padding:var(--space-2) var(--space-3);background:var(--color-tile-bg);border-radius:var(--radius-md)}
+.pv div{display:flex;align-items:center;gap:var(--space-3);min-height:var(--space-8);font-size:var(--font-size-sm);line-height:var(--font-line-height-sm)}
+.pv div b{font-weight:var(--font-weight-semibold)}
+.pv .i{color:var(--color-text-muted)}
+.vbar{display:flex;align-items:center;gap:var(--space-2);margin-top:var(--space-3)}
+.vbar .time{font-variant-numeric:var(--font-feature-tabular);font-size:var(--font-size-md);line-height:var(--font-line-height-md);font-weight:var(--font-weight-semibold)}
+.wave{display:flex;align-items:center;gap:calc(var(--space-1) / 2);flex:1;height:var(--space-6);color:var(--color-text-muted)}
+.wave i{width:calc(var(--space-1) / 2);height:var(--space-2);border-radius:var(--radius-full);background:currentColor;animation:wv var(--motion-spring-small-duration) var(--motion-easing-standard) infinite alternate}
+.wave i:nth-child(3n+1){height:var(--space-4);animation-delay:var(--motion-stagger-chip)}
+.wave i:nth-child(3n+2){height:var(--space-5);animation-delay:calc(2 * var(--motion-stagger-chip))}
+.wave i:nth-child(4n){height:var(--space-3)}
+@keyframes wv{from{transform:scaleY(.5)}to{transform:scaleY(1)}}
+
+/* ekleme paneli */
+.attach{padding:var(--space-4);min-height:var(--size-attach-panel-min);background:var(--color-panel-bg);border-top:var(--border-width-hairline) solid var(--color-border)}
+.attach h4{margin:0 0 var(--space-2);font-size:var(--font-size-xs);line-height:var(--font-line-height-xs);font-weight:var(--font-weight-semibold);color:var(--color-text-muted)}
+.attach h4:not(:first-child){margin-top:var(--space-5)}
+.tiles{display:grid;grid-template-columns:repeat(5,1fr);gap:var(--space-2)}
+.tile{display:flex;flex-direction:column;align-items:center;gap:var(--space-1);min-height:var(--size-touch-min);padding:0;border:0;background:transparent;font-size:var(--font-size-xs);line-height:var(--font-line-height-xs);font-weight:var(--font-weight-medium);color:var(--color-text)}
+.tile .sq{display:grid;place-items:center;width:var(--size-tile);height:var(--size-tile);border-radius:var(--radius-md);background:var(--color-tile-bg);transition:background var(--motion-duration-fast) var(--motion-easing-standard)}
+.tile:active .sq,.tile.is-pressed .sq{background:var(--color-chip-bg-pressed)}
+.tile:focus-visible,.tile.is-focus{outline-offset:calc(-1 * var(--border-width-focus));border-radius:var(--radius-md)}
+
+/* bottom sheet */
+.screen{position:relative;height:calc(var(--size-phone-height) * 0.78);overflow:hidden;background:var(--color-bg);border:var(--border-width-hairline) solid var(--color-border);border-radius:var(--radius-lg)}
+.screen .scrim{position:absolute;inset:0;background:var(--color-scrim)}
+.sheet{position:absolute;left:0;right:0;bottom:0;display:flex;flex-direction:column;padding:0 var(--space-4) var(--space-4);background:var(--color-sheet-bg);border-radius:var(--radius-lg) var(--radius-lg) 0 0;box-shadow:var(--shadow-sheet)}
+.sheet.peek{height:calc(var(--size-sheet-peek) * 100%)}
+.sheet.full{height:calc(var(--size-sheet-full) * 100%)}
+.handle-wrap{display:grid;place-items:center;min-height:var(--size-touch-min);flex:none}
+.handle{width:var(--size-handle-width);height:var(--size-handle-height);border-radius:var(--radius-full);background:var(--color-sheet-handle)}
+.sheet h4{margin:0;font-size:var(--font-size-lg);line-height:var(--font-line-height-lg);font-weight:var(--font-weight-semibold);letter-spacing:var(--font-letter-spacing-tight)}
+.sheet .shead{display:flex;align-items:center;justify-content:space-between;gap:var(--space-2)}
+.sheet .stext{margin:var(--space-2) 0 var(--space-3)}
+.sheet .sm-meta{font-size:var(--font-size-xs);line-height:var(--font-line-height-xs);color:var(--color-meta);font-variant-numeric:var(--font-feature-tabular)}
+.sheet .foot{margin-top:auto;padding-top:var(--space-3)}
+.sug{display:flex;align-items:center;gap:var(--space-2);min-height:calc(var(--size-touch-min) + var(--space-2));border-top:var(--border-width-hairline) solid var(--color-border)}
+.sug .t{flex:1;min-width:0;font-size:var(--font-size-sm);line-height:var(--font-line-height-sm);font-weight:var(--font-weight-medium);color:var(--color-chip-text)}
+.sug .t small{display:block;font-size:var(--font-size-xs);line-height:var(--font-line-height-xs);color:var(--color-meta);font-weight:var(--font-weight-regular)}
+.sug .ai{display:grid;place-items:center;color:var(--color-text-muted)}
+.sug .yes{color:var(--color-accept)}
+.sug .no{color:var(--color-dismiss)}
+.sug.done .t{color:var(--color-success)}
+.sug.done .yes{color:var(--color-accept)}
+.stage .sug{padding:0 var(--space-3);background:var(--color-sheet-bg);border:var(--border-width-hairline) solid var(--color-border);border-radius:var(--radius-md)}
+.lnk{display:flex;align-items:center;gap:var(--space-3);min-height:var(--size-touch-min);padding:var(--space-2) 0;border-top:var(--border-width-hairline) solid var(--color-border);font-size:var(--font-size-sm);line-height:var(--font-line-height-sm)}
+.lnk small{display:block;font-size:var(--font-size-xs);line-height:var(--font-line-height-xs);color:var(--color-meta)}
+.sec-h{margin:var(--space-4) 0 var(--space-2);font-size:var(--font-size-xs);line-height:var(--font-line-height-xs);font-weight:var(--font-weight-semibold);color:var(--color-text-muted)}
+
+/* giriş alanları */
+.field{display:grid;gap:var(--space-1)}
+.field>label,.field>.lab{font-size:var(--font-size-sm);line-height:var(--font-line-height-sm);font-weight:var(--font-weight-semibold)}
+.ctl{display:flex;align-items:center;gap:var(--space-2);width:100%;min-height:var(--size-input);padding:0 var(--space-3);background:var(--color-input-bg);border:var(--border-width-hairline) solid var(--color-input-border);border-radius:var(--radius-md);color:var(--color-text);text-align:left}
+.ctl input,.ctl select{flex:1;min-width:0;border:0;background:transparent;outline:0;padding:0;appearance:none;-webkit-appearance:none;min-height:var(--size-input)}
+.ctl input::placeholder{color:var(--color-placeholder);opacity:1}
+.ctl .grow{flex:1}
+.ctl .i{color:var(--color-text-muted)}
+.ctl:focus-within,.ctl.is-focus{outline:var(--border-width-focus) solid var(--color-focus-ring);outline-offset:calc(-1 * var(--border-width-focus));border-color:transparent}
+.ctl.err{border-color:var(--color-error-border);background:var(--color-error-bg)}
+.help{display:flex;align-items:center;gap:var(--space-1);font-size:var(--font-size-xs);line-height:var(--font-line-height-xs);color:var(--color-meta)}
+.help.err{color:var(--color-error)}
+
+/* toast */
+.toast{display:flex;align-items:center;gap:var(--space-3);min-height:var(--size-touch-min);padding:var(--space-1) var(--space-1) var(--space-1) var(--space-4);background:var(--color-surface-raised);color:var(--color-text);border:var(--border-width-hairline) solid var(--color-border-strong);border-radius:var(--radius-md);box-shadow:var(--shadow-floating);font-size:var(--font-size-sm);line-height:var(--font-line-height-sm);font-weight:var(--font-weight-medium)}
+.toast .m{flex:1;min-width:0}
+.toast .i.ok{color:var(--color-success)}.toast .i.in{color:var(--color-info)}
+.toast .btn-text{font-size:var(--font-size-sm);font-weight:var(--font-weight-bold)}
+
+/* modal */
+.modal-bg{position:relative;display:grid;place-items:center;padding:var(--space-8) var(--space-4);background:var(--color-bg);border:var(--border-width-hairline) solid var(--color-border);border-radius:var(--radius-lg);overflow:hidden}
+.modal-bg .scrim{position:absolute;inset:0;background:var(--color-scrim)}
+.modal{position:relative;width:100%;max-width:calc(var(--size-phone-width) * 0.82);padding:var(--space-6);background:var(--color-surface-raised);border:var(--border-width-hairline) solid var(--color-border);border-radius:var(--radius-lg);box-shadow:var(--shadow-floating)}
+.modal h4{margin:0 0 var(--space-2);font-size:var(--font-size-lg);line-height:var(--font-line-height-lg);font-weight:var(--font-weight-semibold);letter-spacing:var(--font-letter-spacing-tight)}
+.modal p{color:var(--color-text-muted);font-size:var(--font-size-md)}
+.modal .acts{display:flex;justify-content:flex-end;gap:var(--space-2);margin-top:var(--space-5)}
+
+/* boş durum */
+.empty{display:flex;flex-direction:column;align-items:center;text-align:center;gap:var(--space-2);padding:var(--space-10) var(--space-6)}
+.empty .ring{display:grid;place-items:center;width:calc(var(--size-tile) + var(--space-4));height:calc(var(--size-tile) + var(--space-4));margin-bottom:var(--space-2);border-radius:var(--radius-full);background:var(--color-tile-bg);color:var(--color-text-muted)}
+.empty h4{margin:0;font-size:var(--font-size-lg);line-height:var(--font-line-height-lg);font-weight:var(--font-weight-semibold);letter-spacing:var(--font-letter-spacing-tight)}
+.empty p{max-width:calc(var(--size-phone-width) * 0.7);color:var(--color-text-muted);font-size:var(--font-size-md)}
+.empty .btn{margin-top:var(--space-3)}
+
+/* uyarı kutuları */
+.alert{display:flex;gap:var(--space-3);padding:var(--space-3) var(--space-4);border:var(--border-width-hairline) solid;border-radius:var(--radius-md);font-size:var(--font-size-sm);line-height:var(--font-line-height-sm);color:var(--color-text)}
+.alert b{display:block;font-weight:var(--font-weight-bold);font-size:var(--font-size-md);line-height:var(--font-line-height-md)}
+.alert .i{margin-top:calc(var(--space-1) / 2)}
+.alert-success{background:var(--color-success-bg);border-color:var(--color-success-border)}.alert-success b,.alert-success .i{color:var(--color-success)}
+.alert-warning{background:var(--color-warning-bg);border-color:var(--color-warning-border)}.alert-warning b,.alert-warning .i{color:var(--color-warning)}
+.alert-error{background:var(--color-error-bg);border-color:var(--color-error-border)}.alert-error b,.alert-error .i{color:var(--color-error)}
+.alert-info{background:var(--color-info-bg);border-color:var(--color-info-border)}.alert-info b,.alert-info .i{color:var(--color-info)}
+
+@media (prefers-reduced-motion:reduce){
+  @keyframes pop{0%,100%{transform:none}}
+  @keyframes chipin{from{opacity:0}to{opacity:1}}
+  @keyframes wv{from{transform:none}to{transform:none}}
+  .track::after{transition:background var(--motion-duration-fast) linear}
+}
+
+</style>
+<div class="theme-head"><h1>NotAI bileşenleri</h1><span id="tname"></span></div>
+
+<!-- 1 SEKME ÇUBUĞU -->
+<section class="sec" id="tabbar"><h2>Alt sekme çubuğu</h2>
+<p class="note">5 sekme, ikon ve etiket her zaman görünür. Etkin sekmede 56×32 hap, <code>aria-current="page"</code>. Akış ekranında gizlidir.</p>
+<div class="stage">
+<div class="demo"><p class="lbl">Günlük etkin</p><div class="frame"><nav class="tabbar" aria-label="Ana gezinme">
+<button class="tab" aria-current="page"><span class="pill"><svg class="i" aria-hidden="true"><use href="#i-journal"/></svg></span>Günlük</button>
+<button class="tab"><span class="pill"><svg class="i" aria-hidden="true"><use href="#i-tasks"/></svg></span>Görevler</button>
+<button class="tab"><span class="pill"><svg class="i" aria-hidden="true"><use href="#i-calendar"/></svg></span>Takvim</button>
+<button class="tab"><span class="pill"><svg class="i" aria-hidden="true"><use href="#i-bell"/></svg></span>Hatırlatma</button>
+<button class="tab"><span class="pill"><svg class="i" aria-hidden="true"><use href="#i-search"/></svg></span>Ara/Sor</button></nav></div></div>
+<div class="demo"><p class="lbl">Görevler etkin</p><div class="frame"><nav class="tabbar" aria-label="Ana gezinme">
+<button class="tab"><span class="pill"><svg class="i" aria-hidden="true"><use href="#i-journal"/></svg></span>Günlük</button>
+<button class="tab" aria-current="page"><span class="pill"><svg class="i" aria-hidden="true"><use href="#i-tasks"/></svg></span>Görevler</button>
+<button class="tab"><span class="pill"><svg class="i" aria-hidden="true"><use href="#i-calendar"/></svg></span>Takvim</button>
+<button class="tab"><span class="pill"><svg class="i" aria-hidden="true"><use href="#i-bell"/></svg></span>Hatırlatma</button>
+<button class="tab"><span class="pill"><svg class="i" aria-hidden="true"><use href="#i-search"/></svg></span>Ara/Sor</button></nav></div></div>
+<div class="demo"><p class="lbl">Durumlar: etkin · basılı (Takvim) · odak (Hatırlatma) · devre dışı (Ara/Sor)</p><div class="frame"><nav class="tabbar" aria-label="Durum örneği">
+<button class="tab" aria-current="page"><span class="pill"><svg class="i" aria-hidden="true"><use href="#i-journal"/></svg></span>Günlük</button>
+<button class="tab"><span class="pill"><svg class="i" aria-hidden="true"><use href="#i-tasks"/></svg></span>Görevler</button>
+<button class="tab is-pressed"><span class="pill"><svg class="i" aria-hidden="true"><use href="#i-calendar"/></svg></span>Takvim</button>
+<button class="tab is-focus"><span class="pill"><svg class="i" aria-hidden="true"><use href="#i-bell"/></svg></span>Hatırlatma</button>
+<button class="tab" disabled><span class="pill"><svg class="i" aria-hidden="true"><use href="#i-search"/></svg></span>Ara/Sor</button></nav></div></div>
+<div class="demo"><p class="lbl">Sayaç rozetli (3 işlenmemiş)</p><div class="frame"><nav class="tabbar" aria-label="Rozet örneği">
+<button class="tab" aria-current="page"><span class="pill"><span class="tabdot"><svg class="i" aria-hidden="true"><use href="#i-journal"/></svg><span class="badge" role="img" aria-label="3 işlenmemiş">3</span></span></span>Günlük</button>
+<button class="tab"><span class="pill"><svg class="i" aria-hidden="true"><use href="#i-tasks"/></svg></span>Görevler</button>
+<button class="tab"><span class="pill"><svg class="i" aria-hidden="true"><use href="#i-calendar"/></svg></span>Takvim</button>
+<button class="tab"><span class="pill"><svg class="i" aria-hidden="true"><use href="#i-bell"/></svg></span>Hatırlatma</button>
+<button class="tab"><span class="pill"><svg class="i" aria-hidden="true"><use href="#i-search"/></svg></span>Ara/Sor</button></nav></div></div>
+</div></section>
+
+<!-- 2 UYGULAMA BAŞLIĞI -->
+<section class="sec"><h2>Uygulama başlığı</h2>
+<p class="note">Ana ekranda büyük başlık; akış ekranında geri, konu ikonu + ad ve eylemler. Ana Günlük’ün ikonu defter + kalemdir, kitap değil.</p>
+<div class="stage">
+<div class="demo"><p class="lbl">Ana başlık</p><div class="frame"><header class="appbar"><h3>Günlük</h3><button class="ib" aria-label="Ara"><svg class="i" aria-hidden="true"><use href="#i-search"/></svg></button><button class="ib" aria-label="Ayarlar"><svg class="i" aria-hidden="true"><use href="#i-stack"/></svg></button></header></div></div>
+<div class="demo"><p class="lbl">Akış başlığı: Ana Günlük</p><div class="frame"><header class="appbar flow-bar"><button class="ib" aria-label="Geri"><svg class="i" aria-hidden="true"><use href="#i-chev-l"/></svg></button><button class="who"><span class="ticon"><svg class="i" aria-hidden="true"><use href="#i-journal"/></svg></span><span><b>Ana Günlük</b><small>128&nbsp;kayıt · 3 işlenmemiş</small></span></button><button class="ib" aria-label="Ara"><svg class="i" aria-hidden="true"><use href="#i-search"/></svg></button></header></div></div>
+<div class="demo"><p class="lbl">Akış başlığı: konu · basılı geri · odaklı ad</p><div class="frame"><header class="appbar flow-bar"><button class="ib is-pressed" aria-label="Geri"><svg class="i" aria-hidden="true"><use href="#i-chev-l"/></svg></button><button class="who is-focus"><span class="ticon"><svg class="i" aria-hidden="true"><use href="#i-brief"/></svg></span><span><b>GemOlive</b><small>Proje · 42&nbsp;kayıt</small></span></button><button class="ib" aria-label="Ara"><svg class="i" aria-hidden="true"><use href="#i-search"/></svg></button></header></div></div>
+</div></section>
+
+<!-- 3 BÖLMELİ KONTROL -->
+<section class="sec"><h2>Bölmeli kontrol</h2>
+<p class="note">Ana ekran filtresi: Tümü | Proje | Alan | Kaynak. Seçili parça beyaz zemin ve 1px kenarla ayrılır.</p>
+<div class="stage">
+<div class="demo"><p class="lbl">Tümü seçili</p><div class="seg" role="group" aria-label="Konu türü"><button aria-pressed="true">Tümü</button><button aria-pressed="false">Proje</button><button aria-pressed="false">Alan</button><button aria-pressed="false">Kaynak</button></div></div>
+<div class="demo"><p class="lbl">Proje seçili · basılı (Alan) · odak (Kaynak)</p><div class="seg" role="group" aria-label="Konu türü"><button aria-pressed="false">Tümü</button><button aria-pressed="true">Proje</button><button aria-pressed="false" class="is-pressed">Alan</button><button aria-pressed="false" class="is-focus">Kaynak</button></div></div>
+<div class="demo"><p class="lbl">Devre dışı</p><div class="seg is-disabled" role="group" aria-label="Konu türü"><button disabled aria-pressed="true">Tümü</button><button disabled aria-pressed="false">Proje</button><button disabled aria-pressed="false">Alan</button><button disabled aria-pressed="false">Kaynak</button></div></div>
+</div></section>
+
+<!-- 4 KONU SATIRI -->
+<section class="sec"><h2>Konu satırı</h2>
+<p class="note">Sabitli Ana Günlük en üstte (işlenmemiş rozetli), hemen altında Haftalık gözden geçirme. Her konunun ikonu farklıdır.</p>
+<div class="stage">
+<div class="demo"><p class="lbl">Liste</p><div class="frame topics">
+<button class="trow"><span class="ticon"><svg class="i" aria-hidden="true"><use href="#i-journal"/></svg></span><span class="mid"><b>Ana Günlük</b><span>Kostik fiyatı 1.850&nbsp;₺’ye çıktı, Murat Bey’e sor</span></span><span class="end"><span class="pinrow"><svg class="i i-xs" aria-hidden="true"><use href="#i-pushpin"/></svg>09:12</span><span class="badge" role="img" aria-label="3 işlenmemiş kayıt">3</span></span></button>
+<button class="trow weekly"><span class="ticon"><svg class="i" aria-hidden="true"><use href="#i-calendar"/></svg></span><span class="mid"><b>Haftalık gözden geçirme</b><span>Cuma 17:00 · 6 açık iş</span></span><span class="end"><span class="pinrow"><svg class="i i-xs" aria-hidden="true"><use href="#i-pushpin"/></svg>Cum</span></span></button>
+<button class="trow"><span class="ticon"><svg class="i" aria-hidden="true"><use href="#i-brief"/></svg></span><span class="mid"><b>GemOlive</b><span>Zeytinyağı etiket baskısı onaylandı</span></span><span class="end"><span>Dün</span></span></button>
+<button class="trow"><span class="ticon"><svg class="i" aria-hidden="true"><use href="#i-stack"/></svg></span><span class="mid"><b>Logo ERP geçişi</b><span>Stok sayımı için 25&nbsp;kg’lık çuvalları say</span></span><span class="end"><span>Çar</span></span></button>
+<button class="trow"><span class="ticon"><svg class="i" aria-hidden="true"><use href="#i-home"/></svg></span><span class="mid"><b>Ev</b><span>Doğalgaz faturası ödendi</span></span><span class="end"><span>4 Kas</span></span></button>
+<button class="trow"><span class="ticon"><svg class="i" aria-hidden="true"><use href="#i-heart"/></svg></span><span class="mid"><b>Sağlık</b><span>Diş kontrolü için randevu al</span></span><span class="end"><span>2 Kas</span></span></button>
+<button class="trow"><span class="ticon"><svg class="i" aria-hidden="true"><use href="#i-book"/></svg></span><span class="mid"><b>Okuma notları</b><span>Değer akışı haritalandırması üzerine notlar</span></span><span class="end"><span>29 Eki</span></span></button>
+</div></div>
+<div class="demo"><p class="lbl">Basılı · odak</p><div class="frame topics">
+<button class="trow is-pressed"><span class="ticon"><svg class="i" aria-hidden="true"><use href="#i-brief"/></svg></span><span class="mid"><b>GemOlive</b><span>Zeytinyağı etiket baskısı onaylandı</span></span><span class="end"><span>Dün</span></span></button>
+<button class="trow is-focus"><span class="ticon"><svg class="i" aria-hidden="true"><use href="#i-home"/></svg></span><span class="mid"><b>Ev</b><span>Doğalgaz faturası ödendi</span></span><span class="end"><span>4 Kas</span></span></button>
+</div></div>
+</div></section>
+
+<!-- 5 GÜN AYRACI -->
+<section class="sec"><h2>Gün ayracı</h2>
+<p class="note">Üstte ve altta 24px boşluk. Gün adı ayraç başlığında büyük harfle başlar.</p>
+<div class="stage"><div class="demo"><div class="frame">
+<div class="daysep"><span>Çarşamba, 4 Kasım</span></div><div class="daysep"><span>Dün</span></div><div class="daysep"><span>Bugün</span></div></div></div></div></section>
+
+<!-- 6 KAYIT BALONU -->
+<section class="sec"><h2>Kayıt balonu</h2>
+<p class="note">Sağa yaslı, kuyruksuz, en çok %86 genişlik. Saat balonun üstünde. İşlenmemiş noktası sabit sol olukta (16px), ilk satırla hizalı.</p>
+<div class="stage">
+<div class="demo"><p class="lbl">Metin · saat üstte</p><div class="frame flow"><div class="entry"><span class="gut"></span><div class="col"><div class="meta">09:12</div><div class="bubble">Kostik tedarikçisini ara&nbsp;– perşembe</div></div></div></div></div>
+<div class="demo"><p class="lbl">Fotoğraflı</p><div class="frame flow"><div class="entry"><span class="gut"></span><div class="col"><div class="meta">11:40</div><div class="bubble has-photo"><div class="photo"><svg viewBox="0 0 200 150" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-label="Çuval fotoğrafı" role="img"><path d="M60 40c10-8 70-8 80 0l8 90c-30 10-66 10-96 0z"/><path d="M60 40c10 10 70 10 80 0"/><path d="M78 80h44M82 96h36"/><path d="M0 140h200" opacity=".5"/></svg></div><div class="cap">Çuval etiketi: 25&nbsp;kg, parti 2411</div></div></div></div></div></div>
+<div class="demo"><p class="lbl">Doğrudan konuya girilmiş · konu etiketli</p><div class="frame flow"><div class="entry"><span class="gut"></span><div class="col"><div class="meta">14:05 · <svg class="i i-xs" aria-hidden="true"><use href="#i-brief"/></svg>GemOlive</div><div class="bubble">Kargo teklifi 1.850&nbsp;₺, pazartesiye kadar cevap bekliyorlar</div></div></div></div></div>
+<div class="demo"><p class="lbl">İşlenmemiş · sol olukta nokta</p><div class="frame flow"><div class="entry tight"><span class="gut"><span class="dot" role="img" aria-label="İşlenmedi"></span></span><div class="col"><div class="meta">16:30</div><div class="bubble">Logo ERP geçişinde stok kartlarını tek tek kontrol et</div></div></div>
+<div class="entry"><span class="gut"><span class="dot" role="img" aria-label="İşlenmedi"></span></span><div class="col"><div class="meta">16:42</div><div class="bubble">Değer akışı haritalandırması için Ğ ğ Ş ş İ ı Ö Ü Ç testi: İŞLENMEDİ</div></div></div>
+<div class="entry"><span class="gut"></span><div class="col"><div class="meta">17:10</div><div class="bubble is-pressed">Basılı balon (uzun basma menüsü açılır)</div></div></div></div></div>
+</div></section>
+
+<!-- 7 AI ÇİPİ -->
+<section class="sec" id="chips"><h2>AI çipi</h2>
+<p class="note">Şeffaf, kesikli kenarlı, hiçbir zaman dolgulu değil. Gövde kabul eder, × yalnız o çipi yoksayar. Görünür 32px, dokunma alanı 44px.</p>
+<div class="stage">
+<div class="demo"><p class="lbl">Öneri (varsayılan) · basılı · odak</p><div class="chips">
+<span class="chip"><button class="body"><svg class="i i-xs" aria-hidden="true"><use href="#i-sparkle"/></svg>Görev · Perşembe</button><button class="x" aria-label="Yoksay: Görev · Perşembe"><svg class="i i-xs" aria-hidden="true"><use href="#i-x"/></svg></button></span>
+<span class="chip is-pressed"><button class="body"><svg class="i i-xs" aria-hidden="true"><use href="#i-sparkle"/></svg>→ GemOlive</button><button class="x" aria-label="Yoksay: GemOlive"><svg class="i i-xs" aria-hidden="true"><use href="#i-x"/></svg></button></span>
+<span class="chip"><button class="body is-focus"><svg class="i i-xs" aria-hidden="true"><use href="#i-sparkle"/></svg>Hatırlatma · 10:00</button><button class="x" aria-label="Yoksay: Hatırlatma"><svg class="i i-xs" aria-hidden="true"><use href="#i-x"/></svg></button></span></div></div>
+<div class="demo"><p class="lbl">Kabul edilmiş (düz kenar, ✓ yeşil) · devre dışı</p><div class="chips">
+<span class="chip accepted"><button class="body"><span class="ok"><svg class="i i-xs" aria-hidden="true"><use href="#i-check"/></svg></span>Görev · Perşembe</button></span>
+<span class="chip accepted pop"><button class="body"><span class="ok"><svg class="i i-xs" aria-hidden="true"><use href="#i-check"/></svg></span>GemOlive</button></span>
+<span class="chip is-disabled"><button class="body" disabled><svg class="i i-xs" aria-hidden="true"><use href="#i-sparkle"/></svg>Etkinlik · Cuma</button><button class="x" disabled aria-label="Yoksay"><svg class="i i-xs" aria-hidden="true"><use href="#i-x"/></svg></button></span></div></div>
+<div class="demo"><p class="lbl">Etkileşimli: gövdeye dokun → kabul animasyonu, × → solarak kaybolur</p><div class="chips" data-demo="chips">
+<span class="chip"><button class="body"><svg class="i i-xs" aria-hidden="true"><use href="#i-sparkle"/></svg>Görev · Perşembe</button><button class="x" aria-label="Yoksay: Görev · Perşembe"><svg class="i i-xs" aria-hidden="true"><use href="#i-x"/></svg></button></span>
+<span class="chip"><button class="body"><svg class="i i-xs" aria-hidden="true"><use href="#i-sparkle"/></svg>→ Kostik tedarik</button><button class="x" aria-label="Yoksay: Kostik tedarik"><svg class="i i-xs" aria-hidden="true"><use href="#i-x"/></svg></button></span></div></div>
+<div class="demo"><p class="lbl">Yeni-giriş animasyonu (yay + 40ms kademe)</p><div class="chips" id="enter-chips">
+<span class="chip enter"><button class="body"><svg class="i i-xs" aria-hidden="true"><use href="#i-sparkle"/></svg>Görev · Perşembe</button><button class="x" aria-label="Yoksay"><svg class="i i-xs" aria-hidden="true"><use href="#i-x"/></svg></button></span>
+<span class="chip enter"><button class="body"><svg class="i i-xs" aria-hidden="true"><use href="#i-sparkle"/></svg>→ GemOlive</button><button class="x" aria-label="Yoksay"><svg class="i i-xs" aria-hidden="true"><use href="#i-x"/></svg></button></span>
+<span class="chip enter"><button class="body"><svg class="i i-xs" aria-hidden="true"><use href="#i-sparkle"/></svg>Hatırlatma · 10:00</button><button class="x" aria-label="Yoksay"><svg class="i i-xs" aria-hidden="true"><use href="#i-x"/></svg></button></span></div>
+<div class="row" style="justify-content:flex-end;margin-top:var(--space-2)"><button class="btn btn-text" id="replay">Animasyonu tekrar oynat</button></div></div>
+<div class="demo"><p class="lbl">Bağlamda: balon + çipler</p><div class="frame flow"><div class="entry"><span class="gut"><span class="dot" role="img" aria-label="İşlenmedi"></span></span><div class="col"><div class="meta">09:12</div><div class="bubble">Kostik tedarikçisini ara&nbsp;– perşembe</div><div class="chips">
+<span class="chip"><button class="body"><svg class="i i-xs" aria-hidden="true"><use href="#i-sparkle"/></svg>Görev · Perşembe</button><button class="x" aria-label="Yoksay: Görev · Perşembe"><svg class="i i-xs" aria-hidden="true"><use href="#i-x"/></svg></button></span>
+<span class="chip"><button class="body"><svg class="i i-xs" aria-hidden="true"><use href="#i-sparkle"/></svg>→ Kostik tedarik</button><button class="x" aria-label="Yoksay: Kostik tedarik"><svg class="i i-xs" aria-hidden="true"><use href="#i-x"/></svg></button></span></div></div></div></div></div>
+</div></section>
+
+<!-- 8 SABAH PLANI -->
+<section class="sec"><h2>Sabah planı kartı</h2>
+<p class="note">Sol tarafta tam genişlikte. En çok 3 onay kutulu madde; gecikme yalnız metinle ve hata renginde.</p>
+<div class="stage"><div class="demo"><div class="plan">
+<div class="eyebrow"><svg class="i i-xs" aria-hidden="true"><use href="#i-sparkle"/></svg>Sabah planı</div>
+<h4><span class="big">3</span> iş bugün öne çıkıyor</h4>
+<ul>
+<li><label class="check"><input type="checkbox"><span class="box"><svg class="i" aria-hidden="true"><use href="#i-check"/></svg></span><span class="txt"><b>Kostik tedarikçisini ara</b><small>Perşembe 10:00 · Kostik tedarik</small></span></label></li>
+<li><label class="check"><input type="checkbox"><span class="box"><svg class="i" aria-hidden="true"><use href="#i-check"/></svg></span><span class="txt"><b>GemOlive kargo teklifini yanıtla</b><small>1.850&nbsp;₺ · Pazartesiye kadar</small></span></label></li>
+<li><label class="check"><input type="checkbox"><span class="box"><svg class="i" aria-hidden="true"><use href="#i-check"/></svg></span><span class="txt"><b>Logo ERP: stok sayımını bitir</b><small><span class="late">1 gün gecikti</span> · Logo ERP geçişi</small></span></label></li></ul>
+<div class="acts"><button class="btn btn-primary">Planı onayla</button><button class="btn btn-text">Düzenle</button></div></div></div></div></section>
+
+<!-- 9 YAZMA ÇUBUĞU -->
+<section class="sec"><h2>Yazma çubuğu</h2>
+<p class="note">Sıra: ataç · alan · kamera · mikrofon. Yazı varsa mikrofon aynı yerde Gönder’e döner. Mikrofona basınca çubuk yerinde şeride dönüşür; arka plan karartılmaz.</p>
+<div class="stage">
+<div class="demo"><p class="lbl">Boş</p><div class="frame"><div class="composer"><button class="ib" aria-label="Ekle"><svg class="i" aria-hidden="true"><use href="#i-clip"/></svg></button><div class="field-in ph">Ana Günlük’e yaz…</div><button class="ib" aria-label="Kamera"><svg class="i" aria-hidden="true"><use href="#i-camera"/></svg></button><button class="mic" aria-label="Mikrofon"><svg class="i" aria-hidden="true"><use href="#i-mic"/></svg></button></div></div></div>
+<div class="demo"><p class="lbl">Yazılıyor (odak halkası) · mikrofon yerinde Gönder</p><div class="frame"><div class="composer"><button class="ib" aria-label="Ekle"><svg class="i" aria-hidden="true"><use href="#i-clip"/></svg></button><div class="field-in is-focus">Kostik tedarikçisini ara&nbsp;– perş<span class="caret"></span></div><button class="ib" aria-label="Kamera"><svg class="i" aria-hidden="true"><use href="#i-camera"/></svg></button><button class="mic" aria-label="Gönder"><svg class="i" aria-hidden="true"><use href="#i-send"/></svg></button></div></div></div>
+<div class="demo"><p class="lbl">Basılı mikrofon · devre dışı (çevrimdışı ses)</p><div class="frame"><div class="composer"><button class="ib" aria-label="Ekle"><svg class="i" aria-hidden="true"><use href="#i-clip"/></svg></button><div class="field-in ph">Ana Günlük’e yaz…</div><button class="ib" aria-label="Kamera"><svg class="i" aria-hidden="true"><use href="#i-camera"/></svg></button><button class="mic is-pressed" aria-label="Mikrofon"><svg class="i" aria-hidden="true"><use href="#i-mic"/></svg></button></div>
+<div class="composer"><button class="ib" aria-label="Ekle" disabled><svg class="i" aria-hidden="true"><use href="#i-clip"/></svg></button><div class="field-in ph is-disabled">Ana Günlük’e yaz…</div><button class="ib" aria-label="Kamera" disabled><svg class="i" aria-hidden="true"><use href="#i-camera"/></svg></button><button class="mic" aria-label="Mikrofon" disabled><svg class="i" aria-hidden="true"><use href="#i-mic"/></svg></button></div></div></div>
+<div class="demo"><p class="lbl">Ses kaydında: şeride dönüşmüş</p><div class="frame"><div class="voice" role="region" aria-label="Ses kaydı">
+<p class="live" aria-live="polite"><span class="settled">Kostik tedarikçisini ara&nbsp;– </span><del>yarın</del> <span class="now">perşembe</span></p>
+<div class="pv"><div><svg class="i i-sm" aria-hidden="true"><use href="#i-calendar"/></svg><b>Perşembe 12 Kas</b></div><div><svg class="i i-sm" aria-hidden="true"><use href="#i-clock"/></svg><b>10:00</b></div><div><svg class="i i-sm" aria-hidden="true"><use href="#i-folder"/></svg><b>Kostik tedarik</b></div></div>
+<div class="vbar"><span class="time">0:07</span><span class="wave" aria-hidden="true"><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i></span><button class="btn btn-text">İptal</button><button class="ib ib-outline" aria-label="Kaydı durdur"><svg class="i" aria-hidden="true"><use href="#i-stop"/></svg></button><button class="btn btn-primary">Gönder</button></div></div></div></div>
+</div></section>
+
+<!-- 10 EKLEME PANELİ -->
+<section class="sec"><h2>Ekleme paneli</h2>
+<p class="note">Klavyenin yerine açılır, karartma yok. Ataç ikonu × olur. İki grup: Ekle, Oluştur.</p>
+<div class="stage"><div class="demo"><div class="frame">
+<div class="composer"><button class="ib" aria-label="Paneli kapat"><svg class="i" aria-hidden="true"><use href="#i-x"/></svg></button><div class="field-in ph">Ana Günlük’e yaz…</div><button class="ib" aria-label="Kamera"><svg class="i" aria-hidden="true"><use href="#i-camera"/></svg></button><button class="mic" aria-label="Mikrofon"><svg class="i" aria-hidden="true"><use href="#i-mic"/></svg></button></div>
+<div class="attach" role="group" aria-label="Ekleme paneli"><h4>Ekle</h4><div class="tiles">
+<button class="tile"><span class="sq"><svg class="i" aria-hidden="true"><use href="#i-image"/></svg></span>Fotoğraf</button><button class="tile is-pressed"><span class="sq"><svg class="i" aria-hidden="true"><use href="#i-camera"/></svg></span>Kamera</button><button class="tile"><span class="sq"><svg class="i" aria-hidden="true"><use href="#i-file"/></svg></span>Belge</button><button class="tile is-focus"><span class="sq"><svg class="i" aria-hidden="true"><use href="#i-pinmap"/></svg></span>Konum</button><button class="tile" disabled><span class="sq"><svg class="i" aria-hidden="true"><use href="#i-user"/></svg></span>Kişi</button></div>
+<h4>Oluştur</h4><div class="tiles">
+<button class="tile"><span class="sq"><svg class="i" aria-hidden="true"><use href="#i-ok"/></svg></span>Görev</button><button class="tile"><span class="sq"><svg class="i" aria-hidden="true"><use href="#i-bell"/></svg></span>Hatırlatma</button><button class="tile"><span class="sq"><svg class="i" aria-hidden="true"><use href="#i-calendar"/></svg></span>Etkinlik</button><button class="tile"><span class="sq"><svg class="i" aria-hidden="true"><use href="#i-list"/></svg></span>Liste</button></div></div></div>
+<p class="note" style="margin-top:var(--space-2)">Kamera basılı · Konum odakta · Kişi devre dışı.</p></div></div></section>
+
+<!-- 11 SES ŞERİDİ / ÖNİZLEME KARTI -->
+<section class="sec"><h2>Yapılandırılmış önizleme kartı</h2>
+<p class="note">Ses şeridi içinde canlı oluşur (üstte, Yazma çubuğu bölümünde). Düzeltme: “yarın” üstü çizilir, “perşembe” canlı renkte. Kart tek başına:</p>
+<div class="stage"><div class="demo"><div class="pv"><div><svg class="i i-sm" aria-hidden="true"><use href="#i-calendar"/></svg><b>Perşembe 12 Kas</b></div><div><svg class="i i-sm" aria-hidden="true"><use href="#i-clock"/></svg><b>10:00</b></div><div><svg class="i i-sm" aria-hidden="true"><use href="#i-folder"/></svg><b>Kostik tedarik</b></div></div></div></div></section>
+
+<!-- 12 BOTTOM SHEET -->
+<section class="sec"><h2>Bottom sheet</h2>
+<p class="note">Not detayı. İki durak: %55 göz at, %92 düzenle. Karartma yalnız burada. Geçiş translateY ile. <code>role="dialog"</code>, <code>aria-modal</code>.</p>
+<div class="stage">
+<div class="demo"><p class="lbl">%55 durağı: göz at</p><div class="screen">
+<div class="flow"><div class="daysep"><span>Bugün</span></div><div class="entry"><span class="gut"></span><div class="col"><div class="meta">09:12</div><div class="bubble">Kostik tedarikçisini ara&nbsp;– perşembe</div></div></div><div class="entry"><span class="gut"></span><div class="col"><div class="meta">11:40</div><div class="bubble">Çuval etiketi: 25&nbsp;kg</div></div></div></div>
+<div class="scrim"></div>
+<div class="sheet peek" role="dialog" aria-modal="true" aria-label="Not detayı"><div class="handle-wrap"><span class="handle"></span></div>
+<h4>Not detayı</h4><p class="stext">Kostik tedarikçisini ara&nbsp;– perşembe</p><p class="sm-meta">Bugün 09:12 · Ana Günlük</p>
+<div class="sec-h">AI ÖNERİLERİ</div>
+<div class="sug"><span class="ai"><svg class="i i-sm" aria-hidden="true"><use href="#i-sparkle"/></svg></span><span class="t">Görev · Perşembe 12 Kasım</span><button class="ib yes" aria-label="Kabul et: Görev"><svg class="i" aria-hidden="true"><use href="#i-check"/></svg></button><button class="ib no" aria-label="Yoksay: Görev"><svg class="i" aria-hidden="true"><use href="#i-x"/></svg></button></div>
+<div class="sug"><span class="ai"><svg class="i i-sm" aria-hidden="true"><use href="#i-sparkle"/></svg></span><span class="t">→ Kostik tedarik</span><button class="ib yes" aria-label="Kabul et: Kostik tedarik"><svg class="i" aria-hidden="true"><use href="#i-check"/></svg></button><button class="ib no" aria-label="Yoksay: Kostik tedarik"><svg class="i" aria-hidden="true"><use href="#i-x"/></svg></button></div>
+<div class="foot"><button class="btn btn-primary btn-block">Görev olarak kaydet</button></div></div></div></div>
+<div class="demo"><p class="lbl">%92 durağı: düzenle</p><div class="screen">
+<div class="flow"><div class="daysep"><span>Bugün</span></div><div class="entry"><span class="gut"></span><div class="col"><div class="meta">09:12</div><div class="bubble">Kostik tedarikçisini ara&nbsp;– perşembe</div></div></div></div>
+<div class="scrim"></div>
+<div class="sheet full" role="dialog" aria-modal="true" aria-label="Görevi düzenle"><div class="handle-wrap"><span class="handle"></span></div>
+<div class="shead"><h4>Görevi düzenle</h4><button class="ib" aria-label="Kapat"><svg class="i" aria-hidden="true"><use href="#i-x"/></svg></button></div>
+<p class="stext">Kostik tedarikçisini ara&nbsp;– perşembe</p>
+<div class="grid2" style="grid-template-columns:1fr 1fr;gap:var(--space-3)">
+<div class="field"><span class="lab">Tarih</span><button class="ctl"><svg class="i i-sm" aria-hidden="true"><use href="#i-calendar"/></svg><span class="grow">12 Kasım</span></button></div>
+<div class="field"><span class="lab">Saat</span><button class="ctl"><svg class="i i-sm" aria-hidden="true"><use href="#i-clock"/></svg><span class="grow">10:00</span></button></div>
+<div class="field"><span class="lab">Öncelik</span><button class="ctl"><svg class="i i-sm" aria-hidden="true"><use href="#i-signal"/></svg><span class="grow">Yüksek</span><svg class="i i-sm" aria-hidden="true"><use href="#i-chev-d"/></svg></button></div>
+<div class="field"><span class="lab">Hatırlatma</span><button class="ctl"><svg class="i i-sm" aria-hidden="true"><use href="#i-bell"/></svg><span class="grow">30&nbsp;dk önce</span><svg class="i i-sm" aria-hidden="true"><use href="#i-chev-d"/></svg></button></div></div>
+<div class="sec-h">BAĞLANTILI KAYITLAR</div>
+<div class="lnk"><svg class="i i-sm" aria-hidden="true"><use href="#i-journal"/></svg><span>Kostik fiyatı 1.850&nbsp;₺’ye çıktı<small>Dün 16:20 · Ana Günlük</small></span></div>
+<div class="lnk"><svg class="i i-sm" aria-hidden="true"><use href="#i-folder"/></svg><span>Kostik tedarik<small>Konu · 6&nbsp;kayıt</small></span></div>
+<div class="foot"><button class="btn btn-primary btn-block">Görev olarak kaydet</button></div></div></div></div>
+</div></section>
+
+<!-- 13 ÖNERİ SATIRI -->
+<section class="sec"><h2>Öneri satırı ✓ / ×</h2>
+<p class="note">Sheet içinde her öneri için bir satır. ✓ ve × 44px; toplu ret yok.</p>
+<div class="stage"><div class="demo">
+<p class="lbl">Varsayılan · ✓ basılı · × odak · kabul edilmiş</p>
+<div class="sug"><span class="ai"><svg class="i i-sm" aria-hidden="true"><use href="#i-sparkle"/></svg></span><span class="t">Görev · Perşembe 12 Kasım</span><button class="ib yes" aria-label="Kabul et"><svg class="i" aria-hidden="true"><use href="#i-check"/></svg></button><button class="ib no" aria-label="Yoksay"><svg class="i" aria-hidden="true"><use href="#i-x"/></svg></button></div>
+<div class="sug" style="margin-top:var(--space-2)"><span class="ai"><svg class="i i-sm" aria-hidden="true"><use href="#i-sparkle"/></svg></span><span class="t">Hatırlatma · 09:30</span><button class="ib yes is-pressed" aria-label="Kabul et"><svg class="i" aria-hidden="true"><use href="#i-check"/></svg></button><button class="ib no" aria-label="Yoksay"><svg class="i" aria-hidden="true"><use href="#i-x"/></svg></button></div>
+<div class="sug" style="margin-top:var(--space-2)"><span class="ai"><svg class="i i-sm" aria-hidden="true"><use href="#i-sparkle"/></svg></span><span class="t">→ Kostik tedarik</span><button class="ib yes" aria-label="Kabul et"><svg class="i" aria-hidden="true"><use href="#i-check"/></svg></button><button class="ib no is-focus" aria-label="Yoksay"><svg class="i" aria-hidden="true"><use href="#i-x"/></svg></button></div>
+<div class="sug done" style="margin-top:var(--space-2)"><span class="ai yes"><svg class="i" aria-hidden="true"><use href="#i-check"/></svg></span><span class="t">Görev eklendi<small>Perşembe 12 Kasım · 10:00</small></span></div>
+</div></div></section>
+
+<!-- 14 BUTONLAR -->
+<section class="sec"><h2>Butonlar</h2>
+<p class="note">Mürekkep dolgulu öğe ekranda en fazla bir tane. Hepsi en az 44px.</p>
+<div class="stage"><div class="demo" style="max-width:none"><div class="matrix">
+<span class="lbl">Varsayılan</span><span class="lbl">Basılı</span><span class="lbl">Odak</span><span class="lbl">Devre dışı</span>
+<button class="btn btn-primary">Kaydet</button><button class="btn btn-primary is-pressed">Kaydet</button><button class="btn btn-primary is-focus">Kaydet</button><button class="btn btn-primary" disabled>Kaydet</button>
+<button class="btn btn-secondary">Vazgeç</button><button class="btn btn-secondary is-pressed">Vazgeç</button><button class="btn btn-secondary is-focus">Vazgeç</button><button class="btn btn-secondary" disabled>Vazgeç</button>
+<button class="btn btn-text">Düzenle</button><button class="btn btn-text is-pressed">Düzenle</button><button class="btn btn-text is-focus">Düzenle</button><button class="btn btn-text" disabled>Düzenle</button>
+<button class="ib ib-outline" aria-label="Ekle"><svg class="i" aria-hidden="true"><use href="#i-plus"/></svg></button><button class="ib ib-outline is-pressed" aria-label="Ekle"><svg class="i" aria-hidden="true"><use href="#i-plus"/></svg></button><button class="ib ib-outline is-focus" aria-label="Ekle"><svg class="i" aria-hidden="true"><use href="#i-plus"/></svg></button><button class="ib ib-outline" disabled aria-label="Ekle"><svg class="i" aria-hidden="true"><use href="#i-plus"/></svg></button>
+<button class="btn btn-danger"><svg class="i i-sm" aria-hidden="true"><use href="#i-trash"/></svg>Kalıcı sil</button><button class="btn btn-danger is-pressed"><svg class="i i-sm" aria-hidden="true"><use href="#i-trash"/></svg>Kalıcı sil</button><button class="btn btn-danger is-focus"><svg class="i i-sm" aria-hidden="true"><use href="#i-trash"/></svg>Kalıcı sil</button><button class="btn btn-danger" disabled><svg class="i i-sm" aria-hidden="true"><use href="#i-trash"/></svg>Kalıcı sil</button>
+</div><p class="note" style="margin-top:var(--space-3)">Sıra: birincil · ikincil · metin · ikon · tehlike.</p></div></div></section>
+
+<!-- 15 GİRİŞ ALANLARI -->
+<section class="sec"><h2>Giriş alanları</h2>
+<p class="note">Alan 48px, 1px form kenarı (3:1), odakta 2px halka.</p>
+<div class="stage">
+<div class="grid2">
+<div class="field"><label for="f1">Başlık</label><div class="ctl"><input id="f1" placeholder="Ör. Kostik tedarikçisini ara"></div><span class="help">Varsayılan</span></div>
+<div class="field"><label for="f2">Başlık</label><div class="ctl is-focus"><input id="f2" value="Kostik tedarikçisini ara"></div><span class="help">Odakta</span></div>
+<div class="field"><label for="f3">Tutar</label><div class="ctl err"><input id="f3" value="1.850 TL" aria-invalid="true"></div><span class="help err"><svg class="i i-xs" aria-hidden="true"><use href="#i-err"/></svg>Tutarı “1.850&nbsp;₺” biçiminde yaz</span></div>
+<div class="field is-disabled"><label for="f4">Konu</label><div class="ctl"><input id="f4" value="Kostik tedarik" disabled></div><span class="help">Devre dışı</span></div>
+<div class="field"><span class="lab">Tarih</span><button class="ctl"><svg class="i i-sm" aria-hidden="true"><use href="#i-calendar"/></svg><span class="grow">Perşembe, 12 Kasım</span></button><span class="help">Tarih seçici</span></div>
+<div class="field"><span class="lab">Seçim</span><button class="ctl"><svg class="i i-sm" aria-hidden="true"><use href="#i-signal"/></svg><span class="grow">Yüksek öncelik</span><svg class="i i-sm" aria-hidden="true"><use href="#i-chev-d"/></svg></button><span class="help">Seçim</span></div>
+</div>
+<div class="grid2">
+<div class="demo"><p class="lbl">Onay kutusu: boş · seçili · odak · devre dışı</p>
+<label class="check"><input type="checkbox"><span class="box"><svg class="i" aria-hidden="true"><use href="#i-check"/></svg></span><span class="txt"><b>Kostik tedarikçisini ara</b></span></label>
+<label class="check"><input type="checkbox" checked><span class="box"><svg class="i" aria-hidden="true"><use href="#i-check"/></svg></span><span class="txt"><b class="done">GemOlive teklifini yanıtla</b></span></label>
+<label class="check"><input type="checkbox"><span class="box is-focus"><svg class="i" aria-hidden="true"><use href="#i-check"/></svg></span><span class="txt"><b>Stok sayımı</b></span></label>
+<label class="check is-disabled"><input type="checkbox" disabled><span class="box"><svg class="i" aria-hidden="true"><use href="#i-check"/></svg></span><span class="txt"><b>Arşivlenmiş görev</b></span></label></div>
+<div class="demo"><p class="lbl">Anahtar: kapalı · açık · odak · devre dışı</p>
+<label class="switch"><input type="checkbox" role="switch"><span class="track"></span><span>Sabah planı bildirimi</span></label>
+<label class="switch"><input type="checkbox" role="switch" checked><span class="track"></span><span>AI önerileri</span></label>
+<label class="switch"><input type="checkbox" role="switch"><span class="track is-focus"></span><span>Koyu tema</span></label>
+<label class="switch is-disabled"><input type="checkbox" role="switch" disabled><span class="track"></span><span>Eşitleme (çevrimdışı)</span></label></div>
+</div></div></section>
+
+<!-- 16 TOAST -->
+<section class="sec"><h2>Toast</h2>
+<p class="note">Kısa geri bildirim, “Geri al” eylemli. Katman <code>--z-toast</code>, alttan yükselir.</p>
+<div class="stage"><div class="demo" style="display:grid;gap:var(--space-3)">
+<div class="toast" role="status"><span class="m">Kayıt arşivlendi</span><button class="btn btn-text">Geri al</button></div>
+<div class="toast" role="status"><span class="i ok"><svg class="i" aria-hidden="true"><use href="#i-ok"/></svg></span><span class="m">Görev kaydedildi · Perşembe 10:00</span><button class="btn btn-text is-pressed">Geri al</button></div>
+<div class="toast" role="status"><span class="i in"><svg class="i" aria-hidden="true"><use href="#i-info"/></svg></span><span class="m">Çevrimdışı: kayıtlar cihazda saklanıyor</span><button class="ib" aria-label="Kapat"><svg class="i i-sm" aria-hidden="true"><use href="#i-x"/></svg></button></div></div></div></section>
+
+<!-- 17 MODAL -->
+<section class="sec"><h2>Modal (onay)</h2>
+<p class="note">Geri alınamaz eylemlerde. Silme yoktur, önce Arşiv; yalnız arşivden kalıcı silme onay ister. Vazgeç solda ikincil, tehlike sağda.</p>
+<div class="stage"><div class="demo"><div class="modal-bg"><div class="flow" style="width:100%"><div class="entry"><span class="gut"></span><div class="col"><div class="meta">09:12</div><div class="bubble">Kostik tedarikçisini ara&nbsp;– perşembe</div></div></div></div><div class="scrim"></div>
+<div class="modal" role="alertdialog" aria-modal="true" aria-labelledby="mt"><h4 id="mt">12 kayıt kalıcı silinsin mi?</h4><p>Arşivdeki kayıtlar geri getirilemez. Bağlı görevler korunur.</p><div class="acts"><button class="btn btn-secondary">Vazgeç</button><button class="btn btn-danger">Kalıcı sil</button></div></div></div></div></div></section>
+
+<!-- 18 BOŞ DURUMLAR -->
+<section class="sec"><h2>Boş durumlar</h2>
+<p class="note">Tek cümle ne olduğunu, tek eylem ne yapılacağını söyler.</p>
+<div class="stage">
+<div class="demo"><p class="lbl">Ana Günlük boş</p><div class="frame"><div class="empty"><span class="ring"><svg class="i i-lg" aria-hidden="true"><use href="#i-journal"/></svg></span><h4>Günlüğün henüz boş</h4><p>Aşağıdan yaz ya da mikrofona dokun. İlk kaydın burada görünecek.</p></div></div></div>
+<div class="demo"><p class="lbl">Konu boş</p><div class="frame"><div class="empty"><span class="ring"><svg class="i i-lg" aria-hidden="true"><use href="#i-brief"/></svg></span><h4>GemOlive’de kayıt yok</h4><p>Ana Günlük’teki bir kaydı bu konuya taşıyabilir ya da doğrudan buraya yazabilirsin.</p><button class="btn btn-secondary">Ana Günlük’ü aç</button></div></div></div>
+<div class="demo"><p class="lbl">Arama sonuçsuz</p><div class="frame"><div class="empty"><span class="ring"><svg class="i i-lg" aria-hidden="true"><use href="#i-search"/></svg></span><h4>“kostik fiyatı” için sonuç yok</h4><p>Farklı bir kelime dene ya da Ara/Sor’da notlarına soru sor.</p><button class="btn btn-text">Aramayı temizle</button></div></div></div>
+</div></section>
+
+<!-- 19 ROZET / ETİKETLER -->
+<section class="sec"><h2>Rozet ve etiketler</h2>
+<p class="note">Sayaç rozeti mürekkep rengindedir ve tek istisnadır. Öncelik ve durum etiketleri ikon veya metinle anlam taşır; renk tek başına değil.</p>
+<div class="stage"><div class="demo" style="max-width:none">
+<p class="lbl">Sayaç rozeti · işlenmemiş noktası</p>
+<div class="row"><span class="badge">1</span><span class="badge">3</span><span class="badge">12</span><span class="badge">99+</span><span class="row" style="gap:var(--space-2)"><span class="dot" role="img" aria-label="İşlenmedi"></span><span class="note" style="margin:0">işlenmedi</span></span></div>
+<p class="lbl" style="margin-top:var(--space-4)">Öncelik etiketleri</p>
+<div class="row"><span class="tag tag-high"><svg class="i i-xs" aria-hidden="true"><use href="#i-signal"/></svg>Yüksek</span><span class="tag tag-mid"><svg class="i i-xs" aria-hidden="true"><use href="#i-signal"/></svg>Orta</span><span class="tag tag-low"><svg class="i i-xs" aria-hidden="true"><use href="#i-signal"/></svg>Düşük</span></div>
+<p class="lbl" style="margin-top:var(--space-4)">Durum ve konu etiketleri</p>
+<div class="row"><span class="tag tag-warning"><svg class="i i-xs" aria-hidden="true"><use href="#i-clock"/></svg>Bugün 10:00</span><span class="tag tag-error"><svg class="i i-xs" aria-hidden="true"><use href="#i-warn"/></svg>1 gün gecikti</span><span class="tag tag-success"><svg class="i i-xs" aria-hidden="true"><use href="#i-check"/></svg>Tamamlandı</span><span class="tag tag-info"><svg class="i i-xs" aria-hidden="true"><use href="#i-info"/></svg>Senkronda</span><span class="tag tag-topic"><svg class="i i-xs" aria-hidden="true"><use href="#i-brief"/></svg>GemOlive</span><span class="tag tag-topic"><svg class="i i-xs" aria-hidden="true"><use href="#i-home"/></svg>Ev</span></div>
+</div></div></section>
+
+<!-- 20 SEMANTİK KUTULAR -->
+<section class="sec"><h2>Uyarı, hata, başarı, bilgi kutuları</h2>
+<p class="note">Soluk zemin + 1px semantik kenar; başlık ve ikon semantik renkte, gövde ana metin renginde.</p>
+<div class="stage"><div class="demo" style="display:grid;gap:var(--space-3)">
+<div class="alert alert-success" role="status"><svg class="i" aria-hidden="true"><use href="#i-ok"/></svg><div><b>Görev kaydedildi</b>Kostik tedarikçisini ara&nbsp;– perşembe 10:00.</div></div>
+<div class="alert alert-warning" role="status"><svg class="i" aria-hidden="true"><use href="#i-warn"/></svg><div><b>Yarın bitiyor</b>Logo ERP geçişi için 2 iş hâlâ açık.</div></div>
+<div class="alert alert-error" role="alert"><svg class="i" aria-hidden="true"><use href="#i-err"/></svg><div><b>Gönderilemedi</b>Bağlantı yok. Kaydın cihazında duruyor, bağlanınca gönderilecek.</div></div>
+<div class="alert alert-info" role="status"><svg class="i" aria-hidden="true"><use href="#i-info"/></svg><div><b>Çevrimdışısın</b>Kayıtlar cihazda saklanır, bağlanınca eşitlenir.</div></div></div></div></section>
+
+<script>
+(function(){
+ var c=document.querySelector('[data-demo=chips]');
+ if(c){c.addEventListener('click',function(e){
+  var x=e.target.closest('.x'),b=e.target.closest('.body');
+  if(x){var ch=x.closest('.chip');ch.classList.add('gone');}
+  else if(b){var ch=b.closest('.chip');if(ch.classList.contains('accepted'))return;ch.classList.add('accepted');var x2=ch.querySelector('.x');if(x2)x2.remove();
+   b.querySelector('svg use').setAttribute('href','#i-check');ch.classList.remove('pop');void ch.offsetWidth;ch.classList.add('pop');}
+ });}
+ var r=document.getElementById('replay');
+ if(r){r.addEventListener('click',function(){document.querySelectorAll('#enter-chips .chip').forEach(function(ch){ch.classList.remove('enter');void ch.offsetWidth;ch.classList.add('enter');});});}
+})();
+</script>
+</template>
+
+<script>
+(function(){
+ var lib=document.getElementById('lib').innerHTML;
+ var head='<meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1"><link rel="preconnect" href="https://fonts.googleapis.com"><link href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700&display=swap" rel="stylesheet"><link rel="stylesheet" href="tokens.css">';
+ var names={light:'Açık tema',dark:'Koyu tema'};
+ ['light','dark'].forEach(function(t){
+  var f=document.getElementById('f-'+t);
+  f.srcdoc='<!doctype html><html lang="tr" data-theme="'+t+'"><head>'+head+'</head><body>'+lib+'<scr'+'ipt>document.getElementById("tname").textContent="'+names[t]+'"</scr'+'ipt></body></html>';
+  function fit(){try{var d=f.contentDocument;f.style.height=d.documentElement.scrollHeight+'px';}catch(e){}}
+  f.addEventListener('load',function(){fit();try{f.contentDocument.fonts.ready.then(fit);}catch(e){}setTimeout(fit,600);});
+ });
+})();
+</script>
+</body>
+</html>
