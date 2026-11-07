@@ -150,11 +150,11 @@ pub fn group(
 /// Şimdi çalması gereken hatırlatmalar: zamanı geldi, henüz bu an için çalmadı ve
 /// 24 saatten eski değil. `fired_at`: görevin son bildirim anı.
 #[must_use]
-pub fn due_now<'a>(
-    tasks: &'a [(Task, Option<DateTime<Utc>>)],
+pub fn due_now(
+    tasks: &[(Task, Option<DateTime<Utc>>)],
     now: DateTime<Utc>,
     tz: Tz,
-) -> Vec<(&'a Task, DateTime<Utc>)> {
+) -> Vec<(&Task, DateTime<Utc>)> {
     tasks
         .iter()
         .filter(|(t, _)| t.is_open())
