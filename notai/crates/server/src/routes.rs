@@ -263,6 +263,9 @@ struct TopicBody {
     icon: Option<String>,
     #[serde(default)]
     pinned: bool,
+    /// Üst konu (alt konu açmak için).
+    #[serde(default)]
+    parent_id: Option<TopicId>,
 }
 
 async fn create_topic(
@@ -275,6 +278,7 @@ async fn create_topic(
     );
     new.icon = b.icon;
     new.pinned = b.pinned;
+    new.parent = b.parent_id;
     let topic = st.store.create_topic(new, st.now()).await?;
     Ok((StatusCode::CREATED, Json(json!(topic))))
 }

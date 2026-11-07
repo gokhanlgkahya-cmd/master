@@ -100,3 +100,14 @@ Yazı tipi, ikon seti ve renkler NotAI'nin kendi token'ları olarak kalır.
 - Ekran görüntüleri: `screens/r3-ana-ekran.png`, `r3-ana-ekran-koyu.png`, `r3-konu-akisi.png`.
   01/02/03 HTML prototipleri bu revizyondan öncedir; bileşenlerin tek kaynağı `screens.css`'tir.
 
+## Revizyon 4 — Konu hiyerarşisi (Gökhan, 2026-11-07)
+"Ana başlıklar olmalı: Sabun işi; altında Malzeme hareketleri, Yapılacaklar, Para alışverişi… Her iş ayrı
+yazışma olmaz. Ana iş ana ekranda bir kişi gibi; girince en üstte ana konunun yazışması, altında alt
+konular (ana ekran gibi). Ana konuya yazılan alta dağıtılır; alt konuya yazılan üst konuda ve Ana
+Günlük'te de görünür — aslında tek kayıt. Zamanla Obsidian gibi dallanır."
+- Ana ekranda yalnız en üst konular; satırda alt konu sayısı (katman simgesi). Rozet ve son kayıt alt dalları kapsar.
+- Alt konusu olan konu açılınca: "<Konu> · genel" iğneli satırı (dalın tüm kayıtları), alt konular, "Yeni kayıt".
+- Ana konuya yazılan kayıt için AI yalnız o dalın alt konularını önerir (ya da dalın içinde yeni alt konu).
+- Konu menüsü: "Alt konu ekle", "Üst konuyu değiştir". En fazla 5 kat; döngü yok.
+- Görüntü: `screens/r4-alt-konular.png`.
+

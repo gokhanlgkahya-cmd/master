@@ -73,6 +73,7 @@ pub(crate) struct TopicRow {
     pub due_date: Option<String>,
     pub icon: Option<String>,
     pub avatar: Option<String>,
+    pub parent_id: Option<String>,
     pub pinned: i64,
 }
 
@@ -90,6 +91,11 @@ impl TryFrom<TopicRow> for Topic {
             kind: ParaKind::from_parts(&r.kind, due)?,
             icon: r.icon,
             avatar: r.avatar,
+            parent: r
+                .parent_id
+                .as_deref()
+                .map(|p| parse_id("konu", p))
+                .transpose()?,
             pinned: bool_from(r.pinned),
         })
     }

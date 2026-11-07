@@ -28,6 +28,7 @@ fn ctx() -> ClassifyContext {
             id: TopicId::new(),
             name: TopicName::new("Kostik tedarik").unwrap(),
             kind: ParaKind::Project { due: None },
+            parent: None,
         }],
         facts: vec![],
         recent: vec![],

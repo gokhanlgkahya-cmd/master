@@ -3,6 +3,7 @@
 pub mod calendar;
 pub mod flow;
 pub mod home;
+pub mod hub;
 pub mod reminders;
 pub mod review;
 pub mod search;

@@ -51,7 +51,7 @@ fn steps(r: WeeklyReviewView) -> impl IntoView {
                 name: s.name.clone(),
             };
             view! {
-                <button class="urow" on:click=move |_| c.screen.set(Screen::Flow(Some(target.clone())))>
+                <button class="urow" on:click=move |_| c.screen.set(Screen::Topic(target.clone()))>
                     <span class="urow__txt">
                         <span class="urow__title">{s.name}</span>
                         <span class="urow__meta">{s.idle}</span>

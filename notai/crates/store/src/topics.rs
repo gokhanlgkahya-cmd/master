@@ -19,6 +19,8 @@ pub struct NewTopic {
     pub kind: ParaKind,
     pub icon: Option<String>,
     pub pinned: bool,
+    /// Üst konu (yoksa en üstte).
+    pub parent: Option<TopicId>,
 }
 
 impl NewTopic {
@@ -29,12 +31,18 @@ impl NewTopic {
             kind,
             icon: None,
             pinned: false,
+            parent: None,
         }
     }
 }
 
-pub(crate) fn name_key(name: &TopicName) -> String {
-    tr_lower(name.as_str())
+/// Ad benzersizlik anahtarı: en üstte Türkçe küçük harf ad; alt konuda "<üst id>/<ad>"
+/// (aynı ad farklı üst konularda olabilir: "Sabun işi / Yapılacaklar", "Ev / Yapılacaklar").
+pub(crate) fn name_key(parent: Option<TopicId>, name: &TopicName) -> String {
+    match parent {
+        None => tr_lower(name.as_str()),
+        Some(p) => format!("{p}/{}", tr_lower(name.as_str())),
+    }
 }
 
 /// Konuyu ekler; aynı adda (Türkçe büyük/küçük harf duyarsız) konu varsa `Conflict`.
@@ -45,15 +53,16 @@ pub(crate) async fn insert_topic(
     now: DateTime<Utc>,
 ) -> Result<()> {
     let id = topic.id.to_string();
-    let key = name_key(&topic.name);
+    let key = name_key(topic.parent, &topic.name);
     let name = topic.name.as_str();
     let kind = topic.kind.name();
     let due = topic.kind.due().map(date_str);
     let pinned = i64::from(topic.pinned);
+    let parent = topic.parent.map(|p| p.to_string());
     let now_s = ts(now);
     let res = sqlx::query!(
-        "INSERT INTO topics (id, name, name_key, kind, due_date, icon, avatar, pinned, created_at, updated_at)
-         VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?9, ?7, ?8, ?8)
+        "INSERT INTO topics (id, name, name_key, kind, due_date, icon, avatar, pinned, created_at, updated_at, parent_id)
+         VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?9, ?7, ?8, ?8, ?10)
          ON CONFLICT (name_key) DO NOTHING",
         id,
         name,
@@ -63,7 +72,8 @@ pub(crate) async fn insert_topic(
         topic.icon,
         pinned,
         now_s,
-        topic.avatar
+        topic.avatar,
+        parent
     )
     .execute(&mut *conn)
     .await?;
@@ -78,12 +88,13 @@ pub(crate) async fn insert_topic(
 
 pub(crate) async fn find_by_name(
     conn: &mut SqliteConnection,
+    parent: Option<TopicId>,
     name: &TopicName,
 ) -> Result<Option<Topic>> {
-    let key = name_key(name);
+    let key = name_key(parent, name);
     let row = sqlx::query_as!(
         TopicRow,
-        "SELECT id, name, kind, due_date, icon, avatar, pinned FROM topics WHERE name_key = ?1",
+        "SELECT id, name, kind, due_date, icon, avatar, parent_id, pinned FROM topics WHERE name_key = ?1",
         key
     )
     .fetch_optional(&mut *conn)
@@ -95,7 +106,7 @@ pub(crate) async fn get_topic(conn: &mut SqliteConnection, id: TopicId) -> Resul
     let id_s = id.to_string();
     let row = sqlx::query_as!(
         TopicRow,
-        "SELECT id, name, kind, due_date, icon, avatar, pinned FROM topics WHERE id = ?1",
+        "SELECT id, name, kind, due_date, icon, avatar, parent_id, pinned FROM topics WHERE id = ?1",
         id_s
     )
     .fetch_optional(&mut *conn)
@@ -106,11 +117,24 @@ pub(crate) async fn get_topic(conn: &mut SqliteConnection, id: TopicId) -> Resul
 }
 
 impl Store {
-    /// Yeni konu açar.
+    /// Yeni konu açar (üst konu verilirse onun altında).
     pub async fn create_topic(&self, new: NewTopic, now: DateTime<Utc>) -> Result<Topic> {
         let mut topic = Topic::new(new.name, new.kind);
         topic.icon = new.icon;
         topic.pinned = new.pinned;
+        if let Some(p) = new.parent {
+            self.topic(p).await?;
+            let tree = self.topic_tree().await?;
+            if tree.ancestors(p).len() + 2 > notai_core::topic::MAX_DEPTH {
+                return Err(notai_core::CoreError::TooLong {
+                    field: "konu derinliği",
+                    max: notai_core::topic::MAX_DEPTH,
+                    actual: tree.ancestors(p).len() + 2,
+                }
+                .into());
+            }
+        }
+        topic.parent = new.parent;
         let mut tx = self.pool.begin().await?;
         insert_topic(&mut tx, &self.origin, &topic, now).await?;
         tx.commit().await?;
@@ -122,16 +146,42 @@ impl Store {
         get_topic(&mut conn, id).await
     }
 
-    /// Adıyla konu bulur (Türkçe büyük/küçük harf duyarsız).
+    /// Adıyla en üst düzey konu bulur (Türkçe büyük/küçük harf duyarsız).
     pub async fn topic_by_name(&self, name: &TopicName) -> Result<Option<Topic>> {
         let mut conn = self.pool.acquire().await?;
-        find_by_name(&mut conn, name).await
+        find_by_name(&mut conn, None, name).await
     }
 
-    /// Konunun adını, türünü, simgesini, sabitlemesini günceller.
+    /// Tüm konuların üst konu ağacı.
+    pub async fn topic_tree(&self) -> Result<notai_core::topic::Tree> {
+        let rows = sqlx::query!("SELECT id, parent_id FROM topics")
+            .fetch_all(&self.pool)
+            .await?;
+        let mut pairs = Vec::with_capacity(rows.len());
+        for r in rows {
+            pairs.push((
+                crate::codec::parse_id("konu", &r.id)?,
+                r.parent_id
+                    .as_deref()
+                    .map(|p| crate::codec::parse_id("konu", p))
+                    .transpose()?,
+            ));
+        }
+        Ok(notai_core::topic::Tree::new(pairs))
+    }
+
+    /// Konunun adını, türünü, simgesini, sabitlemesini, üst konusunu günceller. Üst konu
+    /// değişiyorsa: üst konu var olmalı, döngü olmamalı, derinlik sınırı aşılmamalı.
     pub async fn update_topic(&self, topic: &Topic, now: DateTime<Utc>) -> Result<()> {
+        if let Some(p) = topic.parent {
+            self.topic(p).await?;
+        }
+        self.topic_tree()
+            .await?
+            .check_move(topic.id, topic.parent)?;
+        let parent = topic.parent.map(|p| p.to_string());
         let id = topic.id.to_string();
-        let key = name_key(&topic.name);
+        let key = name_key(topic.parent, &topic.name);
         let name = topic.name.as_str();
         let kind = topic.kind.name();
         let due = topic.kind.due().map(date_str);
@@ -140,7 +190,7 @@ impl Store {
         let mut tx = self.pool.begin().await?;
         let res = sqlx::query!(
             "UPDATE topics SET name = ?2, name_key = ?3, kind = ?4, due_date = ?5, icon = ?6,
-                    pinned = ?7, updated_at = ?8, avatar = ?9
+                    pinned = ?7, updated_at = ?8, avatar = ?9, parent_id = ?10
              WHERE id = ?1",
             id,
             name,
@@ -150,7 +200,8 @@ impl Store {
             topic.icon,
             pinned,
             now_s,
-            topic.avatar
+            topic.avatar,
+            parent
         )
         .execute(&mut *tx)
         .await
@@ -172,7 +223,7 @@ impl Store {
     /// Ana ekran konu listesi: son kayıt önizlemesiyle, sabitlenenler önce, sonra son etkinliğe göre.
     pub async fn topic_list(&self, filter: KindFilter) -> Result<Vec<TopicActivity>> {
         let rows = sqlx::query!(
-            r#"SELECT t.id, t.name, t.kind, t.due_date, t.icon, t.avatar, t.pinned,
+            r#"SELECT t.id, t.name, t.kind, t.due_date, t.icon, t.avatar, t.parent_id, t.pinned,
                       (SELECT e.captured_at FROM entries e
                         WHERE e.topic_id = t.id AND e.status IN ('inbox', 'processed')
                         ORDER BY e.captured_at DESC LIMIT 1) AS "last_at: String",
@@ -217,11 +268,10 @@ impl Store {
                 due_date: r.due_date,
                 icon: r.icon,
                 avatar: r.avatar,
+                parent_id: r.parent_id,
                 pinned: r.pinned,
             })?;
-            if !filter.matches(topic.kind) {
-                continue;
-            }
+            // Filtre toplamadan sonra uygulanır: alt konu başka türde olsa da üstüne toplansın.
             let color = slots.get(&topic.id).copied().unwrap_or(0);
             let pending = u64::try_from(r.pending).unwrap_or(0);
             let last_at = r
@@ -242,8 +292,12 @@ impl Store {
                 recent_texts,
                 color,
                 pending,
+                children: 0,
+                path: String::new(),
             });
         }
+        notai_core::journal::roll_up(&mut out);
+        out.retain(|a| filter.matches(a.topic.kind));
         order_topics(&mut out);
         Ok(out)
     }

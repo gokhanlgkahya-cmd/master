@@ -29,8 +29,10 @@ const SPRITE: &str = include_str!(concat!(env!("OUT_DIR"), "/sprite.svg"));
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub enum Screen {
     Home,
-    /// Ana Günlük (`None`) ya da bir konunun akışı.
+    /// Ana Günlük (`None`) ya da bir konunun (alt konuları dahil) yazışması.
     Flow(Option<TopicRef>),
+    /// Konuyu aç: alt konusu varsa alt konu listesi (hub), yoksa doğrudan yazışma.
+    Topic(TopicRef),
     Tasks,
     Calendar,
     Reminders,
@@ -149,7 +151,7 @@ pub fn App() -> impl IntoView {
         // Android: bildirime dokununca ilgili konu açılır (uygulama açıkken / arka plandayken).
         web::on_notification_tap(move |payload| {
             if let Some(t) = view::tap_target(&payload) {
-                c.screen.set(Screen::Flow(Some(t)));
+                c.screen.set(Screen::Topic(t));
             }
         });
     }
@@ -167,6 +169,7 @@ pub fn App() -> impl IntoView {
             {move || match c.screen.get() {
                 Screen::Home => view! { <screens::home::Home/> }.into_any(),
                 Screen::Flow(topic) => view! { <screens::flow::Flow topic=topic/> }.into_any(),
+                Screen::Topic(topic) => view! { <screens::hub::Hub topic=topic/> }.into_any(),
                 Screen::Tasks => view! { <screens::tasks::Tasks/> }.into_any(),
                 Screen::Calendar => view! { <screens::calendar::Calendar/> }.into_any(),
                 Screen::Reminders => view! { <screens::reminders::Reminders/> }.into_any(),

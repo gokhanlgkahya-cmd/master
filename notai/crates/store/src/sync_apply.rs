@@ -136,10 +136,14 @@ async fn insert_entry_snapshot(
 }
 
 /// Bir ad için boş olan ilk " (n)" ekli adı bulur.
-async fn free_name(conn: &mut SqliteConnection, base: &TopicName) -> Result<TopicName> {
+async fn free_name(
+    conn: &mut SqliteConnection,
+    parent: Option<notai_core::TopicId>,
+    base: &TopicName,
+) -> Result<TopicName> {
     for n in 2..=99 {
         let candidate = TopicName::new(format!("{base} ({n})"))?;
-        let key = name_key(&candidate);
+        let key = name_key(parent, &candidate);
         let taken = sqlx::query_scalar!(
             r#"SELECT COUNT(*) AS "n!: i64" FROM topics WHERE name_key = ?1"#,
             key
@@ -164,7 +168,7 @@ async fn insert_topic_snapshot(
     at: DateTime<Utc>,
 ) -> Result<()> {
     let id = t.id.to_string();
-    let key = name_key(&t.name);
+    let key = name_key(t.parent, &t.name);
     let existing = sqlx::query!("SELECT id, name FROM topics WHERE name_key = ?1", key)
         .fetch_optional(&mut *conn)
         .await?;
@@ -172,8 +176,8 @@ async fn insert_topic_snapshot(
     if let Some(ex) = existing {
         if ex.id.as_str() > id.as_str() {
             // Yereldeki daha yeni: yerelinkini yeniden adlandır, gelen adı korusun.
-            let renamed = free_name(conn, &TopicName::new(&ex.name)?).await?;
-            let rkey = name_key(&renamed);
+            let renamed = free_name(conn, t.parent, &TopicName::new(&ex.name)?).await?;
+            let rkey = name_key(t.parent, &renamed);
             let rname = renamed.as_str();
             sqlx::query!(
                 "UPDATE topics SET name = ?2, name_key = ?3 WHERE id = ?1",
@@ -184,18 +188,19 @@ async fn insert_topic_snapshot(
             .execute(&mut *conn)
             .await?;
         } else {
-            name = free_name(conn, &t.name).await?;
+            name = free_name(conn, t.parent, &t.name).await?;
         }
     }
-    let key = name_key(&name);
+    let key = name_key(t.parent, &name);
+    let parent = t.parent.map(|p| p.to_string());
     let name_s = name.as_str();
     let kind = t.kind.name();
     let due = t.kind.due().map(crate::codec::date_str);
     let pinned = i64::from(t.pinned);
     let at_s = ts(at);
     sqlx::query!(
-        "INSERT INTO topics (id, name, name_key, kind, due_date, icon, avatar, pinned, created_at, updated_at)
-         VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?9, ?7, ?8, ?8)",
+        "INSERT INTO topics (id, name, name_key, kind, due_date, icon, avatar, pinned, created_at, updated_at, parent_id)
+         VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?9, ?7, ?8, ?8, ?10)",
         id,
         name_s,
         key,
@@ -204,7 +209,8 @@ async fn insert_topic_snapshot(
         t.icon,
         pinned,
         at_s,
-        t.avatar
+        t.avatar,
+        parent
     )
     .execute(&mut *conn)
     .await?;
@@ -220,7 +226,8 @@ async fn update_topic_snapshot(
     let kind = t.kind.name();
     let due = t.kind.due().map(crate::codec::date_str);
     let pinned = i64::from(t.pinned);
-    let key = name_key(&t.name);
+    let key = name_key(t.parent, &t.name);
+    let parent = t.parent.map(|p| p.to_string());
     let name = t.name.as_str();
     let at_s = ts(at);
     // Ad başka konuyla çakışırsa adı değiştirme, diğer alanları uygula.
@@ -248,7 +255,7 @@ async fn update_topic_snapshot(
     } else {
         sqlx::query!(
             "UPDATE topics SET name = ?2, name_key = ?3, kind = ?4, due_date = ?5, icon = ?6, pinned = ?7,
-                    updated_at = ?8, avatar = ?9
+                    updated_at = ?8, avatar = ?9, parent_id = ?10
              WHERE id = ?1",
             id,
             name,
@@ -258,7 +265,8 @@ async fn update_topic_snapshot(
             t.icon,
             pinned,
             at_s,
-            t.avatar
+            t.avatar,
+            parent
         )
         .execute(&mut *conn)
         .await?;

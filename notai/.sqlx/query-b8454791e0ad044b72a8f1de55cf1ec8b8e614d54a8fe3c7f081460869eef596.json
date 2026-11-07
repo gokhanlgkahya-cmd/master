@@ -1,6 +1,6 @@
 {
   "db_name": "SQLite",
-  "query": "SELECT id, name, kind, due_date, icon, avatar, pinned FROM topics WHERE id = ?1",
+  "query": "SELECT id, name, kind, due_date, icon, avatar, parent_id, pinned FROM topics WHERE name_key = ?1",
   "describe": {
     "columns": [
       {
@@ -70,8 +70,19 @@
         }
       },
       {
-        "name": "pinned",
+        "name": "parent_id",
         "ordinal": 6,
+        "type_info": "Text",
+        "origin": {
+          "Table": {
+            "table": "topics",
+            "name": "parent_id"
+          }
+        }
+      },
+      {
+        "name": "pinned",
+        "ordinal": 7,
         "type_info": "Integer",
         "origin": {
           "Table": {
@@ -91,8 +102,9 @@
       true,
       true,
       true,
+      true,
       false
     ]
   },
-  "hash": "0b6b82439921779fe2d8ea43ff3f8cf765f727a438c60186a69ba9ca7b4eed0e"
+  "hash": "b8454791e0ad044b72a8f1de55cf1ec8b8e614d54a8fe3c7f081460869eef596"
 }

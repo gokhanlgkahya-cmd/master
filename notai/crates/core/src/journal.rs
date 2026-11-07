@@ -127,6 +127,45 @@ pub struct TopicActivity {
     /// Karar bekleyen önerisi olan kayıt sayısı (WhatsApp'taki okunmamış rozeti gibi).
     #[serde(default)]
     pub pending: u64,
+    /// Doğrudan alt konu sayısı (0: yaprak konu, doğrudan yazışma açılır).
+    #[serde(default)]
+    pub children: u32,
+    /// Yol adı ("Sabun işi / Malzeme hareketleri").
+    #[serde(default)]
+    pub path: String,
+}
+
+/// Hiyerarşide yukarı toplama: her konunun son hareketi/önizlemesi ve rozeti alt konularını da
+/// kapsar (alt konuya yazılan üst konuda da görünür); alt konu sayısı doldurulur. Simge seçimi
+/// için son kayıtlar da birleşir.
+pub fn roll_up(list: &mut [TopicActivity]) {
+    let tree = crate::topic::Tree::new(list.iter().map(|a| (a.topic.id, a.topic.parent)));
+    let snapshot: Vec<TopicActivity> = list.to_vec();
+    let by_id: std::collections::HashMap<crate::TopicId, &TopicActivity> =
+        snapshot.iter().map(|a| (a.topic.id, a)).collect();
+    let names: std::collections::HashMap<crate::TopicId, String> = snapshot
+        .iter()
+        .map(|a| (a.topic.id, a.topic.name.as_str().to_owned()))
+        .collect();
+    for a in list.iter_mut() {
+        a.path = crate::topic::path_name(&tree, &names, a.topic.id);
+        a.children = u32::try_from(tree.children(a.topic.id).len()).unwrap_or(u32::MAX);
+        for d in tree.subtree(a.topic.id).into_iter().skip(1) {
+            let Some(child) = by_id.get(&d) else {
+                continue;
+            };
+            a.pending += child.pending;
+            if child.last_at > a.last_at {
+                a.last_at = child.last_at;
+                a.last_preview.clone_from(&child.last_preview);
+            }
+            for t in &child.recent_texts {
+                if a.recent_texts.len() < crate::look::RECENT_FOR_ICON {
+                    a.recent_texts.push(t.clone());
+                }
+            }
+        }
+    }
 }
 
 /// Sabitlenenler önce; sonra son etkinliğe göre (yeni üstte); hiç kaydı olmayanlar en altta,
@@ -227,6 +266,41 @@ mod tests {
     }
 
     #[test]
+    fn roll_up_sums_subtree() {
+        let mut sabun = Topic::new(TopicName::new("Sabun işi").unwrap(), ParaKind::Area);
+        sabun.pinned = false;
+        let mut malzeme = Topic::new(TopicName::new("Malzeme").unwrap(), ParaKind::Area);
+        malzeme.parent = Some(sabun.id);
+        let mut kostik = Topic::new(TopicName::new("Kostik").unwrap(), ParaKind::Area);
+        kostik.parent = Some(malzeme.id);
+        let row = |t: Topic, last: Option<DateTime<Utc>>, pending: u64| TopicActivity {
+            topic: t,
+            last_at: last,
+            last_preview: last.map(|_| "son".to_owned()),
+            recent_texts: vec![],
+            color: 0,
+            pending,
+            children: 0,
+            path: String::new(),
+        };
+        let mut list = vec![
+            row(sabun.clone(), Some(utc(11, 1, 6, 0)), 0),
+            row(malzeme.clone(), None, 1),
+            TopicActivity {
+                last_preview: Some("Kostik geldi".into()),
+                ..row(kostik.clone(), Some(utc(11, 6, 7, 0)), 2)
+            },
+        ];
+        roll_up(&mut list);
+        assert_eq!(list[0].pending, 3, "alt konuların rozetleri toplanır");
+        assert_eq!(list[0].children, 1);
+        assert_eq!(list[0].last_preview.as_deref(), Some("Kostik geldi"));
+        assert_eq!(list[1].pending, 3);
+        assert_eq!(list[2].children, 0);
+        assert_eq!(list[2].path, "Sabun işi / Malzeme / Kostik");
+    }
+
+    #[test]
     fn topic_ordering() {
         let t = |name: &str, pinned: bool| {
             let mut t = Topic::new(TopicName::new(name).unwrap(), ParaKind::Area);
@@ -241,6 +315,8 @@ mod tests {
                 recent_texts: vec![],
                 color: 0,
                 pending: 0,
+                children: 0,
+                path: String::new(),
             },
             TopicActivity {
                 topic: t("İş", false),
@@ -249,6 +325,8 @@ mod tests {
                 recent_texts: vec![],
                 color: 0,
                 pending: 0,
+                children: 0,
+                path: String::new(),
             },
             TopicActivity {
                 topic: t("GemOlive", false),
@@ -257,6 +335,8 @@ mod tests {
                 recent_texts: vec![],
                 color: 0,
                 pending: 0,
+                children: 0,
+                path: String::new(),
             },
             TopicActivity {
                 topic: t("Ev", true),
@@ -265,6 +345,8 @@ mod tests {
                 recent_texts: vec![],
                 color: 0,
                 pending: 0,
+                children: 0,
+                path: String::new(),
             },
             TopicActivity {
                 topic: t("ılık", false),
@@ -273,6 +355,8 @@ mod tests {
                 recent_texts: vec![],
                 color: 0,
                 pending: 0,
+                children: 0,
+                path: String::new(),
             },
         ];
         order_topics(&mut list);

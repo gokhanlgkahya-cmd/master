@@ -93,9 +93,18 @@ pub struct TopicRowView {
     /// Profil fotoğrafı (`data:image/…`); varsa simgenin yerine yuvarlak içinde gösterilir.
     #[serde(default)]
     pub avatar: Option<String>,
-    /// Karar bekleyen önerisi olan kayıt sayısı (rozet).
+    /// Karar bekleyen önerisi olan kayıt sayısı (rozet; alt konular dahil).
     #[serde(default)]
     pub pending: u64,
+    /// Üst konu (hiyerarşi; `None` = en üst).
+    #[serde(default)]
+    pub parent_id: Option<String>,
+    /// Yol adı ("Sabun işi / Malzeme hareketleri").
+    #[serde(default)]
+    pub path: String,
+    /// Doğrudan alt konu sayısı (>0 ise konu açılınca alt konular listelenir).
+    #[serde(default)]
+    pub children: u32,
     pub pinned: bool,
     /// "12:05", "Dün", "Çarşamba", "2 Kas".
     pub last_label: Option<String>,
@@ -307,6 +316,9 @@ pub struct TopicEditRequest {
     /// Profil fotoğrafı (`data:image/…;base64,…`); boş dizgi kaldırır.
     #[serde(default)]
     pub avatar: Option<String>,
+    /// Üst konu kimliği; boş dizgi en üste taşır.
+    #[serde(default)]
+    pub parent_id: Option<String>,
     pub pinned: Option<bool>,
 }
 

@@ -306,3 +306,26 @@ async fn answer_on_phone_requeues_entry_on_server() {
     sync_once(&w.desktop, &w.hub).await.unwrap();
     assert!(!w.desktop.suggestions_for(id).await.unwrap()[0].is_pending());
 }
+
+#[tokio::test]
+async fn subtopics_sync_with_their_parent() {
+    let w = world().await;
+    let sabun = topic(&w.phone, "Sabun işi", t(0)).await;
+    let mut n = NewTopic::new(
+        TopicName::new("Malzeme hareketleri").unwrap(),
+        ParaKind::Area,
+    );
+    n.parent = Some(sabun);
+    let malzeme = w.phone.create_topic(n, t(1)).await.unwrap().id;
+    let id = capture(&w.phone, "Kostik geldi", t(2), Some(malzeme)).await;
+    sync_once(&w.phone, &w.hub).await.unwrap();
+    sync_once(&w.desktop, &w.hub).await.unwrap();
+    for s in [&w.server, &w.desktop] {
+        assert_eq!(s.topic(malzeme).await.unwrap().parent, Some(sabun));
+        let flow = s
+            .journal(JournalFilter::Topic { id: sabun }, None, 10)
+            .await
+            .unwrap();
+        assert_eq!(flow[0].entry.id, id, "alt konu kaydı üst konuda görünür");
+    }
+}

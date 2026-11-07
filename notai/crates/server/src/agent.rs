@@ -39,6 +39,7 @@ pub async fn build_context(state: &AppState, entry: Entry) -> Result<ClassifyCon
             id: a.topic.id,
             name: a.topic.name,
             kind: a.topic.kind,
+            parent: a.topic.parent,
         })
         .collect();
     let facts_all = state.store.facts().await?;

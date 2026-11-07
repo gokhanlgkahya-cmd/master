@@ -194,14 +194,19 @@ impl Store {
         };
         let before = before.map(ts);
         let limit = i64::from(limit.clamp(1, 500));
+        // Konu akışı alt konuları da kapsar (hiyerarşi: alt konuya yazılan üstte de görünür).
         let rows = sqlx::query!(
-            r#"SELECT e.id, e.text, e.source, e.captured_at, e.topic_id, e.status, e.trashed_at,
+            r#"WITH RECURSIVE sub(id) AS (
+                   SELECT ?2 WHERE ?2 IS NOT NULL
+                   UNION SELECT t.id FROM topics t JOIN sub ON t.parent_id = sub.id
+               )
+               SELECT e.id, e.text, e.source, e.captured_at, e.topic_id, e.status, e.trashed_at,
                       e.ai_state, t.name AS "topic_name?: String"
                FROM entries e LEFT JOIN topics t ON t.id = e.topic_id
                WHERE e.status IN ('inbox', 'processed')
                  AND (?1 = 'all'
                       OR (?1 = 'unprocessed' AND e.status = 'inbox')
-                      OR (?1 = 'topic' AND e.topic_id = ?2))
+                      OR (?1 = 'topic' AND e.topic_id IN (SELECT id FROM sub)))
                  AND (?3 IS NULL OR e.captured_at < ?3)
                ORDER BY e.captured_at DESC, e.id DESC
                LIMIT ?4"#,

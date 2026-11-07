@@ -110,6 +110,55 @@ pub fn tap_target(payload: &serde_json::Value) -> Option<notai_api::TopicRef> {
     })
 }
 
+/// Konu satırından gezinme hedefi.
+#[must_use]
+pub fn topic_ref(t: &TopicRowView) -> notai_api::TopicRef {
+    notai_api::TopicRef {
+        id: t.id.clone(),
+        name: t.name.clone(),
+    }
+}
+
+/// Bir konunun doğrudan alt konuları (listedeki sırayla).
+#[must_use]
+pub fn children_of(all: &[TopicRowView], id: &str) -> Vec<TopicRowView> {
+    all.iter()
+        .filter(|t| t.parent_id.as_deref() == Some(id))
+        .cloned()
+        .collect()
+}
+
+/// Konu ve tüm alt konularının kimlikleri (üst konu seçerken kendi dalı hariç tutulur).
+#[must_use]
+pub fn subtree_ids(all: &[TopicRowView], id: &str) -> Vec<String> {
+    let mut out = vec![id.to_owned()];
+    let mut i = 0;
+    while i < out.len() {
+        let cur = out[i].clone();
+        for c in all
+            .iter()
+            .filter(|t| t.parent_id.as_deref() == Some(cur.as_str()))
+        {
+            if !out.contains(&c.id) {
+                out.push(c.id.clone());
+            }
+        }
+        i += 1;
+    }
+    out
+}
+
+/// Ana Günlük'teki/akıştaki kaydın üstünde konu adı gösterilsin mi? Ana Günlük'te her zaman;
+/// konu akışında yalnız alt konudan gelen kayıtlarda (hangi alt konuya ait olduğu görünsün).
+#[must_use]
+pub fn show_entry_topic(current: Option<&str>, entry_topic: Option<&str>) -> bool {
+    match (current, entry_topic) {
+        (None, Some(_)) => true,
+        (Some(cur), Some(t)) => cur != t,
+        _ => false,
+    }
+}
+
 /// Ana ekran hap filtresi.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum HomeFilter {
@@ -169,10 +218,12 @@ impl HomeFilter {
     /// Konu satırı bu filtrede görünür mü? (Tür filtresini sunucu uygular.)
     #[must_use]
     pub const fn keeps(self, t: &TopicRowView) -> bool {
-        match self {
-            Self::Unprocessed => t.pending > 0,
-            _ => true,
-        }
+        // Ana ekranda yalnız en üst konular; alt konulara üst konudan girilir.
+        t.parent_id.is_none()
+            && match self {
+                Self::Unprocessed => t.pending > 0,
+                _ => true,
+            }
     }
 }
 
@@ -801,6 +852,9 @@ mod tests {
             color: 3,
             avatar: None,
             pending: 0,
+            parent_id: None,
+            path: id.into(),
+            children: 0,
             pinned: false,
             last_label: None,
             preview: None,
@@ -836,6 +890,32 @@ mod tests {
     }
 
     #[test]
+    fn hierarchy_helpers() {
+        let mut a = looks_row_pending(0);
+        a.id = "sabun".into();
+        let mut b = looks_row_pending(0);
+        b.id = "malzeme".into();
+        b.parent_id = Some("sabun".into());
+        let mut c = looks_row_pending(0);
+        c.id = "kostik".into();
+        c.parent_id = Some("malzeme".into());
+        let all = vec![a.clone(), b.clone(), c.clone()];
+        assert_eq!(children_of(&all, "sabun").len(), 1);
+        assert_eq!(subtree_ids(&all, "sabun"), ["sabun", "malzeme", "kostik"]);
+        assert!(
+            HomeFilter::All.keeps(&a) && !HomeFilter::All.keeps(&b),
+            "ana ekranda yalnız en üst"
+        );
+        assert!(show_entry_topic(None, Some("sabun")));
+        assert!(!show_entry_topic(Some("sabun"), Some("sabun")));
+        assert!(
+            show_entry_topic(Some("sabun"), Some("malzeme")),
+            "alt konudan gelen işaretlenir"
+        );
+        assert!(!show_entry_topic(Some("sabun"), None));
+    }
+
+    #[test]
     fn notification_targets() {
         let n = notai_api::NoticeView {
             kind: "reminder".into(),
@@ -868,6 +948,9 @@ mod tests {
             color: 1,
             avatar: None,
             pending,
+            parent_id: None,
+            path: "x".into(),
+            children: 0,
             pinned: false,
             last_label: None,
             preview: None,

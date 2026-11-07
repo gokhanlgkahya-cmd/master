@@ -3,7 +3,7 @@
 //! profil, ayraçsız, işlenmemiş rozeti) — ve sağ altta "Yeni kayıt" düğmesi.
 
 use leptos::prelude::*;
-use notai_api::{TopicRef, TopicsView};
+use notai_api::TopicsView;
 
 use crate::sheets::NewTopicSheet;
 use crate::view::{HomeFilter, TopicLook};
@@ -103,11 +103,11 @@ pub fn Home() -> impl IntoView {
     }
 }
 
-fn pin_icon() -> impl IntoView {
+pub(crate) fn pin_icon() -> impl IntoView {
     view! { <span class="chat__pin" aria-label="Sabitlendi"><Icon name="pinned" size="xs"/></span> }
 }
 
-fn badge(n: u64, what: &'static str) -> Option<impl IntoView> {
+pub(crate) fn badge(n: u64, what: &'static str) -> Option<impl IntoView> {
     (n > 0).then(|| view! { <span class="badge" aria-label=format!("{n} {what}")>{n}</span> })
 }
 
@@ -154,33 +154,38 @@ fn home_list(v: TopicsView, filter: HomeFilter) -> impl IntoView {
         };
         view! { <p class="setnote">{text}</p> }
     });
-    let rows = topics
-        .into_iter()
-        .map(|t| {
-            let target = TopicRef {
-                id: t.id.clone(),
-                name: t.name.clone(),
-            };
-            let look = TopicLook::of(&t);
-            let pending = t.pending;
-            let pin = t.pinned.then(pin_icon);
-            let preview = t.preview.clone().unwrap_or_else(|| view::kind_line(&t.kind_label, t.due_date));
-            view! {
-                <button class="chat" on:click=move |_| c.screen.set(Screen::Flow(Some(target.clone())))>
-                    <Avatar look=look/>
-                    <span class="chat__body">
-                        <span class="chat__top">
-                            <span class="chat__name">{t.name}</span>
-                            <span class="chat__time" class:chat__time--unread={pending > 0}>{t.last_label.unwrap_or_default()}</span>
-                        </span>
-                        <span class="chat__bottom">
-                            <span class="chat__preview">{preview}</span>
-                            {pin}{badge(pending, "karar bekleyen kayıt")}
-                        </span>
-                    </span>
-                </button>
-            }
-        })
-        .collect_view();
+    let rows = topics.into_iter().map(topic_chat).collect_view();
     view! { {journal}{review}{rows}{empty} }
+}
+
+/// Konu satırı (WhatsApp sohbet satırı gibi). Dokununca konu açılır: alt konusu varsa alt konu
+/// listesi (hub), yoksa doğrudan yazışma.
+pub(crate) fn topic_chat(t: notai_api::TopicRowView) -> impl IntoView {
+    let c = ctx();
+    let target = view::topic_ref(&t);
+    let look = TopicLook::of(&t);
+    let pending = t.pending;
+    let pin = t.pinned.then(pin_icon);
+    let preview = t
+        .preview
+        .clone()
+        .unwrap_or_else(|| view::kind_line(&t.kind_label, t.due_date));
+    let subs = (t.children > 0).then(|| {
+        view! { <span class="chat__subs" aria-label=format!("{} alt konu", t.children)><Icon name="layers" size="xs"/>{t.children}</span> }
+    });
+    view! {
+        <button class="chat" on:click=move |_| c.screen.set(Screen::Topic(target.clone()))>
+            <Avatar look=look/>
+            <span class="chat__body">
+                <span class="chat__top">
+                    <span class="chat__name">{t.name}</span>
+                    <span class="chat__time" class:chat__time--unread={pending > 0}>{t.last_label.unwrap_or_default()}</span>
+                </span>
+                <span class="chat__bottom">
+                    <span class="chat__preview">{preview}</span>
+                    {subs}{pin}{badge(pending, "karar bekleyen kayıt")}
+                </span>
+            </span>
+        </button>
+    }
 }

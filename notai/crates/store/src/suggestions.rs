@@ -361,11 +361,17 @@ impl Store {
                     get_topic(&mut tx, topic).await?;
                     entry.assign_topic(Some(topic))?;
                 }
-                Effect::CreateTopicAndAssign { name, kind, .. } => {
-                    let topic = match find_by_name(&mut tx, &name).await? {
+                Effect::CreateTopicAndAssign {
+                    name, kind, parent, ..
+                } => {
+                    if let Some(p) = parent {
+                        get_topic(&mut tx, p).await?;
+                    }
+                    let topic = match find_by_name(&mut tx, parent, &name).await? {
                         Some(existing) => existing,
                         None => {
-                            let t = Topic::new(name, kind);
+                            let mut t = Topic::new(name, kind);
+                            t.parent = parent;
                             insert_topic(&mut tx, &self.origin, &t, now).await?;
                             created_topic = Some(t.clone());
                             t

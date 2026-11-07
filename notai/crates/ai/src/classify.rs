@@ -34,6 +34,24 @@ pub struct ContextTopic {
     pub id: TopicId,
     pub name: TopicName,
     pub kind: ParaKind,
+    /// Üst konu (hiyerarşi).
+    pub parent: Option<TopicId>,
+}
+
+impl ClassifyContext {
+    fn tree(&self) -> notai_core::topic::Tree {
+        notai_core::topic::Tree::new(self.topics.iter().map(|t| (t.id, t.parent)))
+    }
+
+    /// "Sabun işi / Malzeme hareketleri".
+    fn path(&self, id: TopicId) -> String {
+        let names = self
+            .topics
+            .iter()
+            .map(|t| (t.id, t.name.as_str().to_owned()))
+            .collect();
+        notai_core::topic::path_name(&self.tree(), &names, id)
+    }
 }
 
 /// Sınıflandırma bağlamı.
@@ -104,6 +122,9 @@ struct RawTopic {
     existing_id: Option<String>,
     new_name: Option<String>,
     new_kind: Option<String>,
+    /// Yeni konu bir konunun alt konusu olacaksa üst konunun kimliği.
+    #[serde(default)]
+    parent_id: Option<String>,
     confidence: f64,
 }
 
@@ -172,11 +193,12 @@ pub fn output_schema() -> Value {
             "topic": nullable(json!({
                 "type": "object",
                 "additionalProperties": false,
-                "required": ["existing_id", "new_name", "new_kind", "confidence"],
+                "required": ["existing_id", "new_name", "new_kind", "parent_id", "confidence"],
                 "properties": {
                     "existing_id": nullable(json!({ "type": "string" })),
                     "new_name": nullable(json!({ "type": "string" })),
                     "new_kind": nullable(json!({ "type": "string", "enum": ["project", "area", "resource"] })),
+                    "parent_id": nullable(json!({ "type": "string", "description": "Yeni konu bir alt konuysa üst konunun kimliği" })),
                     "confidence": confidence
                 }
             })),
@@ -221,9 +243,11 @@ hiçbir şey uygulanmaz.
 
 Kurallar:
 - Yalnız gerçekten yararlı öneri yap; emin değilsen boş bırak. Her öneriye dürüst bir 0–1 güven skoru ver.
-- Konu: kayıt listedeki bir konuya uyuyorsa `existing_id` ile onu seç (new_name ve new_kind null). \
-Hiçbiri uymuyor ama kayıt kalıcı bir konuya işaret ediyorsa `new_name` ve `new_kind` öner (existing_id null). \
-Kayıt zaten bir konudaysa `topic` null olsun.
+- Konu: konular hiyerarşiktir (\"Sabun işi / Malzeme hareketleri\"). Kayda uyan EN ALT konuyu \
+`existing_id` ile seç (new_name, new_kind, parent_id null). Hiçbiri uymuyor ama kayıt kalıcı bir başlığa \
+işaret ediyorsa `new_name` + `new_kind` öner; bir konunun alt başlığı olacaksa `parent_id` o konunun kimliği. \
+Kayıt zaten bir konudaysa yalnız O KONUNUN ALT KONULARINA dağıtabilirsin (ya da onun altına yeni alt \
+konu önerebilirsin); uygun alt konu yoksa `topic` null olsun.
 - Görev: kayıtta yapılacak bir iş varsa kısa, eylemle biten Türkçe bir başlık yaz (en fazla 3). \
 Göreli tarihleri (\"perşembe\", \"yarın\", \"haftaya\") kaydın yakalandığı güne göre çöz; geçmiş tarih verme. \
 Saat söylenmediyse due_time null. Kullanıcı sonradan düzeltirse (\"yok, aslında perşembe\") son söyleneni esas al.
@@ -257,12 +281,17 @@ pub fn build_request(ctx: &ClassifyContext) -> JsonRequest {
             system.push_str(&format!("\n- {f}"));
         }
     }
-    system.push_str("\n\nKonular (id · tür · ad):");
+    system.push_str("\n\nKonular (id · tür · yol):");
     if ctx.topics.is_empty() {
         system.push_str("\n- (henüz konu yok)");
     }
     for t in &ctx.topics {
-        system.push_str(&format!("\n- {} · {} · {}", t.id, t.kind.label(), t.name));
+        system.push_str(&format!(
+            "\n- {} · {} · {}",
+            t.id,
+            t.kind.label(),
+            ctx.path(t.id)
+        ));
     }
     if !ctx.recent.is_empty() {
         system.push_str("\n\nSon kayıtlar (yalnız bağlam için):");
@@ -307,10 +336,13 @@ pub fn build_request(ctx: &ClassifyContext) -> JsonRequest {
     } else {
         format!("\nKullanıcı bu kayıtla ilgili sorduğun soruyu cevapladı; cevabı esas al:{qa_note}")
     };
-    let topic_note = if ctx.entry.topic().is_some() {
-        "\n(Bu kayıt zaten bir konuda; topic null olmalı.)"
-    } else {
-        ""
+    let topic_note = match ctx.entry.topic() {
+        Some(t) => format!(
+            "\n(Bu kayıt \"{}\" konusuna yazıldı; yalnız onun alt konularından birine dağıtabilirsin, \
+uygun değilse topic null.)",
+            ctx.path(t)
+        ),
+        None => String::new(),
     };
     JsonRequest {
         system,
@@ -349,14 +381,32 @@ fn topic_suggestion(
     ctx: &ClassifyContext,
     dropped: &mut Vec<String>,
 ) -> Option<SuggestionKind> {
-    if ctx.entry.topic().is_some() {
-        dropped.push("konu: kayıt zaten bir konuda".into());
-        return None;
-    }
+    // Kayıt zaten bir konudaysa yalnız o konunun ALT konularına dağıtılabilir.
+    let within = ctx.entry.topic().map(|t| ctx.tree().subtree(t));
+    let allowed = |id: TopicId| match (&within, ctx.entry.topic()) {
+        (Some(sub), Some(cur)) => id != cur && sub.contains(&id),
+        _ => true,
+    };
+    let parent = match raw.parent_id.as_deref() {
+        None => None,
+        Some(p) => match ctx.topics.iter().find(|t| t.id.to_string() == p) {
+            Some(t) => Some(t.id),
+            None => {
+                dropped.push(format!("konu: listede olmayan üst konu {p}"));
+                return None;
+            }
+        },
+    };
     match (raw.existing_id, raw.new_name) {
         (Some(id), None) => {
             let found = ctx.topics.iter().find(|t| t.id.to_string() == id);
             match found {
+                Some(t) if !allowed(t.id) => {
+                    dropped.push(
+                        "konu: kayıt zaten bir konuda (yalnız alt konulara dağıtılabilir)".into(),
+                    );
+                    None
+                }
                 Some(t) if t.kind != ParaKind::Archive => Some(SuggestionKind::Topic {
                     target: TopicTarget::Existing {
                         id: t.id,
@@ -377,9 +427,20 @@ fn topic_suggestion(
                     return None;
                 }
             };
-            // Model var olan bir konuyu "yeni" diye önerirse var olana bağla.
+            // Kayıt bir konudaysa yeni konu yalnız onun altına (ya da alt dalına) açılabilir.
+            if let Some(sub) = &within
+                && !parent.is_some_and(|p| sub.contains(&p))
+            {
+                dropped.push("konu: kayıt zaten bir konuda (yeni konu yalnız onun altına)".into());
+                return None;
+            }
+            // Model var olan bir konuyu "yeni" diye önerirse (aynı üst konu altında) var olana bağla.
             let key = tr_lower(name.as_str());
-            if let Some(t) = ctx.topics.iter().find(|t| tr_lower(t.name.as_str()) == key) {
+            if let Some(t) = ctx
+                .topics
+                .iter()
+                .find(|t| t.parent == parent && tr_lower(t.name.as_str()) == key)
+            {
                 return Some(SuggestionKind::Topic {
                     target: TopicTarget::Existing {
                         id: t.id,
@@ -389,7 +450,7 @@ fn topic_suggestion(
             }
             match raw.new_kind.as_deref().and_then(parse_kind) {
                 Some(kind) => Some(SuggestionKind::Topic {
-                    target: TopicTarget::New { name, kind },
+                    target: TopicTarget::New { name, kind, parent },
                 }),
                 None => {
                     dropped.push("konu: yeni konu için tür eksik/geçersiz".into());
@@ -619,11 +680,13 @@ mod tests {
                     id: TopicId::new(),
                     name: TopicName::new("Kostik tedarik").unwrap(),
                     kind: ParaKind::Project { due: None },
+                    parent: None,
                 },
                 ContextTopic {
                     id: TopicId::new(),
                     name: TopicName::new("GemOlive").unwrap(),
                     kind: ParaKind::Area,
+                    parent: None,
                 },
             ],
             facts: vec!["GemOlive = sabun markası, Alan: İş".into()],
@@ -904,7 +967,70 @@ mod tests {
             Value::Null,
         );
         assert!(validate(&raw, &c).unwrap().suggestions.is_empty());
-        assert!(build_request(&c).user.contains("zaten bir konuda"));
+        assert!(build_request(&c).user.contains("konusuna yazıldı"));
+    }
+
+    #[test]
+    fn entry_in_parent_topic_is_distributed_to_subtopics_only() {
+        let mut c = ctx("Kostik 25 kg geldi");
+        let sabun = TopicId::new();
+        let malzeme = TopicId::new();
+        c.topics.push(ContextTopic {
+            id: sabun,
+            name: TopicName::new("Sabun işi").unwrap(),
+            kind: ParaKind::Area,
+            parent: None,
+        });
+        c.topics.push(ContextTopic {
+            id: malzeme,
+            name: TopicName::new("Malzeme hareketleri").unwrap(),
+            kind: ParaKind::Area,
+            parent: Some(sabun),
+        });
+        c.entry.assign_topic(Some(sabun)).unwrap();
+        let req = build_request(&c);
+        assert!(
+            req.system.contains("Sabun işi / Malzeme hareketleri"),
+            "yol adı"
+        );
+        assert!(req.user.contains("\"Sabun işi\" konusuna yazıldı"));
+        let pick = |existing: Value, new_name: Value, parent: Value| {
+            output(
+                json!({ "existing_id": existing, "new_name": new_name, "new_kind": "area",
+                        "parent_id": parent, "confidence": 0.9 }),
+                json!([]),
+                json!([]),
+                json!([]),
+                Value::Null,
+            )
+        };
+        // Alt konuya dağıtım: kabul.
+        let v = validate(
+            &pick(json!(malzeme.to_string()), Value::Null, Value::Null),
+            &c,
+        )
+        .unwrap();
+        assert_eq!(v.suggestions.len(), 1);
+        // Dal dışındaki konu (GemOlive): atılır.
+        let gem = c.topics[1].id;
+        let v = validate(&pick(json!(gem.to_string()), Value::Null, Value::Null), &c).unwrap();
+        assert!(v.suggestions.is_empty());
+        // Yeni alt konu: yalnız dalın içine.
+        let v = validate(
+            &pick(
+                Value::Null,
+                json!("Para alışverişi"),
+                json!(sabun.to_string()),
+            ),
+            &c,
+        )
+        .unwrap();
+        assert!(matches!(
+            &v.suggestions[0].kind,
+            SuggestionKind::Topic { target: TopicTarget::New { parent: Some(p), .. } } if *p == sabun
+        ));
+        let v = validate(&pick(Value::Null, json!("Başka"), Value::Null), &c).unwrap();
+        assert!(v.suggestions.is_empty(), "en üste yeni konu açılamaz");
     }
 
     #[test]

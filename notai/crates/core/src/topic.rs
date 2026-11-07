@@ -114,6 +114,9 @@ pub struct Topic {
     /// yuvarlak içinde gösterilir.
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub avatar: Option<String>,
+    /// Üst konu (hiyerarşi: "Sabun işi" → "Malzeme hareketleri"). `None` = en üst.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub parent: Option<TopicId>,
     pub pinned: bool,
 }
 
@@ -126,6 +129,7 @@ impl Topic {
             kind,
             icon: None,
             avatar: None,
+            parent: None,
             pinned: false,
         }
     }
@@ -160,6 +164,127 @@ impl Topic {
         self.kind = ParaKind::Archive;
         self.pinned = false;
     }
+}
+
+// ---------------- Hiyerarşi (Gökhan, 2026-11-07) ----------------
+//
+// Konular ağaç oluşturur (Obsidian klasörleri gibi). Bir kayıt tek bir konuya bağlıdır; üst
+// konuların ve Ana Günlük'ün akışında da *görünür* ama tek kayıttır (raporlarda mükerrer olmaz).
+
+/// En fazla iç içe derinlik (en üst = 1).
+pub const MAX_DEPTH: usize = 5;
+
+/// Ağaç işlemleri için konu → üst konu eşlemesi.
+#[derive(Debug, Clone, Default)]
+pub struct Tree {
+    parent: std::collections::HashMap<TopicId, Option<TopicId>>,
+}
+
+impl Tree {
+    #[must_use]
+    pub fn new(pairs: impl IntoIterator<Item = (TopicId, Option<TopicId>)>) -> Self {
+        Self {
+            parent: pairs.into_iter().collect(),
+        }
+    }
+
+    #[must_use]
+    pub fn parent_of(&self, id: TopicId) -> Option<TopicId> {
+        self.parent.get(&id).copied().flatten()
+    }
+
+    /// Üst konular (yakından uzağa). Bozuk veride döngü olsa bile sonlanır.
+    #[must_use]
+    pub fn ancestors(&self, id: TopicId) -> Vec<TopicId> {
+        let mut out = Vec::new();
+        let mut cur = self.parent_of(id);
+        while let Some(p) = cur {
+            if p == id || out.contains(&p) || out.len() > self.parent.len() {
+                break;
+            }
+            out.push(p);
+            cur = self.parent_of(p);
+        }
+        out
+    }
+
+    /// Doğrudan alt konular.
+    #[must_use]
+    pub fn children(&self, id: TopicId) -> Vec<TopicId> {
+        let mut c: Vec<TopicId> = self
+            .parent
+            .iter()
+            .filter(|(_, p)| **p == Some(id))
+            .map(|(c, _)| *c)
+            .collect();
+        c.sort_unstable();
+        c
+    }
+
+    /// Konu ve tüm alt konuları.
+    #[must_use]
+    pub fn subtree(&self, id: TopicId) -> Vec<TopicId> {
+        let mut out = vec![id];
+        let mut i = 0;
+        while i < out.len() {
+            for c in self.children(out[i]) {
+                if !out.contains(&c) {
+                    out.push(c);
+                }
+            }
+            i += 1;
+        }
+        out
+    }
+
+    /// `id` konusunu `new_parent` altına taşımak geçerli mi? (Kendi altına/torununa taşınamaz;
+    /// derinlik sınırı aşılamaz.)
+    pub fn check_move(&self, id: TopicId, new_parent: Option<TopicId>) -> Result<(), CoreError> {
+        let Some(p) = new_parent else {
+            return Ok(());
+        };
+        let sub = self.subtree(id);
+        if sub.contains(&p) {
+            return Err(CoreError::InvalidTransition {
+                from: "konu",
+                to: "kendi alt konusu",
+            });
+        }
+        // Yeni yerdeki derinlik + taşınan dalın yüksekliği.
+        let parent_depth = self.ancestors(p).len() + 1;
+        let height = sub
+            .iter()
+            .map(|d| self.ancestors(*d).iter().take_while(|a| **a != id).count() + 1)
+            .max()
+            .unwrap_or(1);
+        if parent_depth + height > MAX_DEPTH {
+            return Err(CoreError::TooLong {
+                field: "konu derinliği",
+                max: MAX_DEPTH,
+                actual: parent_depth + height,
+            });
+        }
+        Ok(())
+    }
+}
+
+/// Yol adı: "Sabun işi / Malzeme hareketleri". `names`: konu → ad.
+#[must_use]
+pub fn path_name(
+    tree: &Tree,
+    names: &std::collections::HashMap<TopicId, String>,
+    id: TopicId,
+) -> String {
+    let mut parts: Vec<&str> = tree
+        .ancestors(id)
+        .iter()
+        .rev()
+        .filter_map(|a| names.get(a).map(String::as_str))
+        .collect();
+    if let Some(n) = names.get(&id) {
+        parts.push(n);
+    }
+    parts.join(" / ")
 }
 
 #[cfg(test)]
@@ -209,5 +334,70 @@ mod tests {
         assert_eq!(t.kind, ParaKind::Archive);
         assert!(!t.pinned);
         assert_eq!(t.kind.label(), "Arşiv");
+    }
+}
+
+#[cfg(test)]
+mod tree_tests {
+    #![allow(clippy::unwrap_used)]
+    use super::*;
+    use std::collections::HashMap;
+
+    #[test]
+    fn tree_paths_subtree_and_moves() {
+        let (sabun, malzeme, para, kostik, ev) = (
+            TopicId::new(),
+            TopicId::new(),
+            TopicId::new(),
+            TopicId::new(),
+            TopicId::new(),
+        );
+        let tree = Tree::new([
+            (sabun, None),
+            (malzeme, Some(sabun)),
+            (para, Some(sabun)),
+            (kostik, Some(malzeme)),
+            (ev, None),
+        ]);
+        let names: HashMap<TopicId, String> = [
+            (sabun, "Sabun işi"),
+            (malzeme, "Malzeme hareketleri"),
+            (para, "Para alışverişi"),
+            (kostik, "Kostik"),
+            (ev, "Ev"),
+        ]
+        .into_iter()
+        .map(|(i, n)| (i, n.to_owned()))
+        .collect();
+        assert_eq!(
+            path_name(&tree, &names, kostik),
+            "Sabun işi / Malzeme hareketleri / Kostik"
+        );
+        assert_eq!(tree.ancestors(kostik), [malzeme, sabun]);
+        let mut sub = tree.subtree(sabun);
+        sub.sort_unstable();
+        let mut want = vec![sabun, malzeme, para, kostik];
+        want.sort_unstable();
+        assert_eq!(sub, want);
+        assert_eq!(tree.subtree(ev), [ev]);
+
+        // Döngü yasak: üst konu kendi torununun altına taşınamaz.
+        assert!(tree.check_move(sabun, Some(kostik)).is_err());
+        assert!(tree.check_move(sabun, Some(sabun)).is_err());
+        assert!(tree.check_move(ev, Some(kostik)).is_ok());
+        assert!(tree.check_move(kostik, None).is_ok());
+        // Derinlik: Sabun dalı (3 kat) Ev'in altına girerse 4; 5'i aşmaz.
+        assert!(tree.check_move(sabun, Some(ev)).is_ok());
+        let deep = Tree::new([
+            (sabun, None),
+            (malzeme, Some(sabun)),
+            (para, Some(malzeme)),
+            (kostik, Some(para)),
+            (ev, Some(kostik)),
+        ]);
+        let extra = TopicId::new();
+        let mut t2 = deep.clone();
+        t2.parent.insert(extra, None);
+        assert!(t2.check_move(extra, Some(ev)).is_err(), "6. kat olmaz");
     }
 }

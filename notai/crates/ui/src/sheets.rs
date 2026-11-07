@@ -203,7 +203,7 @@ fn TopicPicker(entry: String, current: Option<String>) -> impl IntoView {
                         <button class="topic" aria-current=is_current.then_some("true") on:click=move |_| pick(Some(id.clone()))>
                             <Avatar look=look small=true/>
                             <span class="topic__body">
-                                <span class="topic__line"><span class="topic__name">{t.name}</span><span class="topic__kind">{t.kind_label}</span></span>
+                                <span class="topic__line"><span class="topic__name">{if t.path.is_empty() { t.name } else { t.path }}</span><span class="topic__kind">{t.kind_label}</span></span>
                             </span>
                             {is_current.then(|| view! { <Icon name="check" size="sm"/> })}
                         </button>
@@ -320,14 +320,26 @@ fn TaskEditor(t: TaskRowView) -> impl IntoView {
 
 // ---------------- Konular ----------------
 
-/// Yeni konu: ad + tür (Proje / Alan / Kaynak).
+/// Yeni konu: ad + tür (Proje / Alan / Kaynak). `parent` verilirse alt konu açılır.
 #[component]
-pub fn NewTopicSheet(open: RwSignal<bool>) -> impl IntoView {
-    move || open.get().then(|| view! { <NewTopicForm open=open/> })
+pub fn NewTopicSheet(
+    open: RwSignal<bool>,
+    #[prop(optional)] parent: Option<TopicRef>,
+) -> impl IntoView {
+    move || {
+        let parent = parent.clone();
+        open.get()
+            .then(|| view! { <NewTopicForm open=open parent=parent/> })
+    }
 }
 
 #[component]
-fn NewTopicForm(open: RwSignal<bool>) -> impl IntoView {
+fn NewTopicForm(open: RwSignal<bool>, parent: Option<TopicRef>) -> impl IntoView {
+    let parent_id = parent.as_ref().map(|p| p.id.clone());
+    let title = parent.as_ref().map_or_else(
+        || "Yeni konu".to_owned(),
+        |p| format!("{} · yeni alt konu", p.name),
+    );
     let name = RwSignal::new(String::new());
     let kind = RwSignal::new("project");
     let input = NodeRef::<leptos::html::Input>::new();
@@ -339,7 +351,8 @@ fn NewTopicForm(open: RwSignal<bool>) -> impl IntoView {
         }
         let k = kind.get_untracked().to_owned();
         open.set(false);
-        run(move |b| async move { b.create_topic(n, k).await });
+        let parent = parent_id.clone();
+        run(move |b| async move { b.create_topic(n, k, parent).await });
     };
     let kinds = view::TOPIC_KINDS
         .iter()
@@ -352,10 +365,10 @@ fn NewTopicForm(open: RwSignal<bool>) -> impl IntoView {
         .collect_view();
     let content = view! {
         <form class="sheet__body" on:submit=move |ev| { ev.prevent_default(); save() }>
-            <h2 class="sheet__title">"Yeni konu"</h2>
+            <h2 class="sheet__title">{title}</h2>
             <label class="formfield formfield--sheet">
                 <span class="formfield__label">"Ad"</span>
-                <span class="input"><input type="text" lang="tr" node_ref=input placeholder="Örn. Kostik tedarik"
+                <span class="input"><input type="text" lang="tr" node_ref=input placeholder="Örn. Malzeme hareketleri"
                     prop:value=move || name.get() on:input=move |ev| name.set(event_target_value(&ev))/></span>
             </label>
             <div class="formfield formfield--sheet">
@@ -375,18 +388,24 @@ fn NewTopicForm(open: RwSignal<bool>) -> impl IntoView {
     )
 }
 
-/// Konu akışının ⋯ menüsü: sabitle / kaldır, yeniden adlandır.
+/// Konunun ⋯ menüsü: sabitle, yeniden adlandır, alt konu ekle, üst konuyu değiştir, profil
+/// fotoğrafı, simge.
 #[component]
 pub fn TopicMenu(topic: TopicRef, open: RwSignal<bool>) -> impl IntoView {
-    move || {
-        let t = topic.clone();
-        open.get()
-            .then(|| view! { <TopicMenuBody topic=t open=open/> })
+    let new_sub = RwSignal::new(false);
+    let t_sheet = topic.clone();
+    view! {
+        {move || {
+            let t = topic.clone();
+            open.get()
+                .then(|| view! { <TopicMenuBody topic=t open=open new_sub=new_sub/> })
+        }}
+        <NewTopicSheet open=new_sub parent=t_sheet/>
     }
 }
 
 #[component]
-fn TopicMenuBody(topic: TopicRef, open: RwSignal<bool>) -> impl IntoView {
+fn TopicMenuBody(topic: TopicRef, open: RwSignal<bool>, new_sub: RwSignal<bool>) -> impl IntoView {
     let c = ctx();
     let renaming = RwSignal::new(false);
     let name = RwSignal::new(topic.name.clone());
@@ -405,6 +424,7 @@ fn TopicMenuBody(topic: TopicRef, open: RwSignal<bool>) -> impl IntoView {
         _ => None,
     });
     let choosing_icon = RwSignal::new(false);
+    let choosing_parent = RwSignal::new(false);
     let photo = NodeRef::<leptos::html::Input>::new();
     // Bağlam (bağlantı) burada yakalanır: fotoğraf küçültme `await`'inden sonra `use_context`
     // okunamaz (`run_then` notu).
@@ -457,6 +477,60 @@ fn TopicMenuBody(topic: TopicRef, open: RwSignal<bool>) -> impl IntoView {
                 icon: Some(icon.to_owned()),
                 ..TopicEditRequest::default()
             });
+        }
+    };
+    let parent_list = {
+        let edit = edit.clone();
+        let me = topic.id.clone();
+        move || {
+            let Some(Ok(v)) = rows.get() else {
+                return ().into_any();
+            };
+            // Kendi dalının içine taşınamaz (döngü olur).
+            let blocked = view::subtree_ids(&v.topics, &me);
+            let current = v
+                .topics
+                .iter()
+                .find(|t| t.id == me)
+                .and_then(|t| t.parent_id.clone());
+            let pick = {
+                let edit = edit.clone();
+                move |p: String| {
+                    edit(TopicEditRequest {
+                        parent_id: Some(p),
+                        ..TopicEditRequest::default()
+                    });
+                }
+            };
+            let top = {
+                let pick = pick.clone();
+                let is_cur = current.is_none();
+                view! {
+                    <button class="topic" aria-current=is_cur.then_some("true") on:click=move |_| pick(String::new())>
+                        <span class="topic__body"><span class="topic__name">"En üst (ana ekranda)"</span></span>
+                        {is_cur.then(|| view! { <Icon name="check" size="sm"/> })}
+                    </button>
+                }
+            };
+            let items = v
+                .topics
+                .into_iter()
+                .filter(|t| !blocked.contains(&t.id))
+                .map(|t| {
+                    let pick = pick.clone();
+                    let is_cur = current.as_deref() == Some(t.id.as_str());
+                    let id = t.id.clone();
+                    let look = view::TopicLook::of(&t);
+                    view! {
+                        <button class="topic" aria-current=is_cur.then_some("true") on:click=move |_| pick(id.clone())>
+                            <Avatar look=look small=true/>
+                            <span class="topic__body"><span class="topic__name">{t.path}</span></span>
+                            {is_cur.then(|| view! { <Icon name="check" size="sm"/> })}
+                        </button>
+                    }
+                })
+                .collect_view();
+            view! { <div class="card pick" role="group" aria-label="Üst konu seç">{top}{items}</div> }.into_any()
         }
     };
     let icon_grid = {
@@ -522,7 +596,7 @@ fn TopicMenuBody(topic: TopicRef, open: RwSignal<bool>) -> impl IntoView {
         };
         run_then(
             move |b| async move { b.edit_topic(id, req).await },
-            move |()| c.screen.set(Screen::Flow(Some(target))),
+            move |()| c.screen.set(Screen::Topic(target)),
         );
     };
     let input = NodeRef::<leptos::html::Input>::new();
@@ -555,6 +629,17 @@ fn TopicMenuBody(topic: TopicRef, open: RwSignal<bool>) -> impl IntoView {
                         </button>
                     }
                 })}
+                <button class="setrow" on:click=move |_| { open.set(false); new_sub.set(true); }>
+                    <span class="setrow__ic"><Icon name="plus"/></span>
+                    <span class="setrow__txt"><span class="setrow__title">"Alt konu ekle"</span>
+                        <span class="setrow__sub">"Örn. Malzeme hareketleri, Yapılacaklar, Para alışverişi"</span></span>
+                </button>
+                <button class="setrow" aria-expanded=move || choosing_parent.get().to_string()
+                    on:click=move |_| choosing_parent.update(|v| *v = !*v)>
+                    <span class="setrow__ic"><Icon name="layers"/></span>
+                    <span class="setrow__txt"><span class="setrow__title">"Üst konuyu değiştir"</span>
+                        <span class="setrow__sub">"Bu konuyu başka bir konunun altına taşı"</span></span>
+                </button>
                 <button class="setrow" aria-expanded=move || choosing_icon.get().to_string()
                     on:click=move |_| choosing_icon.update(|v| *v = !*v)>
                     <span class="setrow__ic"><Icon name="grid"/></span>
@@ -563,6 +648,7 @@ fn TopicMenuBody(topic: TopicRef, open: RwSignal<bool>) -> impl IntoView {
                 </button>
             </div>
             <input class="filepick" type="file" accept="image/*" tabindex="-1" aria-hidden="true" node_ref=photo on:change=on_photo/>
+            {move || choosing_parent.get().then(parent_list.clone())}
             {move || choosing_icon.get().then(icon_grid.clone())}
             <form class="formfield formfield--sheet" class:hidden=move || !renaming.get()
                 on:submit=move |ev| { ev.prevent_default(); rename() }>

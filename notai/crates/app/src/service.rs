@@ -249,14 +249,16 @@ pub async fn create_topic(
     store: &Store,
     name: &str,
     kind: &str,
+    parent: Option<&str>,
     now: DateTime<Utc>,
 ) -> CmdResult<()> {
     let kind = ParaKind::from_parts(kind, None).map_err(err)?;
-    store
-        .create_topic(NewTopic::new(TopicName::new(name).map_err(err)?, kind), now)
-        .await
-        .map(|_| ())
-        .map_err(err)
+    let mut new = NewTopic::new(TopicName::new(name).map_err(err)?, kind);
+    new.parent = parent
+        .filter(|p| !p.is_empty())
+        .map(id::<TopicId>)
+        .transpose()?;
+    store.create_topic(new, now).await.map(|_| ()).map_err(err)
 }
 
 pub async fn edit_topic(

@@ -349,6 +349,7 @@ async fn accepting_new_topic_creates_it_once_and_tags_are_labels() {
                 target: TopicTarget::New {
                     name: TopicName::new("Hammadde").unwrap(),
                     kind: ParaKind::Area,
+                    parent: None,
                 },
             },
             conf(0.7),
@@ -803,4 +804,83 @@ async fn last_notice_is_kept_until_cleared_or_stale() {
     );
     s.clear_notice().await.unwrap();
     assert!(s.notice(at(6, 8, 30)).await.unwrap().is_none());
+}
+
+#[tokio::test]
+async fn topic_hierarchy_subtree_flow_names_and_cycles() {
+    let s = store().await;
+    let sabun = topic(&s, "Sabun işi", ParaKind::Area).await;
+    let sub = |name: &str, parent: TopicId| {
+        let mut n = NewTopic::new(TopicName::new(name).unwrap(), ParaKind::Area);
+        n.parent = Some(parent);
+        n
+    };
+    let malzeme = s
+        .create_topic(sub("Malzeme hareketleri", sabun), now())
+        .await
+        .unwrap()
+        .id;
+    let kostik = s
+        .create_topic(sub("Kostik", malzeme), now())
+        .await
+        .unwrap()
+        .id;
+    let ev = topic(&s, "Ev", ParaKind::Area).await;
+    // Aynı ad farklı üst konularda olabilir; aynı üstte olamaz.
+    s.create_topic(sub("Yapılacaklar", sabun), now())
+        .await
+        .unwrap();
+    s.create_topic(sub("Yapılacaklar", ev), now())
+        .await
+        .unwrap();
+    assert!(matches!(
+        s.create_topic(sub("YAPILACAKLAR", sabun), now()).await,
+        Err(StoreError::Conflict(_))
+    ));
+
+    // Alt konuya yazılan kayıt üst konuların akışında da görünür; kayıt tektir.
+    let id = s
+        .capture(new_entry("25 kg kostik geldi", at(6, 8, 0), Some(kostik)))
+        .await
+        .unwrap()
+        .entry()
+        .id;
+    for t in [kostik, malzeme, sabun] {
+        let flow = s
+            .journal(JournalFilter::Topic { id: t }, None, 50)
+            .await
+            .unwrap();
+        assert_eq!(flow.len(), 1, "alt dal kaydı üstte de görünür");
+        assert_eq!(flow[0].entry.id, id);
+    }
+    assert!(
+        s.journal(JournalFilter::Topic { id: ev }, None, 50)
+            .await
+            .unwrap()
+            .is_empty()
+    );
+    assert_eq!(
+        s.journal(JournalFilter::All, None, 50).await.unwrap().len(),
+        1,
+        "mükerrer yok"
+    );
+
+    // Liste: yol adı, alt konu sayısı, toplanan önizleme.
+    let list = s.topic_list(KindFilter::All).await.unwrap();
+    let row = |id: TopicId| list.iter().find(|a| a.topic.id == id).unwrap();
+    assert_eq!(row(kostik).path, "Sabun işi / Malzeme hareketleri / Kostik");
+    assert_eq!(row(sabun).children, 2);
+    assert_eq!(
+        row(sabun).last_preview.as_deref(),
+        Some("25 kg kostik geldi")
+    );
+
+    // Döngü yasak; taşımak serbest.
+    let mut top = s.topic(sabun).await.unwrap();
+    top.parent = Some(kostik);
+    assert!(s.update_topic(&top, now()).await.is_err());
+    let mut e = s.topic(ev).await.unwrap();
+    e.parent = Some(sabun);
+    s.update_topic(&e, now()).await.unwrap();
+    assert_eq!(s.topic(ev).await.unwrap().parent, Some(sabun));
 }

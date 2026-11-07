@@ -111,8 +111,14 @@ async fn v2_v4_local_features() {
     let s = Store::open_in_memory("telefon").await.unwrap();
 
     // Konu oluştur, düzenle (sabitle), kaydı konuya taşı.
-    service::create_topic(&s, "Ev", "area", now).await.unwrap();
-    assert!(service::create_topic(&s, "X", "klasör", now).await.is_err());
+    service::create_topic(&s, "Ev", "area", None, now)
+        .await
+        .unwrap();
+    assert!(
+        service::create_topic(&s, "X", "klasör", None, now)
+            .await
+            .is_err()
+    );
     let topics = service::topics(&s, "all", now, tz).await.unwrap();
     let ev = topics.topics[0].id.clone();
     service::edit_topic(

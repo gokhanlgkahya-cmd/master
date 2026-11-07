@@ -1,6 +1,6 @@
 {
   "db_name": "SQLite",
-  "query": "SELECT t.id, t.name, t.kind, t.due_date, t.icon, t.avatar, t.pinned,\n                      (SELECT MAX(x) FROM (\n                          SELECT MAX(e.captured_at) AS x FROM entries e WHERE e.topic_id = t.id\n                          UNION ALL\n                          SELECT MAX(k.updated_at) AS x FROM tasks k WHERE k.topic_id = t.id\n                      )) AS \"last: String\"\n               FROM topics t",
+  "query": "SELECT t.id, t.name, t.kind, t.due_date, t.icon, t.avatar, t.parent_id, t.pinned,\n                      (SELECT e.captured_at FROM entries e\n                        WHERE e.topic_id = t.id AND e.status IN ('inbox', 'processed')\n                        ORDER BY e.captured_at DESC LIMIT 1) AS \"last_at: String\",\n                      (SELECT e.text FROM entries e\n                        WHERE e.topic_id = t.id AND e.status IN ('inbox', 'processed')\n                        ORDER BY e.captured_at DESC LIMIT 1) AS \"last_text: String\",\n                      (SELECT COUNT(DISTINCT s.entry_id) FROM suggestions s\n                         JOIN entries e ON e.id = s.entry_id\n                        WHERE e.topic_id = t.id AND s.decision = 'pending'\n                          AND e.status IN ('inbox', 'processed')) AS \"pending!: i64\"\n               FROM topics t",
   "describe": {
     "columns": [
       {
@@ -70,8 +70,19 @@
         }
       },
       {
-        "name": "pinned",
+        "name": "parent_id",
         "ordinal": 6,
+        "type_info": "Text",
+        "origin": {
+          "Table": {
+            "table": "topics",
+            "name": "parent_id"
+          }
+        }
+      },
+      {
+        "name": "pinned",
+        "ordinal": 7,
         "type_info": "Integer",
         "origin": {
           "Table": {
@@ -81,9 +92,31 @@
         }
       },
       {
-        "name": "last: String",
-        "ordinal": 7,
+        "name": "last_at: String",
+        "ordinal": 8,
         "type_info": "Text",
+        "origin": {
+          "Table": {
+            "table": "entries",
+            "name": "captured_at"
+          }
+        }
+      },
+      {
+        "name": "last_text: String",
+        "ordinal": 9,
+        "type_info": "Text",
+        "origin": {
+          "Table": {
+            "table": "entries",
+            "name": "text"
+          }
+        }
+      },
+      {
+        "name": "pending!: i64",
+        "ordinal": 10,
+        "type_info": "Integer",
         "origin": "Expression"
       }
     ],
@@ -97,9 +130,12 @@
       true,
       true,
       true,
+      true,
       false,
-      true
+      true,
+      true,
+      false
     ]
   },
-  "hash": "5bbcc073e8e9903241a7ecd857436cafd95359b901f5b58d0ce8de74857fc210"
+  "hash": "9fccd4bdd7218966e321aafb4d9c1bf7f2d809724aa54c1f9f79499a08ed494c"
 }

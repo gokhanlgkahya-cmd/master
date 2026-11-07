@@ -78,6 +78,29 @@ pub fn Flow(topic: Option<TopicRef>) -> impl IntoView {
             )
         }
     };
+    // Geri: alt konusu olan konunun genel yazışmasından o konunun listesine; alt konudan
+    // üst konusuna; en üstteki konudan ana ekrana.
+    let back_target = {
+        let id = topic_id.clone();
+        move || {
+            let Some(Ok((_, _, topics))) = data.get_untracked() else {
+                return Screen::Home;
+            };
+            let Some(me) = id
+                .as_deref()
+                .and_then(|i| topics.iter().find(|t| t.id == i))
+            else {
+                return Screen::Home;
+            };
+            if me.children > 0 {
+                return Screen::Topic(view::topic_ref(me));
+            }
+            me.parent_id
+                .as_deref()
+                .and_then(|p| topics.iter().find(|t| t.id == p))
+                .map_or(Screen::Home, |p| Screen::Topic(view::topic_ref(p)))
+        }
+    };
     let placeholder = if is_journal {
         "Aklındakini yaz…".to_owned()
     } else {
@@ -85,7 +108,7 @@ pub fn Flow(topic: Option<TopicRef>) -> impl IntoView {
     };
     view! {
         <header class="flowbar">
-            <button class="iconbtn" aria-label="Geri" on:click=move |_| c.screen.set(Screen::Home)><Icon name="back"/></button>
+            <button class="iconbtn" aria-label="Geri" on:click=move |_| c.screen.set(back_target())><Icon name="back"/></button>
             <div class="flowbar__who">
                 {move || view! { <Avatar look=header_look() small=true/> }}
                 <div class="flowbar__text"><span class="flowbar__name">{title.clone()}</span><span class="flowbar__sub">{sub}</span></div>
@@ -93,10 +116,12 @@ pub fn Flow(topic: Option<TopicRef>) -> impl IntoView {
             {menu_btn}
         </header>
         <main class="flow scroll" node_ref=scroller>
-            {move || match data.get() {
+            {
+                let current = topic_id.clone();
+                move || match data.get() {
                 None => loading(),
                 Some(Err(e)) => failed(e),
-                Some(Ok((j, plan, topics))) => flow_items(j, plan, is_journal, &view::topic_looks(&topics)).into_any(),
+                Some(Ok((j, plan, topics))) => flow_items(j, plan, current.clone(), &view::topic_looks(&topics)).into_any(),
             }}
         </main>
         <ErrorNote/>
@@ -110,7 +135,7 @@ type Flowdata = (JournalView, Option<MorningPlanView>, Vec<TopicRowView>);
 fn flow_items(
     j: JournalView,
     plan: Option<MorningPlanView>,
-    is_journal: bool,
+    current: Option<String>,
     looks: &HashMap<String, view::TopicLook>,
 ) -> impl IntoView {
     if j.groups.is_empty() {
@@ -135,7 +160,13 @@ fn flow_items(
             let items = g
                 .items
                 .into_iter()
-                .map(|e| entry_row(e, is_journal, looks))
+                .map(|e| {
+                    let show = view::show_entry_topic(
+                        current.as_deref(),
+                        e.topic.as_ref().map(|t| t.id.as_str()),
+                    );
+                    entry_row(e, show, looks)
+                })
                 .collect_view();
             view! {
                 <div class="daysep"><span>{g.label}</span></div>

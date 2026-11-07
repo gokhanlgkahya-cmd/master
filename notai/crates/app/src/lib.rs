@@ -96,8 +96,13 @@ async fn edit_task(
 }
 
 #[tauri::command]
-async fn create_topic(st: State<'_, AppState>, name: String, kind: String) -> Result<(), String> {
-    service::create_topic(&st.store, &name, &kind, Utc::now()).await
+async fn create_topic(
+    st: State<'_, AppState>,
+    name: String,
+    kind: String,
+    parent: Option<String>,
+) -> Result<(), String> {
+    service::create_topic(&st.store, &name, &kind, parent.as_deref(), Utc::now()).await
 }
 
 #[tauri::command]

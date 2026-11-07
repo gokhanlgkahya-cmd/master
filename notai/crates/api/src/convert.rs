@@ -109,6 +109,9 @@ pub fn topic_row(a: TopicActivity, now: DateTime<Utc>, tz: Tz) -> TopicRowView {
         color: a.color,
         avatar: a.topic.avatar.clone(),
         pending: a.pending,
+        parent_id: a.topic.parent.map(|p| p.to_string()),
+        path: a.path.clone(),
+        children: a.children,
         pinned: a.topic.pinned,
         last_label: a.last_at.map(|t| list_time_label(t, now, tz)),
         preview: a.last_preview,
@@ -449,6 +452,13 @@ pub fn apply_topic_edit(topic: &mut notai_core::Topic, e: &TopicEditRequest) -> 
     }
     if let Some(i) = &e.icon {
         topic.icon = (!i.is_empty()).then(|| i.clone());
+    }
+    if let Some(p) = &e.parent_id {
+        topic.parent = if p.is_empty() {
+            None
+        } else {
+            Some(p.parse::<TopicId>().map_err(|x| x.to_string())?)
+        };
     }
     if let Some(av) = &e.avatar {
         topic.avatar = if av.is_empty() {

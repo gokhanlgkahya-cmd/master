@@ -342,14 +342,21 @@ impl Backend {
         }
     }
 
-    pub async fn create_topic(&self, name: String, kind: String) -> BResult<()> {
-        let body = json!({ "name": name, "kind": kind });
+    /// Konu açar; `parent` verilirse onun alt konusu olarak.
+    pub async fn create_topic(
+        &self,
+        name: String,
+        kind: String,
+        parent: Option<String>,
+    ) -> BResult<()> {
+        let body = json!({ "name": name, "kind": kind, "parent_id": parent });
         match self {
-            Self::Tauri => {
-                Self::call::<Value>("create_topic", json!({ "name": name, "kind": kind }))
-                    .await
-                    .map(|_| ())
-            }
+            Self::Tauri => Self::call::<Value>(
+                "create_topic",
+                json!({ "name": name, "kind": kind, "parent": parent }),
+            )
+            .await
+            .map(|_| ()),
             Self::Http(h) => h.post::<Value>("/topics", &body).await.map(|_| ()),
             Self::Demo(_) => Err(NOT_IN_DEMO.into()),
         }

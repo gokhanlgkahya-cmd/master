@@ -52,8 +52,17 @@ impl From<Confidence> for f64 {
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 #[serde(tag = "target", rename_all = "snake_case")]
 pub enum TopicTarget {
-    Existing { id: TopicId, name: TopicName },
-    New { name: TopicName, kind: ParaKind },
+    Existing {
+        id: TopicId,
+        name: TopicName,
+    },
+    New {
+        name: TopicName,
+        kind: ParaKind,
+        /// Yeni konu bu konunun altına açılır (hiyerarşi).
+        #[serde(default, skip_serializing_if = "Option::is_none")]
+        parent: Option<TopicId>,
+    },
 }
 
 impl TopicTarget {
@@ -207,6 +216,7 @@ pub enum Effect {
         entry: EntryId,
         name: TopicName,
         kind: ParaKind,
+        parent: Option<TopicId>,
     },
     CreateTask {
         task: NewTask,
@@ -290,11 +300,12 @@ impl Suggestion {
                 topic: *id,
             },
             SuggestionKind::Topic {
-                target: TopicTarget::New { name, kind },
+                target: TopicTarget::New { name, kind, parent },
             } => Effect::CreateTopicAndAssign {
                 entry: entry.id,
                 name: name.clone(),
                 kind: *kind,
+                parent: *parent,
             },
             SuggestionKind::Task {
                 title,
@@ -634,6 +645,7 @@ mod tests {
             target: TopicTarget::New {
                 name: TopicName::new("GemOlive").unwrap(),
                 kind: ParaKind::Area,
+                parent: None,
             },
         };
         assert_eq!(topic.chip_text(TZ), "→ GemOlive");
@@ -682,6 +694,7 @@ mod tests {
             target: TopicTarget::New {
                 name: TopicName::new("Ev sunucusu (S24)").unwrap(),
                 kind: ParaKind::Project { due: None },
+                parent: None,
             },
         };
         let json = serde_json::to_string(&k).unwrap();
