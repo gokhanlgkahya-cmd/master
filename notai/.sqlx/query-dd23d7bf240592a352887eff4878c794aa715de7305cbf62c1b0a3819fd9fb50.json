@@ -1,0 +1,12 @@
+{
+  "db_name": "SQLite",
+  "query": "UPDATE entries SET ai_state = ?2, ai_attempts = ?3, ai_next_at = ?4, ai_error = ?5,\n                    updated_at = ?6\n             WHERE id = ?1",
+  "describe": {
+    "columns": [],
+    "parameters": {
+      "Right": 6
+    },
+    "nullable": []
+  },
+  "hash": "dd23d7bf240592a352887eff4878c794aa715de7305cbf62c1b0a3819fd9fb50"
+}

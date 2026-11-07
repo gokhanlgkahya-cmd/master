@@ -1,0 +1,12 @@
+{
+  "db_name": "SQLite",
+  "query": "INSERT INTO change_log (entity, entity_id, op, payload, origin, at)\n         VALUES (?1, ?2, ?3, ?4, ?5, ?6)",
+  "describe": {
+    "columns": [],
+    "parameters": {
+      "Right": 6
+    },
+    "nullable": []
+  },
+  "hash": "78ae0a1c8ed36709786fadd0b9ead2672b6fd6ba834c6a6c649fe7397680d5da"
+}

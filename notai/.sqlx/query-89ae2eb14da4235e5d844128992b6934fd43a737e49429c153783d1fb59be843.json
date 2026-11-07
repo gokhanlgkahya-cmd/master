@@ -1,0 +1,12 @@
+{
+  "db_name": "SQLite",
+  "query": "INSERT INTO suggestions (id, entry_id, kind, payload, confidence, decision, decided_at, created_at)\n         VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7, ?8)",
+  "describe": {
+    "columns": [],
+    "parameters": {
+      "Right": 8
+    },
+    "nullable": []
+  },
+  "hash": "89ae2eb14da4235e5d844128992b6934fd43a737e49429c153783d1fb59be843"
+}

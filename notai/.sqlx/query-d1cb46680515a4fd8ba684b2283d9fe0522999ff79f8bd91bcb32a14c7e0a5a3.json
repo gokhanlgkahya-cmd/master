@@ -1,0 +1,12 @@
+{
+  "db_name": "SQLite",
+  "query": "UPDATE entries SET ai_state = 'pending', ai_attempts = 0, ai_next_at = NULL,\n                    ai_error = NULL, updated_at = ?2\n             WHERE id = ?1",
+  "describe": {
+    "columns": [],
+    "parameters": {
+      "Right": 2
+    },
+    "nullable": []
+  },
+  "hash": "d1cb46680515a4fd8ba684b2283d9fe0522999ff79f8bd91bcb32a14c7e0a5a3"
+}

@@ -1,0 +1,12 @@
+{
+  "db_name": "SQLite",
+  "query": "INSERT INTO topics (id, name, name_key, kind, due_date, icon, pinned, created_at, updated_at)\n         VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7, ?8, ?8)\n         ON CONFLICT (name_key) DO NOTHING",
+  "describe": {
+    "columns": [],
+    "parameters": {
+      "Right": 8
+    },
+    "nullable": []
+  },
+  "hash": "3bc495217a4c007c74fe00468084ab9f7de5feda4533763d1e55e4adc753b4c5"
+}

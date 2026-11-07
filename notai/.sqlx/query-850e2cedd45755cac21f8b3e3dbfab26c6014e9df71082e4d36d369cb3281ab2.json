@@ -1,0 +1,110 @@
+{
+  "db_name": "SQLite",
+  "query": "SELECT t.id, t.name, t.kind, t.due_date, t.icon, t.pinned,\n                      (SELECT e.captured_at FROM entries e\n                        WHERE e.topic_id = t.id AND e.status IN ('inbox', 'processed')\n                        ORDER BY e.captured_at DESC LIMIT 1) AS \"last_at: String\",\n                      (SELECT e.text FROM entries e\n                        WHERE e.topic_id = t.id AND e.status IN ('inbox', 'processed')\n                        ORDER BY e.captured_at DESC LIMIT 1) AS \"last_text: String\"\n               FROM topics t",
+  "describe": {
+    "columns": [
+      {
+        "name": "id",
+        "ordinal": 0,
+        "type_info": "Text",
+        "origin": {
+          "Table": {
+            "table": "topics",
+            "name": "id"
+          }
+        }
+      },
+      {
+        "name": "name",
+        "ordinal": 1,
+        "type_info": "Text",
+        "origin": {
+          "Table": {
+            "table": "topics",
+            "name": "name"
+          }
+        }
+      },
+      {
+        "name": "kind",
+        "ordinal": 2,
+        "type_info": "Text",
+        "origin": {
+          "Table": {
+            "table": "topics",
+            "name": "kind"
+          }
+        }
+      },
+      {
+        "name": "due_date",
+        "ordinal": 3,
+        "type_info": "Text",
+        "origin": {
+          "Table": {
+            "table": "topics",
+            "name": "due_date"
+          }
+        }
+      },
+      {
+        "name": "icon",
+        "ordinal": 4,
+        "type_info": "Text",
+        "origin": {
+          "Table": {
+            "table": "topics",
+            "name": "icon"
+          }
+        }
+      },
+      {
+        "name": "pinned",
+        "ordinal": 5,
+        "type_info": "Integer",
+        "origin": {
+          "Table": {
+            "table": "topics",
+            "name": "pinned"
+          }
+        }
+      },
+      {
+        "name": "last_at: String",
+        "ordinal": 6,
+        "type_info": "Text",
+        "origin": {
+          "Table": {
+            "table": "entries",
+            "name": "captured_at"
+          }
+        }
+      },
+      {
+        "name": "last_text: String",
+        "ordinal": 7,
+        "type_info": "Text",
+        "origin": {
+          "Table": {
+            "table": "entries",
+            "name": "text"
+          }
+        }
+      }
+    ],
+    "parameters": {
+      "Right": 0
+    },
+    "nullable": [
+      false,
+      false,
+      false,
+      true,
+      true,
+      false,
+      true,
+      true
+    ]
+  },
+  "hash": "850e2cedd45755cac21f8b3e3dbfab26c6014e9df71082e4d36d369cb3281ab2"
+}

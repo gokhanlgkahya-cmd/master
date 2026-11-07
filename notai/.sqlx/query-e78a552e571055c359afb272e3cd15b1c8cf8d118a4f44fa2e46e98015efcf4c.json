@@ -1,0 +1,26 @@
+{
+  "db_name": "SQLite",
+  "query": "SELECT ai_attempts FROM entries WHERE id = ?1",
+  "describe": {
+    "columns": [
+      {
+        "name": "ai_attempts",
+        "ordinal": 0,
+        "type_info": "Integer",
+        "origin": {
+          "Table": {
+            "table": "entries",
+            "name": "ai_attempts"
+          }
+        }
+      }
+    ],
+    "parameters": {
+      "Right": 1
+    },
+    "nullable": [
+      false
+    ]
+  },
+  "hash": "e78a552e571055c359afb272e3cd15b1c8cf8d118a4f44fa2e46e98015efcf4c"
+}

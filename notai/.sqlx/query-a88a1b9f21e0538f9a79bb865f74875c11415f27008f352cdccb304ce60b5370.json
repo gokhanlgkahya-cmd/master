@@ -1,0 +1,12 @@
+{
+  "db_name": "SQLite",
+  "query": "UPDATE tasks SET title = ?2, topic_id = ?3, due_date = ?4, due_time = ?5, priority = ?6,\n                recurrence = ?7, reminder = ?8, state = ?9, closed_at = ?10, updated_at = ?11\n         WHERE id = ?1",
+  "describe": {
+    "columns": [],
+    "parameters": {
+      "Right": 11
+    },
+    "nullable": []
+  },
+  "hash": "a88a1b9f21e0538f9a79bb865f74875c11415f27008f352cdccb304ce60b5370"
+}
