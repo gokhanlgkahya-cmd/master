@@ -1,0 +1,86 @@
+{
+  "db_name": "SQLite",
+  "query": "SELECT seq AS \"seq!: i64\", entity, entity_id, payload, origin, at\n               FROM change_log WHERE seq > ?1 AND origin != ?2 ORDER BY seq LIMIT ?3",
+  "describe": {
+    "columns": [
+      {
+        "name": "seq!: i64",
+        "ordinal": 0,
+        "type_info": "Integer",
+        "origin": {
+          "Table": {
+            "table": "change_log",
+            "name": "seq"
+          }
+        }
+      },
+      {
+        "name": "entity",
+        "ordinal": 1,
+        "type_info": "Text",
+        "origin": {
+          "Table": {
+            "table": "change_log",
+            "name": "entity"
+          }
+        }
+      },
+      {
+        "name": "entity_id",
+        "ordinal": 2,
+        "type_info": "Text",
+        "origin": {
+          "Table": {
+            "table": "change_log",
+            "name": "entity_id"
+          }
+        }
+      },
+      {
+        "name": "payload",
+        "ordinal": 3,
+        "type_info": "Text",
+        "origin": {
+          "Table": {
+            "table": "change_log",
+            "name": "payload"
+          }
+        }
+      },
+      {
+        "name": "origin",
+        "ordinal": 4,
+        "type_info": "Text",
+        "origin": {
+          "Table": {
+            "table": "change_log",
+            "name": "origin"
+          }
+        }
+      },
+      {
+        "name": "at",
+        "ordinal": 5,
+        "type_info": "Text",
+        "origin": {
+          "Table": {
+            "table": "change_log",
+            "name": "at"
+          }
+        }
+      }
+    ],
+    "parameters": {
+      "Right": 3
+    },
+    "nullable": [
+      false,
+      false,
+      false,
+      true,
+      false,
+      false
+    ]
+  },
+  "hash": "32ac72999284c8a58efd32863780e55a0f5e973e9190e33de15f5aa9f659d231"
+}

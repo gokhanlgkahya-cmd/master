@@ -76,10 +76,9 @@ pub(crate) async fn load_entry(conn: &mut SqliteConnection, id: EntryId) -> Resu
         .ok_or_else(|| StoreError::not_found("kayıt", id))
 }
 
-/// Kaydın konu/durum alanlarını yazar ve günlüğe düşer.
-pub(crate) async fn update_entry(
+/// Kaydın konu/durum alanlarını yazar (günlüğe yazmaz).
+pub(crate) async fn update_entry_fields(
     conn: &mut SqliteConnection,
-    origin: &str,
     entry: &Entry,
     now: DateTime<Utc>,
 ) -> Result<()> {
@@ -99,8 +98,27 @@ pub(crate) async fn update_entry(
     )
     .execute(&mut *conn)
     .await?;
+    Ok(())
+}
+
+/// Kaydın konu/durum alanlarını yazar ve günlüğe düşer.
+pub(crate) async fn update_entry(
+    conn: &mut SqliteConnection,
+    origin: &str,
+    entry: &Entry,
+    now: DateTime<Utc>,
+) -> Result<()> {
+    update_entry_fields(conn, entry, now).await?;
     let payload = serde_json::to_string(entry)?;
-    log_change(conn, origin, "entry", &id, Some(&payload), now).await
+    log_change(
+        conn,
+        origin,
+        "entry",
+        &entry.id.to_string(),
+        Some(&payload),
+        now,
+    )
+    .await
 }
 
 impl Store {

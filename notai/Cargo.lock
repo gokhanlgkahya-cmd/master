@@ -1216,6 +1216,7 @@ dependencies = [
  "notai-ai",
  "notai-core",
  "notai-store",
+ "notai-sync",
  "reqwest",
  "serde",
  "serde_json",
@@ -1238,6 +1239,22 @@ dependencies = [
  "serde_json",
  "sqlx",
  "tempfile",
+ "thiserror",
+ "tokio",
+ "tracing",
+]
+
+[[package]]
+name = "notai-sync"
+version = "0.1.0"
+dependencies = [
+ "chrono",
+ "chrono-tz",
+ "notai-core",
+ "notai-store",
+ "reqwest",
+ "serde",
+ "serde_json",
  "thiserror",
  "tokio",
  "tracing",

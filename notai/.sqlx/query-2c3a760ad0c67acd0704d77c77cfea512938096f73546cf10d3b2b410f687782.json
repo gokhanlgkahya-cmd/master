@@ -1,0 +1,12 @@
+{
+  "db_name": "SQLite",
+  "query": "INSERT INTO entries (id, text, source, captured_at, topic_id, status, trashed_at, ai_state, updated_at)\n         VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7, ?8, ?9)",
+  "describe": {
+    "columns": [],
+    "parameters": {
+      "Right": 9
+    },
+    "nullable": []
+  },
+  "hash": "2c3a760ad0c67acd0704d77c77cfea512938096f73546cf10d3b2b410f687782"
+}

@@ -1,0 +1,38 @@
+{
+  "db_name": "SQLite",
+  "query": "SELECT at, origin FROM change_log WHERE entity = ?1 AND entity_id = ?2\n         ORDER BY at DESC, origin DESC LIMIT 1",
+  "describe": {
+    "columns": [
+      {
+        "name": "at",
+        "ordinal": 0,
+        "type_info": "Text",
+        "origin": {
+          "Table": {
+            "table": "change_log",
+            "name": "at"
+          }
+        }
+      },
+      {
+        "name": "origin",
+        "ordinal": 1,
+        "type_info": "Text",
+        "origin": {
+          "Table": {
+            "table": "change_log",
+            "name": "origin"
+          }
+        }
+      }
+    ],
+    "parameters": {
+      "Right": 2
+    },
+    "nullable": [
+      false,
+      false
+    ]
+  },
+  "hash": "3018a3b192a67a356b2272f935392d6ce94a9831a38f0f03d627e15c2f9dc863"
+}

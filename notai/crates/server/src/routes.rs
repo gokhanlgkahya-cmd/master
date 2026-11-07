@@ -36,6 +36,8 @@ pub fn router(state: AppState) -> Router {
         .route("/morning-plan", get(morning_plan))
         .route("/search", get(search))
         .route("/facts", get(facts).post(add_fact))
+        .route("/sync/push", post(sync_push))
+        .route("/sync/pull", get(sync_pull))
         .route_layer(axum::middleware::from_fn_with_state(
             state.clone(),
             require_token,
@@ -377,6 +379,33 @@ async fn add_fact(
     let fact = ProfileFact::confirmed(FactText::new(&b.text)?, b.topic_id);
     st.store.add_fact(&fact, st.now()).await?;
     Ok((StatusCode::CREATED, Json(json!(fact))))
+}
+
+// ---------- Senkron ----------
+
+async fn sync_push(
+    State(st): State<AppState>,
+    Json(req): Json<notai_sync::PushRequest>,
+) -> ApiResult<Json<notai_sync::PushResponse>> {
+    Ok(Json(notai_sync::handle_push(&st.store, &req).await?))
+}
+
+#[derive(Debug, Deserialize)]
+struct PullQuery {
+    device: String,
+    #[serde(default)]
+    after: i64,
+    limit: Option<u32>,
+}
+
+async fn sync_pull(
+    State(st): State<AppState>,
+    Query(q): Query<PullQuery>,
+) -> ApiResult<Json<notai_sync::PullResponse>> {
+    let limit = q.limit.unwrap_or(notai_sync::BATCH);
+    Ok(Json(
+        notai_sync::handle_pull(&st.store, &q.device, q.after, limit).await?,
+    ))
 }
 
 // ---------- WhatsApp (MacroDroid) webhook ----------

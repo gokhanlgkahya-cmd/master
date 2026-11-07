@@ -424,3 +424,64 @@ async fn entry_actions_and_topics_list() {
     let (_, found) = h.get("/api/search?q=fatura").await;
     assert_eq!(found["results"].as_array().unwrap().len(), 1);
 }
+
+#[tokio::test]
+async fn http_sync_between_phone_and_real_server() {
+    use notai_core::entry::Source;
+    use notai_core::text::EntryText;
+    use notai_store::NewEntry;
+
+    let mut cfg = Config::defaults();
+    cfg.api_token = Some("s24".into());
+    let h = harness(cfg, ScriptedLlm::new()).await;
+    let listener = tokio::net::TcpListener::bind("127.0.0.1:0").await.unwrap();
+    let addr = listener.local_addr().unwrap();
+    let app = h.app.clone();
+    tokio::spawn(async move { axum::serve(listener, app).await });
+
+    let phone = Store::open_in_memory("telefon").await.unwrap();
+    phone
+        .capture(NewEntry {
+            text: EntryText::new("Telefondan: numune yolla").unwrap(),
+            source: Source::App,
+            topic: None,
+            captured_at: t0(),
+            dedupe_key: None,
+        })
+        .await
+        .unwrap();
+
+    // Yanlış belirteç reddedilir.
+    let bad = notai_sync::Http::new(format!("http://{addr}"), Some("yanlis".into())).unwrap();
+    assert!(matches!(
+        notai_sync::sync_once(&phone, &bad).await,
+        Err(notai_sync::SyncError::Status { status: 401, .. })
+    ));
+
+    let http = notai_sync::Http::new(format!("http://{addr}"), Some("s24".into())).unwrap();
+    let r = notai_sync::sync_once(&phone, &http).await.unwrap();
+    assert_eq!(r.pushed, 1);
+    let (_, j) = h
+        .call(
+            "GET",
+            "/api/journal",
+            None,
+            &[("authorization", "Bearer s24")],
+        )
+        .await;
+    assert_eq!(
+        j["groups"][0]["items"][0]["text"],
+        "Telefondan: numune yolla"
+    );
+
+    // Sunucuya WhatsApp'tan gelen kayıt telefona iner.
+    h.call(
+        "POST",
+        "/api/entries",
+        Some(json!({ "text": "Sunucuda yakalandı" })),
+        &[("authorization", "Bearer s24")],
+    )
+    .await;
+    let r = notai_sync::sync_once(&phone, &http).await.unwrap();
+    assert_eq!(r.pulled_applied, 1);
+}

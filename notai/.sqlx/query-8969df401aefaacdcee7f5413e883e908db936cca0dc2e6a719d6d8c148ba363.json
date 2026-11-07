@@ -1,0 +1,12 @@
+{
+  "db_name": "SQLite",
+  "query": "INSERT INTO profile_facts (id, text, topic_id, status, created_at) VALUES (?1, ?2, ?3, ?4, ?5)\n         ON CONFLICT (id) DO UPDATE SET text = excluded.text, topic_id = excluded.topic_id,\n                                        status = excluded.status",
+  "describe": {
+    "columns": [],
+    "parameters": {
+      "Right": 5
+    },
+    "nullable": []
+  },
+  "hash": "8969df401aefaacdcee7f5413e883e908db936cca0dc2e6a719d6d8c148ba363"
+}

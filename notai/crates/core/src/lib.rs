@@ -12,6 +12,7 @@ pub mod journal;
 pub mod morning;
 pub mod profile;
 pub mod suggestion;
+pub mod sync;
 pub mod task;
 pub mod text;
 pub mod topic;

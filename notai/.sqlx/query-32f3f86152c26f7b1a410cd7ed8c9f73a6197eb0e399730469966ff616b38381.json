@@ -1,0 +1,12 @@
+{
+  "db_name": "SQLite",
+  "query": "UPDATE topics SET kind = ?2, due_date = ?3, icon = ?4, pinned = ?5, updated_at = ?6 WHERE id = ?1",
+  "describe": {
+    "columns": [],
+    "parameters": {
+      "Right": 6
+    },
+    "nullable": []
+  },
+  "hash": "32f3f86152c26f7b1a410cd7ed8c9f73a6197eb0e399730469966ff616b38381"
+}

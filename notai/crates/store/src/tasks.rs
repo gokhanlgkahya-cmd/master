@@ -55,9 +55,9 @@ struct TaskBind {
     closed_at: Option<String>,
 }
 
-pub(crate) async fn insert_task(
+/// Görevi yazar (günlüğe yazmaz).
+pub(crate) async fn insert_task_raw(
     conn: &mut SqliteConnection,
-    origin: &str,
     task: &Task,
     now: DateTime<Utc>,
 ) -> Result<()> {
@@ -83,13 +83,31 @@ pub(crate) async fn insert_task(
     )
     .execute(&mut *conn)
     .await?;
-    let payload = serde_json::to_string(task)?;
-    log_change(conn, origin, "task", &b.id, Some(&payload), now).await
+    Ok(())
 }
 
-async fn update_task(
+pub(crate) async fn insert_task(
     conn: &mut SqliteConnection,
     origin: &str,
+    task: &Task,
+    now: DateTime<Utc>,
+) -> Result<()> {
+    insert_task_raw(conn, task, now).await?;
+    let payload = serde_json::to_string(task)?;
+    log_change(
+        conn,
+        origin,
+        "task",
+        &task.id.to_string(),
+        Some(&payload),
+        now,
+    )
+    .await
+}
+
+/// Görevi günceller (günlüğe yazmaz).
+pub(crate) async fn update_task_raw(
+    conn: &mut SqliteConnection,
     task: &Task,
     now: DateTime<Utc>,
 ) -> Result<()> {
@@ -117,8 +135,26 @@ async fn update_task(
     if res.rows_affected() == 0 {
         return Err(StoreError::not_found("görev", &b.id));
     }
+    Ok(())
+}
+
+async fn update_task(
+    conn: &mut SqliteConnection,
+    origin: &str,
+    task: &Task,
+    now: DateTime<Utc>,
+) -> Result<()> {
+    update_task_raw(conn, task, now).await?;
     let payload = serde_json::to_string(task)?;
-    log_change(conn, origin, "task", &b.id, Some(&payload), now).await
+    log_change(
+        conn,
+        origin,
+        "task",
+        &task.id.to_string(),
+        Some(&payload),
+        now,
+    )
+    .await
 }
 
 async fn load_task(conn: &mut SqliteConnection, id: TaskId) -> Result<Task> {

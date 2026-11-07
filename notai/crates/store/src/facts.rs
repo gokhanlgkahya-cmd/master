@@ -75,15 +75,21 @@ impl Store {
         if res.rows_affected() == 0 {
             return Err(StoreError::not_found("profil bilgisi", id));
         }
-        log_change(
-            &mut tx,
-            &self.origin,
-            "fact",
-            &id_s,
-            Some("{\"status\":\"confirmed\"}"),
-            now,
+        let r = sqlx::query!(
+            "SELECT id, text, topic_id, status FROM profile_facts WHERE id = ?1",
+            id_s
         )
+        .fetch_one(&mut *tx)
         .await?;
+        let fact = ProfileFact {
+            id,
+            text: FactText::new(&r.text)?,
+            topic: parse_opt_id("profil bilgisi", r.topic_id.as_deref())?,
+            status: FactStatus::Confirmed,
+        };
+        // Senkron için tam anlık görüntü.
+        let payload = serde_json::to_string(&fact)?;
+        log_change(&mut tx, &self.origin, "fact", &id_s, Some(&payload), now).await?;
         tx.commit().await?;
         Ok(())
     }

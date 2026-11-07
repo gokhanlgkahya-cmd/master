@@ -25,9 +25,9 @@ pub struct DecisionOutcome {
     pub created_topic: Option<Topic>,
 }
 
-pub(crate) async fn insert_suggestion(
+/// Öneriyi yazar (günlüğe yazmaz).
+pub(crate) async fn insert_suggestion_raw(
     conn: &mut SqliteConnection,
-    origin: &str,
     s: &Suggestion,
     now: DateTime<Utc>,
 ) -> Result<()> {
@@ -53,8 +53,26 @@ pub(crate) async fn insert_suggestion(
     )
     .execute(&mut *conn)
     .await?;
+    Ok(())
+}
+
+pub(crate) async fn insert_suggestion(
+    conn: &mut SqliteConnection,
+    origin: &str,
+    s: &Suggestion,
+    now: DateTime<Utc>,
+) -> Result<()> {
+    insert_suggestion_raw(conn, s, now).await?;
     let snapshot = serde_json::to_string(s)?;
-    log_change(conn, origin, "suggestion", &id, Some(&snapshot), now).await
+    log_change(
+        conn,
+        origin,
+        "suggestion",
+        &s.id.to_string(),
+        Some(&snapshot),
+        now,
+    )
+    .await
 }
 
 async fn load_suggestion(conn: &mut SqliteConnection, id: SuggestionId) -> Result<Suggestion> {
@@ -84,12 +102,8 @@ async fn entry_suggestions(conn: &mut SqliteConnection, entry: EntryId) -> Resul
     rows.into_iter().map(Suggestion::try_from).collect()
 }
 
-async fn write_decision(
-    conn: &mut SqliteConnection,
-    origin: &str,
-    s: &Suggestion,
-    now: DateTime<Utc>,
-) -> Result<()> {
+/// Öneri kararını yazar (günlüğe yazmaz).
+pub(crate) async fn write_decision_raw(conn: &mut SqliteConnection, s: &Suggestion) -> Result<()> {
     let id = s.id.to_string();
     let decision = s.decision().name();
     let decided_at = s.decision().decided_at().map(ts);
@@ -101,8 +115,26 @@ async fn write_decision(
     )
     .execute(&mut *conn)
     .await?;
+    Ok(())
+}
+
+async fn write_decision(
+    conn: &mut SqliteConnection,
+    origin: &str,
+    s: &Suggestion,
+    now: DateTime<Utc>,
+) -> Result<()> {
+    write_decision_raw(conn, s).await?;
     let snapshot = serde_json::to_string(s)?;
-    log_change(conn, origin, "suggestion", &id, Some(&snapshot), now).await
+    log_change(
+        conn,
+        origin,
+        "suggestion",
+        &s.id.to_string(),
+        Some(&snapshot),
+        now,
+    )
+    .await
 }
 
 async fn add_label(

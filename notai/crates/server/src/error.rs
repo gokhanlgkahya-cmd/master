@@ -26,6 +26,8 @@ pub enum ApiError {
     Unauthorized,
     #[error("{0}")]
     BadRequest(String),
+    #[error(transparent)]
+    Sync(#[from] notai_sync::SyncError),
 }
 
 impl ApiError {
@@ -37,6 +39,11 @@ impl ApiError {
             Self::Store(StoreError::NotFound { .. }) => StatusCode::NOT_FOUND,
             Self::Store(StoreError::Conflict(_)) => StatusCode::CONFLICT,
             Self::Store(_) => StatusCode::INTERNAL_SERVER_ERROR,
+            Self::Sync(notai_sync::SyncError::Rejected(_)) => StatusCode::FORBIDDEN,
+            Self::Sync(notai_sync::SyncError::Store(StoreError::Corrupt { .. })) => {
+                StatusCode::UNPROCESSABLE_ENTITY
+            }
+            Self::Sync(_) => StatusCode::INTERNAL_SERVER_ERROR,
         }
     }
 }
