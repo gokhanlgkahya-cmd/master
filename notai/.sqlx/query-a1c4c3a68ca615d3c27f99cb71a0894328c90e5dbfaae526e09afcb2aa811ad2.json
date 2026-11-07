@@ -1,0 +1,38 @@
+{
+  "db_name": "SQLite",
+  "query": "SELECT topic_id AS \"topic_id!: String\", text AS \"text!: String\"\n               FROM (SELECT e.topic_id, e.text,\n                            ROW_NUMBER() OVER (PARTITION BY e.topic_id\n                                               ORDER BY e.captured_at DESC) AS rn\n                       FROM entries e\n                      WHERE e.topic_id IS NOT NULL AND e.status IN ('inbox', 'processed'))\n              WHERE rn <= 20\n              ORDER BY topic_id, rn",
+  "describe": {
+    "columns": [
+      {
+        "name": "topic_id!: String",
+        "ordinal": 0,
+        "type_info": "Text",
+        "origin": {
+          "Table": {
+            "table": "entries",
+            "name": "topic_id"
+          }
+        }
+      },
+      {
+        "name": "text!: String",
+        "ordinal": 1,
+        "type_info": "Text",
+        "origin": {
+          "Table": {
+            "table": "entries",
+            "name": "text"
+          }
+        }
+      }
+    ],
+    "parameters": {
+      "Right": 0
+    },
+    "nullable": [
+      true,
+      false
+    ]
+  },
+  "hash": "a1c4c3a68ca615d3c27f99cb71a0894328c90e5dbfaae526e09afcb2aa811ad2"
+}

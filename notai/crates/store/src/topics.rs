@@ -181,8 +181,29 @@ impl Store {
         )
         .fetch_all(&self.pool)
         .await?;
+        // Simge seçimi için her konunun son kayıtları (en yeni önce, konu başına en fazla 20).
+        let recent_rows = sqlx::query!(
+            r#"SELECT topic_id AS "topic_id!: String", text AS "text!: String"
+               FROM (SELECT e.topic_id, e.text,
+                            ROW_NUMBER() OVER (PARTITION BY e.topic_id
+                                               ORDER BY e.captured_at DESC) AS rn
+                       FROM entries e
+                      WHERE e.topic_id IS NOT NULL AND e.status IN ('inbox', 'processed'))
+              WHERE rn <= 20
+              ORDER BY topic_id, rn"#
+        )
+        .fetch_all(&self.pool)
+        .await?;
+        let mut recent: std::collections::HashMap<String, Vec<String>> =
+            std::collections::HashMap::new();
+        for r in recent_rows {
+            recent.entry(r.topic_id).or_default().push(r.text);
+        }
+        // Renk sırası filtreden önce, tüm konular üzerinden: filtre ya da arşiv rengi kaydırmaz.
+        let slots = notai_core::look::color_slots(rows.iter().filter_map(|r| r.id.parse().ok()));
         let mut out = Vec::with_capacity(rows.len());
         for r in rows {
+            let recent_texts = recent.remove(&r.id).unwrap_or_default();
             let topic = Topic::try_from(TopicRow {
                 id: r.id,
                 name: r.name,
@@ -194,6 +215,7 @@ impl Store {
             if !filter.matches(topic.kind) {
                 continue;
             }
+            let color = slots.get(&topic.id).copied().unwrap_or(0);
             let last_at = r
                 .last_at
                 .as_deref()
@@ -209,6 +231,8 @@ impl Store {
                 topic,
                 last_at,
                 last_preview,
+                recent_texts,
+                color,
             });
         }
         order_topics(&mut out);

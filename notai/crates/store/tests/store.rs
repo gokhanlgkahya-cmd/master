@@ -220,6 +220,41 @@ async fn topic_list_orders_by_pin_then_activity_with_preview() {
 }
 
 #[tokio::test]
+async fn topic_icon_follows_entries_as_they_arrive() {
+    use notai_core::look::icon_for;
+    let s = store().await;
+    let gem = topic(&s, "GemOlive", ParaKind::Area).await;
+    let icon = |list: &[notai_core::journal::TopicActivity]| {
+        let a = list.iter().find(|a| a.topic.id == gem).unwrap();
+        icon_for(&a.topic, &a.recent_texts)
+    };
+    assert_eq!(
+        icon(&s.topic_list(KindFilter::All).await.unwrap()),
+        "layers",
+        "kayıt yok: tür"
+    );
+    s.capture(new_entry(
+        "Zeytinyağlı sabun denemesi",
+        at(5, 8, 0),
+        Some(gem),
+    ))
+    .await
+    .unwrap();
+    assert_eq!(
+        icon(&s.topic_list(KindFilter::All).await.unwrap()),
+        "layers",
+        "tek kayıt yetmez"
+    );
+    s.capture(new_entry("Sabun kalıbı ölçüsü", at(6, 8, 0), Some(gem)))
+        .await
+        .unwrap();
+    let list = s.topic_list(KindFilter::All).await.unwrap();
+    let a = list.iter().find(|a| a.topic.id == gem).unwrap();
+    assert_eq!(a.recent_texts[0], "Sabun kalıbı ölçüsü", "en yeni önce");
+    assert_eq!(icon(&list), "drop");
+}
+
+#[tokio::test]
 async fn ai_suggestions_then_decisions_process_the_entry() {
     let s = store().await;
     let kostik = topic(&s, "Kostik tedarik", ParaKind::Project { due: None }).await;

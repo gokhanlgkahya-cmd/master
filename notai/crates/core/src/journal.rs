@@ -118,6 +118,12 @@ pub struct TopicActivity {
     pub topic: Topic,
     pub last_at: Option<DateTime<Utc>>,
     pub last_preview: Option<String>,
+    /// Son kayıtların metni (en yeni önce, en fazla `look::RECENT_FOR_ICON`): simge seçimi için.
+    #[serde(default)]
+    pub recent_texts: Vec<String>,
+    /// Renk yuvası 1–8 (`look::color_slots`; tüm konular üzerinden hesaplanır).
+    #[serde(default)]
+    pub color: u8,
 }
 
 /// Sabitlenenler önce; sonra son etkinliğe göre (yeni üstte); hiç kaydı olmayanlar en altta,
@@ -229,26 +235,36 @@ mod tests {
                 topic: t("Sağlık", false),
                 last_at: Some(utc(11, 5, 6, 0)),
                 last_preview: None,
+                recent_texts: vec![],
+                color: 0,
             },
             TopicActivity {
                 topic: t("İş", false),
                 last_at: None,
                 last_preview: None,
+                recent_texts: vec![],
+                color: 0,
             },
             TopicActivity {
                 topic: t("GemOlive", false),
                 last_at: Some(utc(11, 6, 7, 47)),
                 last_preview: None,
+                recent_texts: vec![],
+                color: 0,
             },
             TopicActivity {
                 topic: t("Ev", true),
                 last_at: Some(utc(11, 1, 6, 0)),
                 last_preview: None,
+                recent_texts: vec![],
+                color: 0,
             },
             TopicActivity {
                 topic: t("ılık", false),
                 last_at: None,
                 last_preview: None,
+                recent_texts: vec![],
+                color: 0,
             },
         ];
         order_topics(&mut list);

@@ -81,7 +81,12 @@ pub struct TopicRowView {
     pub kind: String,
     pub kind_label: String,
     pub due_date: Option<NaiveDate>,
+    /// Gösterilecek simge: elle seçilen, yoksa addan/son kayıtlardan seçilen, yoksa türün
+    /// varsayılanı (`notai_core::look`).
     pub icon: Option<String>,
+    /// Kalıcı renk yuvası 1–8 (tokens `topic-N-*`); 0 = renksiz (eski sunucu).
+    #[serde(default)]
+    pub color: u8,
     pub pinned: bool,
     /// "12:05", "Dün", "Çarşamba", "2 Kas".
     pub last_label: Option<String>,

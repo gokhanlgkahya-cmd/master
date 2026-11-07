@@ -78,3 +78,8 @@ WhatsApp'ın **düzen ve etkileşim kalıbı** alınır; yeşil marka rengi, duv
 - **Sekmeler (alt çubuk, 5):** Günlük/Konular · Görevler · Takvim · Hatırlatmalar · Ara/Sor.
 - **Serbest bırakılanlar:** Not detayı açılır pencere tipi, ana ekrandaki filtre çipleri, Haftalık Gözden Geçirme'ye erişim yolu.
 - **Zorunlular:** Açık + koyu tema, WCAG AA, ≥44px dokunma hedefi, gerçek Türkçe içerik, marka/ekran kopyası yok.
+
+## Revizyon 2 — Konu simgeleri otomatik ve renkli (Gökhan, 2026-11-07)
+- Tur 3'teki "tek renk ikon" kararı **konu simgeleri için** değişti: her konu paletten kalıcı bir renk alır (8 yumuşak renk, açık/koyu temada simge ≥4,5:1). Diğer ikonlar, metin ve AI çipleri nötr kalır.
+- Konu simgesi elle seçilmediyse **konu adından ve konuya düşen kayıtlardan** anlamlı bir simge seçilir; kayıt geldikçe değişebilir. Seçenekler: "Addan anlamlı simge" (seçildi) / "Baş harfli rozet" / "İkisi birden"; renk için "Her konuya kendi rengi" (seçildi) / "Türe göre renk".
+- Ayrıntı: `guidelines.md` §ikonlar, `screens/15-konu-simgeleri.html`, `tokens.json` (`color.theme.*.topic-N-*`).

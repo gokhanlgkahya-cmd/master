@@ -27,13 +27,50 @@ pub fn topic_icon(icon: Option<&str>, kind: &str) -> String {
     )
 }
 
-/// Konu kimliği → simge adı (ana ekrandaki konu satırıyla aynı kural). Akış başlığında ve
-/// kayıtların üstündeki konu adında aynı simge görünsün diye.
+/// Konunun görünümü: simge ve renk yuvası (sunucu/kabuk `notai_core::look` ile hesaplar).
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct TopicLook {
+    pub icon: String,
+    pub color: u8,
+}
+
+impl TopicLook {
+    #[must_use]
+    pub fn of(t: &TopicRowView) -> Self {
+        Self {
+            icon: topic_icon(t.icon.as_deref(), &t.kind),
+            color: t.color,
+        }
+    }
+
+    /// Simge kutusunun sınıfı ("topicicon topicicon--c3").
+    #[must_use]
+    pub fn box_class(&self) -> String {
+        if self.color == 0 {
+            "topicicon".to_owned()
+        } else {
+            format!("topicicon topicicon--c{}", self.color)
+        }
+    }
+
+    /// Kayıt üstündeki konu adının sınıfı (yalnız simge renk alır).
+    #[must_use]
+    pub fn meta_class(&self) -> String {
+        if self.color == 0 {
+            "meta__topic".to_owned()
+        } else {
+            format!("meta__topic meta__topic--c{}", self.color)
+        }
+    }
+}
+
+/// Konu kimliği → görünüm. Akış başlığında ve kayıtların üstündeki konu adında ana ekranla
+/// aynı simge ve renk görünsün diye.
 #[must_use]
-pub fn topic_icons(topics: &[TopicRowView]) -> std::collections::HashMap<String, String> {
+pub fn topic_looks(topics: &[TopicRowView]) -> std::collections::HashMap<String, TopicLook> {
     topics
         .iter()
-        .map(|t| (t.id.clone(), topic_icon(t.icon.as_deref(), &t.kind)))
+        .map(|t| (t.id.clone(), TopicLook::of(t)))
         .collect()
 }
 
@@ -649,16 +686,27 @@ mod tests {
             kind_label: String::new(),
             due_date: None,
             icon: icon.map(Into::into),
+            color: 3,
             pinned: false,
             last_label: None,
             preview: None,
         };
-        let icons = topic_icons(&[
+        let looks = topic_looks(&[
             row("k", Some("flask"), "project"),
             row("o", None, "resource"),
         ]);
-        assert_eq!(icons["k"], "flask", "akış başlığı ana ekranla aynı simge");
-        assert_eq!(icons["o"], "book");
+        assert_eq!(
+            looks["k"].icon, "flask",
+            "akış başlığı ana ekranla aynı simge"
+        );
+        assert_eq!(looks["o"].icon, "book");
+        assert_eq!(looks["k"].box_class(), "topicicon topicicon--c3");
+        assert_eq!(looks["k"].meta_class(), "meta__topic meta__topic--c3");
+        let plain = TopicLook {
+            icon: "folder".into(),
+            color: 0,
+        };
+        assert_eq!(plain.box_class(), "topicicon");
         assert_eq!(plan_reason_class("overdue"), "plan__sub plan__sub--error");
     }
 

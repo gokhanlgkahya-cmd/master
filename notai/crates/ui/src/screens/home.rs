@@ -66,14 +66,14 @@ fn home_list(v: TopicsView) -> impl IntoView {
                 id: t.id.clone(),
                 name: t.name.clone(),
             };
-            let icon = view::topic_icon(t.icon.as_deref(), &t.kind);
+            let look = view::TopicLook::of(&t);
             let kind = view::kind_line(&t.kind_label, t.due_date);
             let pin = t.pinned.then(|| {
                 view! { <span class="topic__pin" aria-label="Sabitlendi"><Icon name="pinned" size="xs"/></span> }
             });
             view! {
                 <button class="topic" on:click=move |_| c.screen.set(Screen::Flow(Some(target.clone())))>
-                    <span class="topicicon"><Icon name=icon/></span>
+                    <span class=look.box_class()><Icon name=look.icon.clone()/></span>
                     <span class="topic__body">
                         <span class="topic__line"><span class="topic__name">{t.name}</span><span class="topic__kind">{kind}</span></span>
                         <span class="topic__preview">{t.preview.unwrap_or_default()}</span>

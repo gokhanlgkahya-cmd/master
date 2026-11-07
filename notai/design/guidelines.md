@@ -148,9 +148,9 @@ Ekran görüntüsü, logo ya da marka rengi hiçbir dosyaya girmez. Şüphede ka
 
 ## 8. İkon kuralları
 - İkonlar Phosphor "Regular" tarzında (çizgi, yuvarlak uçlu) çizilmiş **kendi setimizdir**. Kaynak olarak açık lisanslı (MIT) Phosphor çizimleri ya da aynı ölçülerde kendi çizimlerimiz kullanılır. Başka setle karıştırılmaz.
-- Boyutlar `--icon-size-md` (24px, varsayılan), `-sm` (20px), `-xs` (16px; meta satırı, çip). Çizgi kalınlığı `--icon-stroke` (24px kutuda 1,5). Renk `currentColor` olur, ikon ayrı renk almaz.
+- Boyutlar `--icon-size-md` (24px, varsayılan), `-sm` (20px), `-xs` (16px; meta satırı, çip). Çizgi kalınlığı `--icon-stroke` (24px kutuda 1,5). Renk `currentColor` olur, ikon ayrı renk almaz. **İstisna (Revizyon 2): konu simgesi** kendi renk yuvasını (`--color-topic-N-bg/-fg`, N = 1–8) alır; kutu zemini `-bg`, çizgi `-fg`. Meta satırındaki 16px konu simgesi yalnız `-fg` alır, konu adı `--color-meta` kalır.
 - **✦ AI işareti** 4 köşeli, tek renkli, kendi çizimimiz olan bir inline SVG'dir. `✦` karakteri metin olarak kullanılmaz.
-- **Ana Günlük'ün ikonu kitap değildir** (defter + kalem). Kitap ikonu Okuma notları'na aittir. Her konu farklı bir ikon taşır, iki konu aynı ikonu paylaşmaz.
+- **Ana Günlük'ün ikonu kitap değildir** (defter + kalem). Kitap ikonu Okuma notları'na aittir. **Konu simgesi (Revizyon 2):** elle seçilmediyse konu adından ve son 20 kayıttan Türkçe anahtar kelimelerle seçilir (`notai_core::look`); addan eşleşme yoksa en az 2 kaydın aynı yönü göstermesi gerekir, hiçbiri tutmazsa türün varsayılanı (Proje klasör, Alan katman, Kaynak kitap, Arşiv arşiv). Kayıt geldikçe simge değişebilir; elle seçilen simge değişmez. Renk oluşturulma sırasıyla paletten verilir, ilk 8 konu farklı renktedir. Galeri: `screens/15-konu-simgeleri.html`.
 - Dekoratif ikon `aria-hidden="true"` olur. Anlam taşıyan tek ikonun düğmesinde etiket bulunur. WhatsApp, Google, Todoist ve Saner ikonları taklit edilmez.
 
 ## 9. Kontrast tablosu (tokens.json'dan hesaplandı)

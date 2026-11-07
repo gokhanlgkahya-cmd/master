@@ -175,6 +175,24 @@ button { font: inherit; color: inherit; background: none; border: 0; padding: 0;
   width: var(--size-topic-icon); height: var(--size-topic-icon);
   border-radius: var(--radius-md); background: var(--color-tile-bg); color: var(--color-text);
 }
+/* Revizyon 2 (Gökhan, 2026-11-07): her konunun kalıcı rengi (1–8, oluşturulma sırasıyla). Yalnız simge
+   renk alır; konu adı, metin ve AI çipleri nötr kalır. Simge, addan/kayıtlardan seçilir. */
+.topicicon--c1 { background: var(--color-topic-1-bg); color: var(--color-topic-1-fg); }
+.topicicon--c2 { background: var(--color-topic-2-bg); color: var(--color-topic-2-fg); }
+.topicicon--c3 { background: var(--color-topic-3-bg); color: var(--color-topic-3-fg); }
+.topicicon--c4 { background: var(--color-topic-4-bg); color: var(--color-topic-4-fg); }
+.topicicon--c5 { background: var(--color-topic-5-bg); color: var(--color-topic-5-fg); }
+.topicicon--c6 { background: var(--color-topic-6-bg); color: var(--color-topic-6-fg); }
+.topicicon--c7 { background: var(--color-topic-7-bg); color: var(--color-topic-7-fg); }
+.topicicon--c8 { background: var(--color-topic-8-bg); color: var(--color-topic-8-fg); }
+.meta__topic--c1 .ic { color: var(--color-topic-1-fg); }
+.meta__topic--c2 .ic { color: var(--color-topic-2-fg); }
+.meta__topic--c3 .ic { color: var(--color-topic-3-fg); }
+.meta__topic--c4 .ic { color: var(--color-topic-4-fg); }
+.meta__topic--c5 .ic { color: var(--color-topic-5-fg); }
+.meta__topic--c6 .ic { color: var(--color-topic-6-fg); }
+.meta__topic--c7 .ic { color: var(--color-topic-7-fg); }
+.meta__topic--c8 .ic { color: var(--color-topic-8-fg); }
 
 /* ---------- 5. Bölmeli kontrol ---------- */
 /* Tek bölmeli kontrol: .segmented (4 parça, ana ekran filtresi). .switch2 (2) ve .seg3 (3/2) takma adlardır. */

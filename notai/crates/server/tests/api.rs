@@ -489,3 +489,51 @@ async fn http_sync_between_phone_and_real_server() {
     let r = notai_sync::sync_once(&phone, &http).await.unwrap();
     assert_eq!(r.pulled_applied, 1);
 }
+
+#[tokio::test]
+async fn topics_carry_auto_icon_and_stable_color() {
+    let h = harness(Config::defaults(), ScriptedLlm::new()).await;
+    h.post(
+        "/api/topics",
+        json!({ "name": "Araba bakımı", "kind": "area" }),
+    )
+    .await;
+    h.post(
+        "/api/topics",
+        json!({ "name": "Ev", "kind": "area", "icon": "heart" }),
+    )
+    .await;
+    h.post(
+        "/api/topics",
+        json!({ "name": "Diğer", "kind": "resource" }),
+    )
+    .await;
+    let (s, b) = h.get("/api/topics").await;
+    assert_eq!(s, StatusCode::OK);
+    let row = |name: &str| {
+        b["topics"]
+            .as_array()
+            .unwrap()
+            .iter()
+            .find(|t| t["name"] == name)
+            .unwrap()
+            .clone()
+    };
+    assert_eq!(row("Araba bakımı")["icon"], "car", "addan");
+    assert_eq!(row("Ev")["icon"], "heart", "elle seçilen sabit");
+    assert_eq!(row("Diğer")["icon"], "book", "türün varsayılanı");
+    let c = row("Araba bakımı")["color"].as_u64().unwrap();
+    assert!((1..=8).contains(&c));
+    let (_, again) = h.get("/api/topics").await;
+    assert_eq!(
+        again["topics"]
+            .as_array()
+            .unwrap()
+            .iter()
+            .find(|t| t["name"] == "Araba bakımı")
+            .unwrap()["color"]
+            .as_u64(),
+        Some(c),
+        "renk kalıcı"
+    );
+}

@@ -49,6 +49,12 @@ fn topic(id: &str, name: &str, kind: &str, icon: &str, last: &str, preview: &str
         kind_label: kind_label.into(),
         due_date: None,
         icon: Some(icon.into()),
+        // Önizlemede de kalıcı renk: kimlikten basit karma (sunucu `look::color_slot` kullanır).
+        color: id
+            .bytes()
+            .fold(0u8, |a, b| a.wrapping_mul(31).wrapping_add(b))
+            % 8
+            + 1,
         pinned: false,
         last_label: Some(last.into()),
         preview: Some(preview.into()),

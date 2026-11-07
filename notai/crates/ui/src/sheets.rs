@@ -198,10 +198,10 @@ fn TopicPicker(entry: String, current: Option<String>) -> impl IntoView {
                     let is_current = current.as_deref() == Some(t.id.as_str());
                     let id = t.id.clone();
                     let pick = pick.clone();
-                    let icon = view::topic_icon(t.icon.as_deref(), &t.kind);
+                    let look = view::TopicLook::of(&t);
                     view! {
                         <button class="topic" aria-current=is_current.then_some("true") on:click=move |_| pick(Some(id.clone()))>
-                            <span class="topicicon"><Icon name=icon/></span>
+                            <span class=look.box_class()><Icon name=look.icon.clone()/></span>
                             <span class="topic__body">
                                 <span class="topic__line"><span class="topic__name">{t.name}</span><span class="topic__kind">{t.kind_label}</span></span>
                             </span>

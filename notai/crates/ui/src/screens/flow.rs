@@ -68,13 +68,19 @@ pub fn Flow(topic: Option<TopicRef>) -> impl IntoView {
                 .unwrap_or_default(),
         }
     };
-    let header_icon = move || {
+    let header_look = move || {
         if is_journal {
-            "notebook".to_owned()
+            view::TopicLook {
+                icon: "notebook".to_owned(),
+                color: 0,
+            }
         } else {
             this_topic().map_or_else(
-                || "folder".to_owned(),
-                |t| view::topic_icon(t.icon.as_deref(), &t.kind),
+                || view::TopicLook {
+                    icon: "folder".to_owned(),
+                    color: 0,
+                },
+                |t| view::TopicLook::of(&t),
             )
         }
     };
@@ -87,7 +93,7 @@ pub fn Flow(topic: Option<TopicRef>) -> impl IntoView {
         <header class="flowbar">
             <button class="iconbtn" aria-label="Geri" on:click=move |_| c.screen.set(Screen::Home)><Icon name="back"/></button>
             <div class="flowbar__who">
-                <span class="topicicon">{move || view! { <Icon name=header_icon()/> }}</span>
+                {move || { let l = header_look(); let class = l.box_class(); view! { <span class=class><Icon name=l.icon/></span> } }}
                 <div class="flowbar__text"><span class="flowbar__name">{title.clone()}</span><span class="flowbar__sub">{sub}</span></div>
             </div>
             {menu_btn}
@@ -96,7 +102,7 @@ pub fn Flow(topic: Option<TopicRef>) -> impl IntoView {
             {move || match data.get() {
                 None => loading(),
                 Some(Err(e)) => failed(e),
-                Some(Ok((j, plan, topics))) => flow_items(j, plan, is_journal, &view::topic_icons(&topics)).into_any(),
+                Some(Ok((j, plan, topics))) => flow_items(j, plan, is_journal, &view::topic_looks(&topics)).into_any(),
             }}
         </main>
         <ErrorNote/>
@@ -111,7 +117,7 @@ fn flow_items(
     j: JournalView,
     plan: Option<MorningPlanView>,
     is_journal: bool,
-    icons: &HashMap<String, String>,
+    looks: &HashMap<String, view::TopicLook>,
 ) -> impl IntoView {
     if j.groups.is_empty() {
         return view! {
@@ -135,7 +141,7 @@ fn flow_items(
             let items = g
                 .items
                 .into_iter()
-                .map(|e| entry_row(e, is_journal, icons))
+                .map(|e| entry_row(e, is_journal, looks))
                 .collect_view();
             view! {
                 <div class="daysep"><span>{g.label}</span></div>
@@ -213,14 +219,21 @@ fn chip(s: SuggestionView) -> impl IntoView {
     .into_any()
 }
 
-fn entry_row(e: EntryView, show_topic: bool, icons: &HashMap<String, String>) -> impl IntoView {
+fn entry_row(
+    e: EntryView,
+    show_topic: bool,
+    looks: &HashMap<String, view::TopicLook>,
+) -> impl IntoView {
     let c = ctx();
     let dot = e
         .unprocessed
         .then(|| view! { <span class="dot" role="img" aria-label="İşlenmedi"></span> });
     let topic = e.topic.clone().filter(|_| show_topic).map(|t| {
-        let icon = icons.get(&t.id).cloned().unwrap_or_else(|| "folder".to_owned());
-        view! { <span aria-hidden="true">"·"</span><span class="meta__topic"><Icon name=icon size="xs"/><span>{t.name}</span></span> }
+        let look = looks.get(&t.id).cloned().unwrap_or_else(|| view::TopicLook {
+            icon: "folder".to_owned(),
+            color: 0,
+        });
+        view! { <span aria-hidden="true">"·"</span><span class=look.meta_class()><Icon name=look.icon.clone() size="xs"/><span>{t.name}</span></span> }
     });
     let failed = e
         .ai_failed

@@ -10,6 +10,7 @@ pub mod entry;
 pub mod error;
 pub mod ids;
 pub mod journal;
+pub mod look;
 pub mod morning;
 pub mod profile;
 pub mod reminders;
