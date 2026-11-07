@@ -150,6 +150,117 @@ pub struct DecisionView {
     pub created_topic: Option<TopicRef>,
 }
 
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+pub struct ReminderView {
+    pub task_id: String,
+    pub title: String,
+    pub topic_id: Option<String>,
+    pub fire_at: DateTime<Utc>,
+    /// "11:30", "Yarın 09:00", "Paz 8 Kas 19:00".
+    pub when: String,
+    pub recurring: bool,
+}
+
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+pub struct ReminderGroupView {
+    /// missed | today | tomorrow | this_week | later | recurring
+    pub key: String,
+    pub label: String,
+    pub items: Vec<ReminderView>,
+}
+
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize, Default)]
+pub struct RemindersView {
+    pub groups: Vec<ReminderGroupView>,
+}
+
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+pub struct CalendarDayView {
+    pub date: NaiveDate,
+    /// "Cum 6 Kas".
+    pub label: String,
+    pub is_today: bool,
+    pub items: Vec<TaskRowView>,
+}
+
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize, Default)]
+pub struct CalendarView {
+    pub days: Vec<CalendarDayView>,
+}
+
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+pub struct StalledView {
+    pub topic_id: String,
+    pub name: String,
+    /// "10 gündür hareket yok" / "Hiç hareket yok".
+    pub idle: String,
+}
+
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+pub struct WeeklyReviewView {
+    pub week_start: NaiveDate,
+    pub unprocessed: u64,
+    pub stalled: Vec<StalledView>,
+    pub upcoming: Vec<TaskRowView>,
+    pub overdue: usize,
+    pub done_last_week: u64,
+}
+
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+pub struct SourceView {
+    pub id: String,
+    pub text: String,
+    /// "3 Kasım 10:00".
+    pub when: String,
+    pub topic: Option<String>,
+}
+
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+pub struct AskView {
+    /// AI kapalıysa ya da cevap üretilemediyse `None`; ilgili kayıtlar yine döner.
+    pub answer: Option<String>,
+    pub not_found: bool,
+    pub sources: Vec<SourceView>,
+}
+
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+pub struct SettingsView {
+    /// Yüksek güvenli önerileri kendiliğinden uygula (geri alınabilir).
+    pub autonomous: bool,
+    /// Otonom uygulama eşiği (0.5–1.0).
+    pub threshold: f64,
+    /// Sunucuda hangi AI sağlayıcı çalışıyor ("Kapalı", "Yerel model", "Claude API").
+    pub ai_provider: String,
+    pub voice_enabled: bool,
+    pub semantic_search: bool,
+}
+
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+pub struct AttachmentView {
+    pub id: String,
+    /// photo | document | location | contact | audio
+    pub kind: String,
+    pub name: String,
+    pub mime: String,
+    pub size: u64,
+    pub value: Option<String>,
+}
+
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+pub struct FactView {
+    pub id: String,
+    pub text: String,
+    pub confirmed: bool,
+}
+
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+pub struct TrashItemView {
+    pub id: String,
+    pub text: String,
+    /// "3 gün önce silindi · 27 gün sonra kalıcı silinir".
+    pub note: String,
+}
+
 // ---- İstekler ----
 
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
@@ -157,6 +268,29 @@ pub struct CaptureRequest {
     pub text: String,
     #[serde(default)]
     pub topic_id: Option<String>,
+}
+
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize, Default)]
+pub struct TaskEditRequest {
+    pub title: Option<String>,
+    /// Boş dizgi tarihi kaldırır.
+    pub due_date: Option<String>,
+    pub due_time: Option<String>,
+    pub priority: Option<String>,
+    /// day | weekday | week | month | none
+    pub repeat: Option<String>,
+    /// Görevden kaç dakika önce hatırlat (0 = kaldır).
+    pub remind_before_minutes: Option<u32>,
+    pub topic_id: Option<String>,
+}
+
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize, Default)]
+pub struct TopicEditRequest {
+    pub name: Option<String>,
+    pub kind: Option<String>,
+    pub due_date: Option<String>,
+    pub icon: Option<String>,
+    pub pinned: Option<bool>,
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]

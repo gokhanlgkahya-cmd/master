@@ -8,6 +8,7 @@
 pub mod config;
 pub mod error;
 pub mod routes;
+pub mod routes_v2;
 pub mod scheduler;
 pub mod state;
 pub mod worker;
@@ -43,4 +44,27 @@ pub fn build_llm(
             OpenAiCompatConfig::new(base_url.clone(), model.clone()),
         )?)),
     })
+}
+
+type Media = (
+    Option<Arc<dyn notai_ai::media::Transcriber>>,
+    Option<Arc<dyn notai_ai::media::Embedder>>,
+);
+
+/// Yapılandırmadan ses → yazı ve vektör istemcilerini kurar.
+pub fn build_media(cfg: &Config) -> Result<Media, notai_ai::AiError> {
+    use notai_ai::media::{EmbeddingClient, LocalServiceConfig, WhisperClient};
+    let stt = match &cfg.stt {
+        Some((url, model)) => Some(Arc::new(WhisperClient::new(LocalServiceConfig::new(
+            url, model,
+        ))?) as Arc<dyn notai_ai::media::Transcriber>),
+        None => None,
+    };
+    let embed = match &cfg.embed {
+        Some((url, model)) => Some(Arc::new(EmbeddingClient::new(LocalServiceConfig::new(
+            url, model,
+        ))?) as Arc<dyn notai_ai::media::Embedder>),
+        None => None,
+    };
+    Ok((stt, embed))
 }

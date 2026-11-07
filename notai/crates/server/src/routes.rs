@@ -41,6 +41,7 @@ pub fn router(state: AppState) -> Router {
         .route("/facts", get(facts).post(add_fact))
         .route("/sync/push", post(sync_push))
         .route("/sync/pull", get(sync_pull))
+        .merge(crate::routes_v2::api_routes())
         .route_layer(axum::middleware::from_fn_with_state(
             state.clone(),
             require_token,

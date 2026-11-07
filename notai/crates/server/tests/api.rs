@@ -37,6 +37,8 @@ async fn harness(cfg: Config, llm: ScriptedLlm) -> Harness {
     let state = AppState {
         store,
         llm: Some(llm.clone() as Arc<dyn LlmClient>),
+        stt: None,
+        embedder: None,
         cfg: Arc::new(cfg),
         clock: clock.clone(),
     };

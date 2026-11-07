@@ -39,9 +39,13 @@ async fn run() -> Result<(), String> {
         );
     }
     let bind = cfg.bind;
+    let (stt, embedder) =
+        notai_server::build_media(&cfg).map_err(|e| format!("ses/vektör: {e}"))?;
     let state = AppState {
         store: store.clone(),
         llm,
+        stt,
+        embedder,
         cfg: Arc::new(cfg),
         clock: Arc::new(SystemClock),
     };

@@ -4,6 +4,7 @@ use std::sync::{Arc, Mutex};
 
 use chrono::{DateTime, Utc};
 use notai_ai::LlmClient;
+use notai_ai::media::{Embedder, Transcriber};
 use notai_store::Store;
 
 use crate::config::Config;
@@ -52,6 +53,10 @@ impl Clock for ManualClock {
 pub struct AppState {
     pub store: Store,
     pub llm: Option<Arc<dyn LlmClient>>,
+    /// Ses → yazı (yoksa sesli yakalama kapalı).
+    pub stt: Option<Arc<dyn Transcriber>>,
+    /// Anlamsal arama vektörleri (yoksa yalnız tam metin arama).
+    pub embedder: Option<Arc<dyn Embedder>>,
     pub cfg: Arc<Config>,
     pub clock: Arc<dyn Clock>,
 }

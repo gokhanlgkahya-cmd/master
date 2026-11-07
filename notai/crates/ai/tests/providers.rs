@@ -33,6 +33,7 @@ fn ctx() -> ClassifyContext {
         recent: vec![],
         tz: chrono_tz::Europe::Istanbul,
         user_name: "Gökhan".into(),
+        examples: vec![],
     }
 }
 
@@ -178,4 +179,77 @@ async fn model_returning_garbage_never_produces_suggestions() {
     ));
     assert!(classify(&llm, &ctx()).await.is_err());
     assert_eq!(llm.requests().len(), 2);
+}
+
+#[tokio::test]
+async fn whisper_transcription_multipart() {
+    use notai_ai::media::{LocalServiceConfig, Transcriber, WhisperClient};
+    let server = MockServer::start().await;
+    Mock::given(method("POST"))
+        .and(path("/v1/audio/transcriptions"))
+        .respond_with(ResponseTemplate::new(200).set_body_json(json!({
+            "text": " Yarın sabah onda İzmir'deki kostik firmasını ara… yok, aslında perşembe yap. "
+        })))
+        .expect(1)
+        .mount(&server)
+        .await;
+    let w = WhisperClient::new(LocalServiceConfig::new(server.uri(), "whisper-large-v3")).unwrap();
+    let text = w.transcribe(b"OggS-sahte-ses", "audio/ogg").await.unwrap();
+    assert!(text.starts_with("Yarın sabah onda"));
+    let req = &server.received_requests().await.unwrap()[0];
+    let body = String::from_utf8_lossy(&req.body);
+    assert!(body.contains("name=\"language\"\r\n\r\ntr"));
+    assert!(body.contains("filename=\"kayit.ogg\""));
+    assert!(w.transcribe(b"", "audio/ogg").await.is_err());
+}
+
+#[tokio::test]
+async fn embeddings_ordered_and_validated() {
+    use notai_ai::media::{Embedder, EmbeddingClient, LocalServiceConfig};
+    let server = MockServer::start().await;
+    Mock::given(method("POST"))
+        .and(path("/v1/embeddings"))
+        .and(body_partial_json(json!({ "model": "bge-m3" })))
+        .respond_with(ResponseTemplate::new(200).set_body_json(json!({
+            "data": [ { "index": 1, "embedding": [0.0, 1.0] }, { "index": 0, "embedding": [1.0, 0.0] } ]
+        })))
+        .up_to_n_times(1)
+        .mount(&server)
+        .await;
+    Mock::given(method("POST"))
+        .respond_with(ResponseTemplate::new(200).set_body_json(json!({
+            "data": [ { "index": 0, "embedding": [1.0] }, { "index": 1, "embedding": [1.0, 2.0] } ]
+        })))
+        .mount(&server)
+        .await;
+    let e = EmbeddingClient::new(LocalServiceConfig::new(server.uri(), "bge-m3")).unwrap();
+    let v = e.embed(&["kostik".into(), "kombi".into()]).await.unwrap();
+    assert_eq!(v, vec![vec![1.0, 0.0], vec![0.0, 1.0]]);
+    assert!(matches!(
+        e.embed(&["a".into(), "b".into()]).await,
+        Err(AiError::Schema(_))
+    ));
+    assert_eq!(e.model(), "bge-m3");
+}
+
+#[tokio::test]
+async fn ask_end_to_end_with_scripted_model() {
+    use notai_ai::ask::{AskContext, AskSource, ask};
+    let id = notai_core::EntryId::new();
+    let llm = ScriptedLlm::new().reply(
+        json!({ "answer": "1.850 ₺", "source_ids": [id.to_string()], "found": true }).to_string(),
+    );
+    let ctx = AskContext {
+        question: "Kostik fiyatı?".into(),
+        sources: vec![AskSource {
+            id,
+            captured_at: Utc.with_ymd_and_hms(2026, 11, 3, 7, 0, 0).unwrap(),
+            text: "NaOH 25 kg 1.850 ₺".into(),
+            topic: None,
+        }],
+        tz: chrono_tz::Europe::Istanbul,
+        user_name: "Gökhan".into(),
+    };
+    let a = ask(&llm, &ctx).await.unwrap();
+    assert_eq!(a.sources, vec![id]);
 }

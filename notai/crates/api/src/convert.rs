@@ -146,3 +146,160 @@ pub fn decision(out: &DecisionOutcome, today: NaiveDate, tz: Tz) -> DecisionView
         }),
     }
 }
+
+// ---------- v0.2–v0.4 ----------
+
+use notai_core::agenda::{AgendaDay, WeeklyReview};
+use notai_core::reminders::{ReminderGroup, ReminderItem};
+
+use crate::{
+    CalendarDayView, CalendarView, ReminderGroupView, ReminderView, RemindersView, SourceView,
+    StalledView, TrashItemView, WeeklyReviewView,
+};
+
+/// "11:30" (bugün), "Yarın 09:00", "Paz 8 Kas 19:00".
+#[must_use]
+pub fn when_label(at: DateTime<Utc>, now: DateTime<Utc>, tz: Tz) -> String {
+    let local = at.with_timezone(&tz);
+    let today = now.with_timezone(&tz).date_naive();
+    let date = local.date_naive();
+    let time = local.format("%H:%M");
+    match (date - today).num_days() {
+        0 => time.to_string(),
+        1 => format!("Yarın {time}"),
+        -1 => format!("Dün {time}"),
+        _ => {
+            let wd: String = notai_core::tr::weekday_name(chrono::Datelike::weekday(&date))
+                .chars()
+                .take(3)
+                .collect();
+            format!(
+                "{wd} {} {} {time}",
+                chrono::Datelike::day(&date),
+                notai_core::tr::month_short(chrono::Datelike::month(&date))
+            )
+        }
+    }
+}
+
+fn group_key(g: ReminderGroup) -> &'static str {
+    match g {
+        ReminderGroup::Missed => "missed",
+        ReminderGroup::Today => "today",
+        ReminderGroup::Tomorrow => "tomorrow",
+        ReminderGroup::ThisWeek => "this_week",
+        ReminderGroup::Later => "later",
+        ReminderGroup::Recurring => "recurring",
+    }
+}
+
+#[must_use]
+pub fn reminders(
+    groups: Vec<(ReminderGroup, Vec<ReminderItem>)>,
+    now: DateTime<Utc>,
+    tz: Tz,
+) -> RemindersView {
+    RemindersView {
+        groups: groups
+            .into_iter()
+            .map(|(g, items)| ReminderGroupView {
+                key: group_key(g).to_owned(),
+                label: g.label().to_owned(),
+                items: items
+                    .into_iter()
+                    .map(|i| ReminderView {
+                        task_id: i.task.to_string(),
+                        title: i.title,
+                        topic_id: i.topic.map(|t| t.to_string()),
+                        when: when_label(i.fire_at, now, tz),
+                        fire_at: i.fire_at,
+                        recurring: i.recurring,
+                    })
+                    .collect(),
+            })
+            .collect(),
+    }
+}
+
+#[must_use]
+pub fn calendar(days: Vec<AgendaDay>, tasks: &[Task], today: NaiveDate) -> CalendarView {
+    CalendarView {
+        days: days
+            .into_iter()
+            .map(|d| CalendarDayView {
+                date: d.date,
+                label: d.label,
+                is_today: d.is_today,
+                items: d
+                    .tasks
+                    .iter()
+                    .filter_map(|id| tasks.iter().find(|t| t.id == *id))
+                    .map(|t| task_row(t, today))
+                    .collect(),
+            })
+            .collect(),
+    }
+}
+
+#[must_use]
+pub fn weekly_review(r: WeeklyReview, tasks: &[Task], today: NaiveDate) -> WeeklyReviewView {
+    WeeklyReviewView {
+        week_start: r.week_start,
+        unprocessed: r.unprocessed,
+        stalled: r
+            .stalled
+            .into_iter()
+            .map(|s| StalledView {
+                topic_id: s.topic.to_string(),
+                name: s.name,
+                idle: s.idle_days.map_or_else(
+                    || "Hiç hareket yok".to_owned(),
+                    |d| format!("{d} gündür hareket yok"),
+                ),
+            })
+            .collect(),
+        upcoming: r
+            .upcoming
+            .iter()
+            .filter_map(|id| tasks.iter().find(|t| t.id == *id))
+            .map(|t| task_row(t, today))
+            .collect(),
+        overdue: r.overdue,
+        done_last_week: r.done_last_week,
+    }
+}
+
+#[must_use]
+pub fn source(
+    id: String,
+    text: &str,
+    at: DateTime<Utc>,
+    topic: Option<String>,
+    tz: Tz,
+) -> SourceView {
+    let local = at.with_timezone(&tz);
+    SourceView {
+        id,
+        text: text.to_owned(),
+        when: format!(
+            "{} {}",
+            notai_core::tr::date_long(
+                local.date_naive(),
+                chrono::Datelike::year(&local.date_naive())
+            ),
+            local.format("%H:%M")
+        ),
+        topic,
+    }
+}
+
+#[must_use]
+pub fn trash_item(e: &notai_core::Entry, now: DateTime<Utc>) -> TrashItemView {
+    let ago = e.status().trashed_at().map_or(0, |t| (now - t).num_days());
+    let left = (notai_core::entry::TRASH_RETENTION_DAYS - ago).max(0);
+    TrashItemView {
+        id: e.id.to_string(),
+        text: e.text.preview(120),
+        note: format!("{ago} gün önce silindi · {left} gün sonra kalıcı silinir"),
+    }
+}

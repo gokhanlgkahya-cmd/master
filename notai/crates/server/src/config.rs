@@ -35,6 +35,10 @@ pub struct Config {
     pub ai: AiProvider,
     /// Sabah planı bildirimi için ntfy konusu URL'si (ör. `http://s24:8080/notai`).
     pub ntfy_url: Option<String>,
+    /// Ses → yazı servisi (Whisper uyumlu): (adres, model).
+    pub stt: Option<(String, String)>,
+    /// Anlamsal arama vektör servisi (OpenAI uyumlu embeddings): (adres, model).
+    pub embed: Option<(String, String)>,
 }
 
 impl Config {
@@ -52,6 +56,8 @@ impl Config {
             morning_at: NaiveTime::from_hms_opt(8, 0, 0).unwrap_or(NaiveTime::MIN),
             ai: AiProvider::None,
             ntfy_url: None,
+            stt: None,
+            embed: None,
         }
     }
 
@@ -89,6 +95,19 @@ impl Config {
                 .map_err(|_| ConfigError::Invalid("NOTAI_MORNING_AT", v))?;
         }
         cfg.ntfy_url = non_empty("NOTAI_NTFY_URL");
+        cfg.stt = non_empty("NOTAI_STT_MODEL").map(|m| {
+            (
+                non_empty("NOTAI_STT_BASE_URL").unwrap_or_else(|| "http://127.0.0.1:8000".into()),
+                m,
+            )
+        });
+        cfg.embed = non_empty("NOTAI_EMBED_MODEL").map(|m| {
+            (
+                non_empty("NOTAI_EMBED_BASE_URL")
+                    .unwrap_or_else(|| "http://127.0.0.1:11434".into()),
+                m,
+            )
+        });
         cfg.ai = match non_empty("NOTAI_AI").as_deref() {
             None | Some("none") => AiProvider::None,
             Some("anthropic") => AiProvider::Anthropic {
@@ -144,6 +163,19 @@ mod tests {
             }
         );
         assert_eq!(c.api_token.as_deref(), Some("gizli"));
+        let c = cfg(&[
+            ("NOTAI_STT_MODEL", "whisper-large-v3"),
+            ("NOTAI_EMBED_MODEL", "bge-m3"),
+        ])
+        .unwrap();
+        assert_eq!(
+            c.stt,
+            Some(("http://127.0.0.1:8000".into(), "whisper-large-v3".into()))
+        );
+        assert_eq!(
+            c.embed,
+            Some(("http://127.0.0.1:11434".into(), "bge-m3".into()))
+        );
         assert!(cfg(&[("NOTAI_AI", "local")]).is_err());
         assert!(cfg(&[("NOTAI_TZ", "Mars/Olympus")]).is_err());
         assert!(cfg(&[("NOTAI_MORNING_AT", "sabah")]).is_err());
