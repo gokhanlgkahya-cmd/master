@@ -123,11 +123,16 @@ async fn insert_entry_snapshot(
     let topic = e.topic().map(|t| t.to_string());
     let status = e.status().name();
     let trashed = e.status().trashed_at().map(ts);
-    let ai_state = if queue_ai { "pending" } else { "done" };
+    let ai_state = if queue_ai && !e.from_notai {
+        "pending"
+    } else {
+        "done"
+    };
+    let author = e.from_notai.then_some("notai");
     let at_s = ts(at);
     sqlx::query!(
-        "INSERT INTO entries (id, text, source, captured_at, topic_id, status, trashed_at, ai_state, updated_at)
-         VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7, ?8, ?9)",
+        "INSERT INTO entries (id, text, source, captured_at, topic_id, status, trashed_at, ai_state, updated_at, author)
+         VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7, ?8, ?9, ?10)",
         id,
         text,
         source,
@@ -136,7 +141,8 @@ async fn insert_entry_snapshot(
         status,
         trashed,
         ai_state,
-        at_s
+        at_s,
+        author
     )
     .execute(&mut *conn)
     .await?;
@@ -201,14 +207,15 @@ async fn insert_topic_snapshot(
     }
     let key = name_key(t.parent, &name);
     let parent = t.parent.map(|p| p.to_string());
+    let watch = t.watch.as_ref().map(serde_json::to_string).transpose()?;
     let name_s = name.as_str();
     let kind = t.kind.name();
     let due = t.kind.due().map(crate::codec::date_str);
     let pinned = i64::from(t.pinned);
     let at_s = ts(at);
     sqlx::query!(
-        "INSERT INTO topics (id, name, name_key, kind, due_date, icon, avatar, pinned, created_at, updated_at, parent_id)
-         VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?9, ?7, ?8, ?8, ?10)",
+        "INSERT INTO topics (id, name, name_key, kind, due_date, icon, avatar, pinned, created_at, updated_at, parent_id, watch)
+         VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?9, ?7, ?8, ?8, ?10, ?11)",
         id,
         name_s,
         key,
@@ -218,7 +225,8 @@ async fn insert_topic_snapshot(
         pinned,
         at_s,
         t.avatar,
-        parent
+        parent,
+        watch
     )
     .execute(&mut *conn)
     .await?;
@@ -236,6 +244,7 @@ async fn update_topic_snapshot(
     let pinned = i64::from(t.pinned);
     let key = name_key(t.parent, &t.name);
     let parent = t.parent.map(|p| p.to_string());
+    let watch = t.watch.as_ref().map(serde_json::to_string).transpose()?;
     let name = t.name.as_str();
     let at_s = ts(at);
     // Ad başka konuyla çakışırsa adı değiştirme, diğer alanları uygula.
@@ -248,7 +257,8 @@ async fn update_topic_snapshot(
     .await?;
     if clash > 0 {
         sqlx::query!(
-            "UPDATE topics SET kind = ?2, due_date = ?3, icon = ?4, pinned = ?5, updated_at = ?6, avatar = ?7
+            "UPDATE topics SET kind = ?2, due_date = ?3, icon = ?4, pinned = ?5, updated_at = ?6, avatar = ?7,
+                    watch = ?8
              WHERE id = ?1",
             id,
             kind,
@@ -256,14 +266,15 @@ async fn update_topic_snapshot(
             t.icon,
             pinned,
             at_s,
-            t.avatar
+            t.avatar,
+            watch
         )
         .execute(&mut *conn)
         .await?;
     } else {
         sqlx::query!(
             "UPDATE topics SET name = ?2, name_key = ?3, kind = ?4, due_date = ?5, icon = ?6, pinned = ?7,
-                    updated_at = ?8, avatar = ?9, parent_id = ?10
+                    updated_at = ?8, avatar = ?9, parent_id = ?10, watch = ?11
              WHERE id = ?1",
             id,
             name,
@@ -274,7 +285,8 @@ async fn update_topic_snapshot(
             pinned,
             at_s,
             t.avatar,
-            parent
+            parent,
+            watch
         )
         .execute(&mut *conn)
         .await?;

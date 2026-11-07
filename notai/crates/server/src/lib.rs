@@ -14,6 +14,7 @@ pub mod routes_v2;
 pub mod scheduler;
 pub mod state;
 pub mod vault;
+pub mod watch;
 pub mod worker;
 
 use std::sync::Arc;

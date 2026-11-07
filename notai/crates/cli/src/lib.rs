@@ -22,6 +22,9 @@ Ajan (sınıflandırma) komutları:
   answer <kayıt-id> [dosya]  Cevap JSON'unu gönderir (dosya yoksa ya da '-' ise stdin'den).
                              Sunucu cevabı şemaya göre doğrular; uymayan öneriler atılır.
   fail <kayıt-id> <neden>    İşi yapamadığını bildirir (kayıt 'AI işleyemedi' olur).
+  watches                    Kontrol zamanı gelmiş fiyat/ürün takipleri (ürün, bağlantılar, şema).
+  watch-report <konu-id> [dosya]
+                             Bulunan teklifleri gönderir; yalnız değişince konuya yazılır.
   statements                 Kurallarla okunamayan banka ekstreleri (metin + şema, JSON).
   statement-answer <id> [dosya]
                              Ekstredeki hareketleri (şemaya uygun JSON) gönderir.
@@ -48,6 +51,8 @@ pub enum Cmd {
     Plan,
     Ask { question: String },
     Statements,
+    Watches,
+    WatchReport { topic: String, file: Option<String> },
     StatementAnswer { id: String, file: Option<String> },
 }
 
@@ -78,6 +83,11 @@ pub fn parse(args: &[String]) -> Result<Cmd, String> {
             file: args.get(2).filter(|f| *f != "-").cloned(),
         }),
         Some("statements") => Ok(Cmd::Statements),
+        Some("watches") => Ok(Cmd::Watches),
+        Some("watch-report") => Ok(Cmd::WatchReport {
+            topic: need(args.get(1).cloned().unwrap_or_default(), "konu kimliği")?,
+            file: args.get(2).filter(|f| *f != "-").cloned(),
+        }),
         Some("statement-answer") => Ok(Cmd::StatementAnswer {
             id: need(args.get(1).cloned().unwrap_or_default(), "ekstre kimliği")?,
             file: args.get(2).filter(|f| *f != "-").cloned(),
@@ -167,6 +177,24 @@ pub async fn run(
         Cmd::Jobs { limit } => {
             let v: Value = c.get(&format!("/agent/jobs?limit={limit}")).await?;
             Ok(pretty(&v))
+        }
+        Cmd::Watches => {
+            let v: Value = c.get("/agent/watches").await?;
+            serde_json::to_string_pretty(&v).map_err(|e| e.to_string())
+        }
+        Cmd::WatchReport { topic, file } => {
+            let raw = match file {
+                Some(f) => {
+                    std::fs::read_to_string(&f).map_err(|e| format!("{f} okunamadı: {e}"))?
+                }
+                None => stdin()?,
+            };
+            let body: Value =
+                serde_json::from_str(&raw).map_err(|e| format!("rapor geçerli JSON değil: {e}"))?;
+            let v: Value = c
+                .post(&format!("/agent/watches/{topic}/report"), &body)
+                .await?;
+            Ok(v["message"].as_str().unwrap_or("işlendi").to_owned())
         }
         Cmd::Statements => {
             let v: Value = c.get("/agent/statements").await?;
@@ -308,6 +336,14 @@ mod tests {
             }
         );
         assert_eq!(parse(&a("statements")).unwrap(), Cmd::Statements);
+        assert_eq!(parse(&a("watches")).unwrap(), Cmd::Watches);
+        assert_eq!(
+            parse(&a("watch-report t1 rapor.json")).unwrap(),
+            Cmd::WatchReport {
+                topic: "t1".into(),
+                file: Some("rapor.json".into())
+            }
+        );
         assert_eq!(
             parse(&a("statement-answer s1 -")).unwrap(),
             Cmd::StatementAnswer {

@@ -17,6 +17,8 @@ pub const FRESH_FOR_MINUTES: i64 = 120;
 pub enum NoticeKind {
     Reminder,
     Question,
+    /// Fiyat / ürün takibinde değişiklik.
+    Watch,
 }
 
 /// Gönderilen bir bildirim ve gideceği yer.
@@ -74,6 +76,25 @@ impl Notice {
             body: question.to_owned(),
             topic,
             topic_name,
+            entry: Some(entry),
+            at,
+        }
+    }
+
+    /// Takip: "Takip · Pixel 10 Pro" / "52.999,00 ₺ (−3,6%) · Trendyol".
+    #[must_use]
+    pub fn watch(
+        headline: &str,
+        topic: (TopicId, String),
+        entry: EntryId,
+        at: DateTime<Utc>,
+    ) -> Self {
+        Self {
+            kind: NoticeKind::Watch,
+            title: titled("Takip", Some(&topic.1)),
+            body: headline.to_owned(),
+            topic: Some(topic.0),
+            topic_name: Some(topic.1),
             entry: Some(entry),
             at,
         }

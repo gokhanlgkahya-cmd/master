@@ -1,6 +1,6 @@
 {
   "db_name": "SQLite",
-  "query": "SELECT e.id, e.text, e.source, e.captured_at, e.topic_id, e.status, e.trashed_at\n             FROM entries_fts f JOIN entries e ON e.rowid = f.rowid\n             WHERE entries_fts MATCH ?1 AND e.status IN ('inbox', 'processed', 'archived')\n             ORDER BY e.captured_at DESC LIMIT ?2",
+  "query": "SELECT id, text, source, captured_at, topic_id, status, trashed_at, author\n             FROM entries WHERE status = 'trashed'",
   "describe": {
     "columns": [
       {
@@ -79,10 +79,21 @@
             "name": "trashed_at"
           }
         }
+      },
+      {
+        "name": "author",
+        "ordinal": 7,
+        "type_info": "Text",
+        "origin": {
+          "Table": {
+            "table": "entries",
+            "name": "author"
+          }
+        }
       }
     ],
     "parameters": {
-      "Right": 2
+      "Right": 0
     },
     "nullable": [
       false,
@@ -91,8 +102,9 @@
       false,
       true,
       false,
+      true,
       true
     ]
   },
-  "hash": "9843b80c7fffe8368bd23c39875806dac0ca3e8ee1f32371fda6f4fcaa876f15"
+  "hash": "0f4f4244607dec15da47d303e80ff0e3e9699e37965204a023e72f94433e7ca0"
 }

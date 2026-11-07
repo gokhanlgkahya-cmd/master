@@ -1,6 +1,6 @@
 {
   "db_name": "SQLite",
-  "query": "SELECT id, text, source, captured_at, topic_id, status, trashed_at\n             FROM entries WHERE status = 'trashed'",
+  "query": "SELECT id, text, source, captured_at, topic_id, status, trashed_at, author\n             FROM entries\n             WHERE ai_state = 'pending' AND status != 'trashed'\n               AND (ai_next_at IS NULL OR ai_next_at <= ?1)\n             ORDER BY captured_at LIMIT 1",
   "describe": {
     "columns": [
       {
@@ -79,10 +79,21 @@
             "name": "trashed_at"
           }
         }
+      },
+      {
+        "name": "author",
+        "ordinal": 7,
+        "type_info": "Text",
+        "origin": {
+          "Table": {
+            "table": "entries",
+            "name": "author"
+          }
+        }
       }
     ],
     "parameters": {
-      "Right": 0
+      "Right": 1
     },
     "nullable": [
       false,
@@ -91,8 +102,9 @@
       false,
       true,
       false,
+      true,
       true
     ]
   },
-  "hash": "76aed716db6795b7eccf1f9c0554571bf537ddce5859a357687753bae4b82b3a"
+  "hash": "e56d74d5c1d06372e488e25b1477e56170c1300ad23dfd045b3da62f5bbcdf52"
 }

@@ -65,7 +65,7 @@ pub(crate) async fn load_entry(conn: &mut SqliteConnection, id: EntryId) -> Resu
     let id_s = id.to_string();
     let row = sqlx::query_as!(
         EntryRow,
-        "SELECT id, text, source, captured_at, topic_id, status, trashed_at
+        "SELECT id, text, source, captured_at, topic_id, status, trashed_at, author
          FROM entries WHERE id = ?1",
         id_s
     )
@@ -124,6 +124,18 @@ pub(crate) async fn update_entry(
 impl Store {
     /// Kaydı yakalar. AI'ı beklemez: kayıt hemen yazılır, AI işi kuyruğa düşer.
     pub async fn capture(&self, new: NewEntry) -> Result<Captured> {
+        self.capture_as(new, false).await
+    }
+
+    /// NotAI'nin bir konuya yazdığı mesaj (ör. fiyat takibi). Sınıflandırılmaz (AI işi yok),
+    /// kullanıcının kaydından ayrı gösterilir.
+    pub async fn capture_notai(&self, new: NewEntry) -> Result<Entry> {
+        match self.capture_as(new, true).await? {
+            Captured::New(e) | Captured::Duplicate(e) => Ok(e),
+        }
+    }
+
+    async fn capture_as(&self, new: NewEntry, from_notai: bool) -> Result<Captured> {
         let mut tx = self.pool.begin().await?;
 
         if let Some(key) = new.dedupe_key.as_deref() {
@@ -140,7 +152,10 @@ impl Store {
             get_topic(&mut tx, topic).await?;
         }
 
-        let entry = Entry::capture(new.text, new.source, new.captured_at, new.topic);
+        let mut entry = Entry::capture(new.text, new.source, new.captured_at, new.topic);
+        entry.from_notai = from_notai;
+        let author = from_notai.then_some("notai");
+        let ai_state = if from_notai { "done" } else { "pending" };
         let id = entry.id.to_string();
         let text = entry.text.as_str();
         let source = entry.source.as_str();
@@ -148,15 +163,18 @@ impl Store {
         let topic = entry.topic().map(|t| t.to_string());
         let status = entry.status().name();
         sqlx::query!(
-            "INSERT INTO entries (id, text, source, captured_at, topic_id, status, dedupe_key, updated_at)
-             VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7, ?4)",
+            "INSERT INTO entries (id, text, source, captured_at, topic_id, status, dedupe_key, updated_at,
+                                  author, ai_state)
+             VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7, ?4, ?8, ?9)",
             id,
             text,
             source,
             captured,
             topic,
             status,
-            new.dedupe_key
+            new.dedupe_key,
+            author,
+            ai_state
         )
         .execute(&mut *tx)
         .await?;
@@ -200,7 +218,7 @@ impl Store {
                    SELECT ?2 WHERE ?2 IS NOT NULL
                    UNION SELECT t.id FROM topics t JOIN sub ON t.parent_id = sub.id
                )
-               SELECT e.id, e.text, e.source, e.captured_at, e.topic_id, e.status, e.trashed_at,
+               SELECT e.id, e.text, e.source, e.captured_at, e.topic_id, e.status, e.trashed_at, e.author,
                       e.ai_state, t.name AS "topic_name?: String"
                FROM entries e LEFT JOIN topics t ON t.id = e.topic_id
                WHERE e.status IN ('inbox', 'processed')
@@ -278,6 +296,7 @@ impl Store {
                 topic_id: r.topic_id,
                 status: r.status,
                 trashed_at: r.trashed_at,
+                author: r.author,
             })?;
             items.push(JournalItem {
                 entry,
@@ -350,7 +369,7 @@ impl Store {
         let mut tx = self.pool.begin().await?;
         let rows = sqlx::query_as!(
             EntryRow,
-            "SELECT id, text, source, captured_at, topic_id, status, trashed_at
+            "SELECT id, text, source, captured_at, topic_id, status, trashed_at, author
              FROM entries WHERE status = 'trashed'"
         )
         .fetch_all(&mut *tx)
@@ -389,7 +408,7 @@ impl Store {
         let limit = i64::from(limit.clamp(1, 200));
         let rows = sqlx::query_as!(
             EntryRow,
-            "SELECT e.id, e.text, e.source, e.captured_at, e.topic_id, e.status, e.trashed_at
+            "SELECT e.id, e.text, e.source, e.captured_at, e.topic_id, e.status, e.trashed_at, e.author
              FROM entries_fts f JOIN entries e ON e.rowid = f.rowid
              WHERE entries_fts MATCH ?1 AND e.status IN ('inbox', 'processed', 'archived')
              ORDER BY e.captured_at DESC LIMIT ?2",
@@ -406,7 +425,7 @@ impl Store {
         let limit = i64::from(limit.clamp(1, 100));
         let rows = sqlx::query_as!(
             EntryRow,
-            "SELECT id, text, source, captured_at, topic_id, status, trashed_at
+            "SELECT id, text, source, captured_at, topic_id, status, trashed_at, author
              FROM entries WHERE status IN ('inbox', 'processed')
              ORDER BY captured_at DESC LIMIT ?1",
             limit
@@ -421,7 +440,7 @@ impl Store {
         let now_s = ts(now);
         let row = sqlx::query_as!(
             EntryRow,
-            "SELECT id, text, source, captured_at, topic_id, status, trashed_at
+            "SELECT id, text, source, captured_at, topic_id, status, trashed_at, author
              FROM entries
              WHERE ai_state = 'pending' AND status != 'trashed'
                AND (ai_next_at IS NULL OR ai_next_at <= ?1)
@@ -444,7 +463,7 @@ impl Store {
         let ids_json = serde_json::to_string(&ids)?;
         let row = sqlx::query_as!(
             EntryRow,
-            "SELECT id, text, source, captured_at, topic_id, status, trashed_at
+            "SELECT id, text, source, captured_at, topic_id, status, trashed_at, author
              FROM entries
              WHERE ai_state = 'pending' AND status != 'trashed'
                AND (ai_next_at IS NULL OR ai_next_at <= ?1)

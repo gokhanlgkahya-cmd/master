@@ -111,6 +111,13 @@ async fn notify(url: &str, view: &MorningPlanView) {
     send(url, &view.headline, &body, "sunrise").await;
 }
 
+/// Yapılandırılmışsa ntfy'ye bildirim gönderir (hata yalnız günlüğe yazılır).
+pub async fn push(state: &AppState, title: &str, body: &str, tag: &str) {
+    if let Some(url) = state.cfg.ntfy_url.as_deref() {
+        send(url, title, body, tag).await;
+    }
+}
+
 /// ntfy'ye bildirim gönderir (ev sunucusundan telefona). Hata yalnız günlüğe yazılır.
 async fn send(url: &str, title: &str, body: &str, tag: &str) {
     let client = reqwest::Client::new();

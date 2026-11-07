@@ -23,6 +23,7 @@ pub mod text;
 pub mod topic;
 pub mod tr;
 pub mod vault;
+pub mod watch;
 
 pub use entry::{Entry, EntryStatus, Source};
 pub use error::CoreError;

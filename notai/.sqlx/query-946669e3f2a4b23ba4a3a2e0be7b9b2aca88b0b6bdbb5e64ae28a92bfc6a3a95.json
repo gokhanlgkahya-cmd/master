@@ -1,6 +1,6 @@
 {
   "db_name": "SQLite",
-  "query": "SELECT id, name, kind, due_date, icon, avatar, parent_id, pinned FROM topics WHERE name_key = ?1",
+  "query": "SELECT id, text, source, captured_at, topic_id, status, trashed_at, author\n             FROM entries WHERE status IN ('inbox', 'processed')\n             ORDER BY captured_at DESC LIMIT ?1",
   "describe": {
     "columns": [
       {
@@ -9,85 +9,85 @@
         "type_info": "Text",
         "origin": {
           "Table": {
-            "table": "topics",
+            "table": "entries",
             "name": "id"
           }
         }
       },
       {
-        "name": "name",
+        "name": "text",
         "ordinal": 1,
         "type_info": "Text",
         "origin": {
           "Table": {
-            "table": "topics",
-            "name": "name"
+            "table": "entries",
+            "name": "text"
           }
         }
       },
       {
-        "name": "kind",
+        "name": "source",
         "ordinal": 2,
         "type_info": "Text",
         "origin": {
           "Table": {
-            "table": "topics",
-            "name": "kind"
+            "table": "entries",
+            "name": "source"
           }
         }
       },
       {
-        "name": "due_date",
+        "name": "captured_at",
         "ordinal": 3,
         "type_info": "Text",
         "origin": {
           "Table": {
-            "table": "topics",
-            "name": "due_date"
+            "table": "entries",
+            "name": "captured_at"
           }
         }
       },
       {
-        "name": "icon",
+        "name": "topic_id",
         "ordinal": 4,
         "type_info": "Text",
         "origin": {
           "Table": {
-            "table": "topics",
-            "name": "icon"
+            "table": "entries",
+            "name": "topic_id"
           }
         }
       },
       {
-        "name": "avatar",
+        "name": "status",
         "ordinal": 5,
         "type_info": "Text",
         "origin": {
           "Table": {
-            "table": "topics",
-            "name": "avatar"
+            "table": "entries",
+            "name": "status"
           }
         }
       },
       {
-        "name": "parent_id",
+        "name": "trashed_at",
         "ordinal": 6,
         "type_info": "Text",
         "origin": {
           "Table": {
-            "table": "topics",
-            "name": "parent_id"
+            "table": "entries",
+            "name": "trashed_at"
           }
         }
       },
       {
-        "name": "pinned",
+        "name": "author",
         "ordinal": 7,
-        "type_info": "Integer",
+        "type_info": "Text",
         "origin": {
           "Table": {
-            "table": "topics",
-            "name": "pinned"
+            "table": "entries",
+            "name": "author"
           }
         }
       }
@@ -99,12 +99,12 @@
       false,
       false,
       false,
+      false,
       true,
+      false,
       true,
-      true,
-      true,
-      false
+      true
     ]
   },
-  "hash": "b8454791e0ad044b72a8f1de55cf1ec8b8e614d54a8fe3c7f081460869eef596"
+  "hash": "946669e3f2a4b23ba4a3a2e0be7b9b2aca88b0b6bdbb5e64ae28a92bfc6a3a95"
 }

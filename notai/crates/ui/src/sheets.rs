@@ -393,19 +393,143 @@ fn NewTopicForm(open: RwSignal<bool>, parent: Option<TopicRef>) -> impl IntoView
 #[component]
 pub fn TopicMenu(topic: TopicRef, open: RwSignal<bool>) -> impl IntoView {
     let new_sub = RwSignal::new(false);
+    let watching = RwSignal::new(false);
     let t_sheet = topic.clone();
+    let t_watch = topic.clone();
     view! {
         {move || {
             let t = topic.clone();
             open.get()
-                .then(|| view! { <TopicMenuBody topic=t open=open new_sub=new_sub/> })
+                .then(|| view! { <TopicMenuBody topic=t open=open new_sub=new_sub watching=watching/> })
         }}
         <NewTopicSheet open=new_sub parent=t_sheet/>
+        {move || watching.get().then(|| view! { <WatchSheet topic=t_watch.clone() open=watching/> })}
     }
 }
 
+/// Fiyat / ürün takibi formu: ürün, bağlantılar, hedef fiyat, sıklık. Ajan (Hermes / Claude
+/// Code) bu sıklıkla bakar; yalnız fiyat düşünce ya da daha uygun bağlantı bulununca konuya yazar.
 #[component]
-fn TopicMenuBody(topic: TopicRef, open: RwSignal<bool>, new_sub: RwSignal<bool>) -> impl IntoView {
+fn WatchSheet(topic: TopicRef, open: RwSignal<bool>) -> impl IntoView {
+    let c = ctx();
+    let b = backend();
+    let query = RwSignal::new(String::new());
+    let urls = RwSignal::new(String::new());
+    let target = RwSignal::new(String::new());
+    let every = RwSignal::new(String::from("24"));
+    let existing = RwSignal::new(false);
+    let tid = topic.id.clone();
+    let rows = LocalResource::new(move || {
+        let b = backend();
+        async move { b.topics("all").await }
+    });
+    Effect::new(move |_| {
+        if let Some(Ok(v)) = rows.get()
+            && let Some(w) = v
+                .topics
+                .iter()
+                .find(|t| t.id == tid)
+                .and_then(|t| t.watch.clone())
+        {
+            query.set(w.query);
+            urls.set(w.urls.join("\n"));
+            target.set(w.target_price);
+            every.set(w.every_hours.to_string());
+            existing.set(true);
+        }
+    });
+    let id_save = topic.id.clone();
+    let b_save = b.clone();
+    let save = move || {
+        let req = notai_api::WatchRequest {
+            query: query.get_untracked(),
+            urls: urls.get_untracked().lines().map(str::to_owned).collect(),
+            target_price: target.get_untracked(),
+            every_hours: every.get_untracked().parse().ok(),
+            active: Some(true),
+        };
+        if req.query.trim().is_empty() {
+            return;
+        }
+        let id = id_save.clone();
+        open.set(false);
+        crate::run_in(
+            c,
+            b_save.clone(),
+            move |b| async move { b.set_watch(id, req).await },
+            |()| {},
+        );
+    };
+    let id_stop = topic.id.clone();
+    let stop = move |_| {
+        let id = id_stop.clone();
+        open.set(false);
+        crate::run_in(
+            c,
+            b.clone(),
+            move |b| async move { b.set_watch(id, notai_api::WatchRequest::default()).await },
+            |()| {},
+        );
+    };
+    let input = NodeRef::<leptos::html::Input>::new();
+    web::focus_later(input);
+    let options = view::WATCH_EVERY
+        .iter()
+        .map(|&(h, l)| {
+            let v = h.to_string();
+            let v2 = v.clone();
+            view! { <option value=v selected=move || every.get() == v2>{l}</option> }
+        })
+        .collect_view();
+    let content = view! {
+        <form class="sheet__body" on:submit=move |ev| { ev.prevent_default(); save() }>
+            <h2 class="sheet__title">{format!("{} · fiyat takibi", topic.name)}</h2>
+            <p class="setnote">"Hermes / Claude Code seçtiğin sıklıkla bakar; yalnız fiyat düşünce, daha uygun bağlantı bulununca ya da hedefe inince bu konuya yazar ve bildirim gönderir."</p>
+            <label class="formfield formfield--sheet">
+                <span class="formfield__label">"Ürün"</span>
+                <span class="input"><input type="text" lang="tr" node_ref=input placeholder="Örn. Pixel 10 Pro 256 GB"
+                    prop:value=move || query.get() on:input=move |ev| query.set(event_target_value(&ev))/></span>
+            </label>
+            <label class="formfield formfield--sheet">
+                <span class="formfield__label">"Bağlantılar (isteğe bağlı, her satıra bir tane)"</span>
+                <textarea class="textarea" rows="3" placeholder="https://…"
+                    prop:value=move || urls.get() on:input=move |ev| urls.set(event_target_value(&ev))></textarea>
+            </label>
+            <div class="fields">
+                <label class="fieldbox">
+                    <span class="fieldbox__label">"Hedef fiyat (₺)"</span>
+                    <span class="fieldbox__val"><input type="text" inputmode="decimal" aria-label="Hedef fiyat" placeholder="İsteğe bağlı"
+                        prop:value=move || target.get() on:input=move |ev| target.set(event_target_value(&ev))/></span>
+                </label>
+                <label class="fieldbox">
+                    <span class="fieldbox__label">"Sıklık"</span>
+                    <span class="fieldbox__val"><select aria-label="Sıklık" on:change=move |ev| every.set(event_target_value(&ev))>{options}</select></span>
+                </label>
+            </div>
+            <div class="sheet__foot sheet__foot--flat">
+                <button class="btn btn--primary btn--block" type="submit">"Takibi kaydet"</button>
+                {move || existing.get().then(|| {
+                    let stop = stop.clone();
+                    view! { <button class="btn btn--text btn--block" type="button" on:click=stop>"Takibi kapat"</button> }
+                })}
+            </div>
+        </form>
+    };
+    shell(
+        "Fiyat takibi",
+        || "sheet--auto",
+        move || open.set(false),
+        content,
+    )
+}
+
+#[component]
+fn TopicMenuBody(
+    topic: TopicRef,
+    open: RwSignal<bool>,
+    new_sub: RwSignal<bool>,
+    watching: RwSignal<bool>,
+) -> impl IntoView {
     let c = ctx();
     let renaming = RwSignal::new(false);
     let name = RwSignal::new(topic.name.clone());
@@ -633,6 +757,14 @@ fn TopicMenuBody(topic: TopicRef, open: RwSignal<bool>, new_sub: RwSignal<bool>)
                     <span class="setrow__ic"><Icon name="plus"/></span>
                     <span class="setrow__txt"><span class="setrow__title">"Alt konu ekle"</span>
                         <span class="setrow__sub">"Örn. Malzeme hareketleri, Yapılacaklar, Para alışverişi"</span></span>
+                </button>
+                <button class="setrow" on:click=move |_| { open.set(false); watching.set(true); }>
+                    <span class="setrow__ic"><Icon name="cart"/></span>
+                    <span class="setrow__txt"><span class="setrow__title">"Fiyat takibi"</span>
+                        <span class="setrow__sub">{move || match row.get().and_then(|t| t.watch) {
+                            Some(w) => format!("Takipte: {}", w.query),
+                            None => "Bir ürünün fiyatını takip et; düşünce haber ver".to_owned(),
+                        }}</span></span>
                 </button>
                 <button class="setrow" aria-expanded=move || choosing_parent.get().to_string()
                     on:click=move |_| choosing_parent.update(|v| *v = !*v)>

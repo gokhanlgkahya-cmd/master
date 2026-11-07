@@ -74,6 +74,7 @@ pub(crate) struct TopicRow {
     pub icon: Option<String>,
     pub avatar: Option<String>,
     pub parent_id: Option<String>,
+    pub watch: Option<String>,
     pub pinned: i64,
 }
 
@@ -96,6 +97,11 @@ impl TryFrom<TopicRow> for Topic {
                 .as_deref()
                 .map(|p| parse_id("konu", p))
                 .transpose()?,
+            watch: r
+                .watch
+                .as_deref()
+                .map(|w| from_json("konu takibi", w))
+                .transpose()?,
             pinned: bool_from(r.pinned),
         })
     }
@@ -109,20 +115,23 @@ pub(crate) struct EntryRow {
     pub topic_id: Option<String>,
     pub status: String,
     pub trashed_at: Option<String>,
+    pub author: Option<String>,
 }
 
 impl TryFrom<EntryRow> for Entry {
     type Error = StoreError;
     fn try_from(r: EntryRow) -> Result<Self> {
         let trashed_at = parse_opt_ts("kayıt", r.trashed_at.as_deref())?;
-        Ok(Self::from_parts(
+        let mut e = Self::from_parts(
             parse_id("kayıt", &r.id)?,
             EntryText::new(&r.text)?,
             Source::parse(&r.source)?,
             parse_ts("kayıt", &r.captured_at)?,
             parse_opt_id("kayıt", r.topic_id.as_deref())?,
             EntryStatus::from_parts(&r.status, trashed_at)?,
-        ))
+        );
+        e.from_notai = r.author.as_deref() == Some("notai");
+        Ok(e)
     }
 }
 

@@ -613,10 +613,58 @@ pub async fn due_notices(
         )
         .await
         .map_err(err)?;
+    // Senkronla gelen NotAI mesajları (ör. fiyat takibi): her biri bir kez bildirilir.
+    let since_notai = store
+        .kv_get(NOTAI_NOTIFIED_KEY)
+        .await
+        .map_err(err)?
+        .and_then(|s| DateTime::parse_from_rfc3339(&s).ok())
+        .map(|d| d.with_timezone(&Utc));
+    let mut notai_until = since_notai.unwrap_or(now);
+    if let Some(since) = since_notai {
+        for e in store.notai_entries_since(since).await.map_err(err)? {
+            if let Some(t) = e.topic() {
+                let name = store
+                    .topic(t)
+                    .await
+                    .map(|x| x.name.as_str().to_owned())
+                    .unwrap_or_default();
+                let headline = e.text.preview(80);
+                out.push(notai_core::notice::Notice::watch(
+                    &headline,
+                    (t, name),
+                    e.id,
+                    now,
+                ));
+            }
+            notai_until = notai_until.max(e.captured_at);
+        }
+    }
+    store
+        .kv_set(
+            NOTAI_NOTIFIED_KEY,
+            &notai_until.to_rfc3339_opts(chrono::SecondsFormat::Nanos, true),
+        )
+        .await
+        .map_err(err)?;
     if let Some(last) = out.last() {
         store.set_notice(last).await.map_err(err)?;
     }
     Ok(out)
+}
+
+const NOTAI_NOTIFIED_KEY: &str = "notai_notified_until";
+
+/// Konuya fiyat/ürün takibi ekler, günceller ya da (`query` boşsa) kaldırır.
+pub async fn set_watch(
+    store: &Store,
+    topic: &str,
+    req: &notai_api::WatchRequest,
+    now: DateTime<Utc>,
+) -> CmdResult<()> {
+    let mut t = store.topic(id::<TopicId>(topic)?).await.map_err(err)?;
+    t.watch = convert::watch_config(req)?;
+    store.update_topic(&t, now).await.map_err(err)
 }
 
 // ---------------- Harcamalar (2026-11-07) ----------------

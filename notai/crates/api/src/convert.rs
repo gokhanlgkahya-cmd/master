@@ -34,6 +34,7 @@ pub fn notice(n: &notai_core::notice::Notice) -> crate::NoticeView {
         kind: match n.kind {
             notai_core::notice::NoticeKind::Reminder => "reminder",
             notai_core::notice::NoticeKind::Question => "question",
+            notai_core::notice::NoticeKind::Watch => "watch",
         }
         .to_owned(),
         title: n.title.clone(),
@@ -63,7 +64,46 @@ pub fn entry(item: JournalItem, tz: Tz) -> EntryView {
         suggestions: item.suggestions.iter().map(|s| suggestion(s, tz)).collect(),
         tags: item.tags,
         people: item.people,
+        from_notai: e.from_notai,
     }
+}
+
+/// Takip ayarı → form görünümü.
+#[must_use]
+pub fn watch_view(w: &notai_core::watch::WatchConfig) -> crate::WatchView {
+    crate::WatchView {
+        query: w.query.clone(),
+        urls: w.urls.clone(),
+        target_price: w.target_price.map_or_else(String::new, |p| {
+            p.format_abs().trim_end_matches("\u{a0}₺").to_owned()
+        }),
+        every_hours: w.every_hours,
+        active: w.active,
+    }
+}
+
+/// Form isteği → takip ayarı (`query` boşsa takip kaldırılır: `None`).
+pub fn watch_config(
+    r: &crate::WatchRequest,
+) -> Result<Option<notai_core::watch::WatchConfig>, String> {
+    if r.query.trim().is_empty() {
+        return Ok(None);
+    }
+    let target = if r.target_price.trim().is_empty() {
+        None
+    } else {
+        Some(notai_core::finance::Money::parse(&r.target_price).map_err(|e| e.to_string())?)
+    };
+    notai_core::watch::WatchConfig::new(
+        &r.query,
+        r.urls.clone(),
+        target,
+        r.every_hours
+            .unwrap_or(notai_core::watch::DEFAULT_EVERY_HOURS),
+        r.active.unwrap_or(true),
+    )
+    .map(Some)
+    .map_err(|e| e.to_string())
 }
 
 /// Akış görünümü. `limit` kadar kayıt geldiyse daha eskileri için imleç verilir.
@@ -112,6 +152,7 @@ pub fn topic_row(a: TopicActivity, now: DateTime<Utc>, tz: Tz) -> TopicRowView {
         parent_id: a.topic.parent.map(|p| p.to_string()),
         path: a.path.clone(),
         children: a.children,
+        watch: a.topic.watch.as_ref().map(watch_view),
         pinned: a.topic.pinned,
         last_label: a.last_at.map(|t| list_time_label(t, now, tz)),
         preview: a.last_preview,

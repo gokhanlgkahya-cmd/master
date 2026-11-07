@@ -1,6 +1,6 @@
 {
   "db_name": "SQLite",
-  "query": "SELECT id, text, source, captured_at, topic_id, status, trashed_at\n         FROM entries WHERE id = ?1",
+  "query": "SELECT id, text, source, captured_at, topic_id, status, trashed_at, author\n             FROM entries WHERE author = 'notai' AND captured_at > ?1 AND status != 'trashed'\n             ORDER BY captured_at",
   "describe": {
     "columns": [
       {
@@ -79,6 +79,17 @@
             "name": "trashed_at"
           }
         }
+      },
+      {
+        "name": "author",
+        "ordinal": 7,
+        "type_info": "Text",
+        "origin": {
+          "Table": {
+            "table": "entries",
+            "name": "author"
+          }
+        }
       }
     ],
     "parameters": {
@@ -91,8 +102,9 @@
       false,
       true,
       false,
+      true,
       true
     ]
   },
-  "hash": "c5d6ed8e30d4d0a6f7bf3633d176988fa12d84120c30dadc7621d4333cb98e5a"
+  "hash": "b6af78251de8e30a0caa663ff9582aa57693cf9306f338071b2db17b9a76038f"
 }

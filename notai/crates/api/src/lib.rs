@@ -58,6 +58,9 @@ pub struct EntryView {
     pub suggestions: Vec<SuggestionView>,
     pub tags: Vec<String>,
     pub people: Vec<String>,
+    /// NotAI'nin yazdığı mesaj (ör. fiyat takibi): sohbette karşı taraf gibi solda gösterilir.
+    #[serde(default)]
+    pub from_notai: bool,
 }
 
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
@@ -105,6 +108,9 @@ pub struct TopicRowView {
     /// Doğrudan alt konu sayısı (>0 ise konu açılınca alt konular listelenir).
     #[serde(default)]
     pub children: u32,
+    /// Fiyat / ürün takibi (varsa).
+    #[serde(default)]
+    pub watch: Option<WatchView>,
     pub pinned: bool,
     /// "12:05", "Dün", "Çarşamba", "2 Kas".
     pub last_label: Option<String>,
@@ -337,6 +343,32 @@ pub struct NoticeView {
     pub topic_id: Option<String>,
     pub topic_name: Option<String>,
     pub entry_id: Option<String>,
+}
+
+/// Konunun takip ayarı (form için).
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+pub struct WatchView {
+    pub query: String,
+    pub urls: Vec<String>,
+    /// "50000,00" biçiminde (form alanı için); yoksa boş.
+    pub target_price: String,
+    pub every_hours: u32,
+    pub active: bool,
+}
+
+/// Takip ayarı isteği; `query` boşsa takip kaldırılır.
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize, Default)]
+pub struct WatchRequest {
+    pub query: String,
+    #[serde(default)]
+    pub urls: Vec<String>,
+    /// "50.000" / "50000,00"; boşsa hedef yok.
+    #[serde(default)]
+    pub target_price: String,
+    #[serde(default)]
+    pub every_hours: Option<u32>,
+    #[serde(default)]
+    pub active: Option<bool>,
 }
 
 /// Harcamalar ekranı (bir ay).

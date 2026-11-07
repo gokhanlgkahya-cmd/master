@@ -177,6 +177,15 @@ async fn voice(
 }
 
 #[tauri::command]
+async fn set_watch(
+    st: State<'_, AppState>,
+    id: String,
+    req: notai_api::WatchRequest,
+) -> Result<(), String> {
+    service::set_watch(&st.store, &id, &req, Utc::now()).await
+}
+
+#[tauri::command]
 async fn finance(
     st: State<'_, AppState>,
     month: Option<String>,
@@ -403,6 +412,7 @@ pub fn run() {
             undo,
             answer_question,
             finance,
+            set_watch,
             import_statement,
             classify_transaction,
             notice,

@@ -613,6 +613,20 @@ impl Backend {
         }
     }
 
+    /// Konuya fiyat/ürün takibi ekler/günceller; `query` boşsa kaldırır.
+    pub async fn set_watch(&self, topic: String, req: notai_api::WatchRequest) -> BResult<()> {
+        match self {
+            Self::Tauri => Self::call::<Value>("set_watch", json!({ "id": topic, "req": req }))
+                .await
+                .map(|_| ()),
+            Self::Http(h) => h
+                .post::<Value>(&format!("/topics/{topic}/watch"), &req)
+                .await
+                .map(|_| ()),
+            Self::Demo(_) => Err(NOT_IN_DEMO.into()),
+        }
+    }
+
     /// Aylık harcama görünümü ("2026-10"; yoksa bu ay).
     pub async fn finance(&self, month: Option<String>) -> BResult<notai_api::FinanceView> {
         match self {

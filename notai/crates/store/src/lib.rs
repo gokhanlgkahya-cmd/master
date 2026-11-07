@@ -18,6 +18,7 @@ mod suggestions;
 mod sync_apply;
 mod tasks;
 mod topics;
+mod watch;
 
 pub mod changes;
 
@@ -42,6 +43,7 @@ pub use suggestions::DecisionOutcome;
 pub use sync_apply::Applied;
 pub use tasks::TaskView;
 pub use topics::NewTopic;
+pub use watch::DueWatch;
 
 /// AI işi başarısız olursa yeniden deneme bekleme süreleri (dakika). Bu kadar denemeden
 /// sonra kayıt "AI işleyemedi" olarak işaretlenir ama asla kaybolmaz.

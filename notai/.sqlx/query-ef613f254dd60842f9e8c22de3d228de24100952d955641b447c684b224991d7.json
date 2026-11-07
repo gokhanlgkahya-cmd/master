@@ -1,0 +1,12 @@
+{
+  "db_name": "SQLite",
+  "query": "INSERT INTO watch_state (topic_id, state) VALUES (?1, ?2)\n             ON CONFLICT (topic_id) DO UPDATE SET state = excluded.state",
+  "describe": {
+    "columns": [],
+    "parameters": {
+      "Right": 2
+    },
+    "nullable": []
+  },
+  "hash": "ef613f254dd60842f9e8c22de3d228de24100952d955641b447c684b224991d7"
+}

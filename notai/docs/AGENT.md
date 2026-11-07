@@ -67,6 +67,29 @@ NotAI gelen kutusunu sınıflandır.
 Hermes için de aynı adımlar geçerlidir (komut satırı aracı aynıdır). Ajanı periyodik çalıştırmak
 için Termux'ta `termux-job-scheduler` ya da n8n'de bir zamanlanmış akış kullanılabilir.
 
+## Fiyat / ürün takibi
+Gökhan bir konuya "Fiyat takibi" eklediğinde (konu menüsü → Fiyat takibi: ürün, bağlantılar, hedef
+fiyat, sıklık — varsayılan günde 1) ajan şu adımlarla çalışır:
+
+| Komut | Ne yapar |
+|---|---|
+| `notai watches` | Kontrol zamanı gelmiş takipler: konu, ürün, bağlantılar, hedef fiyat, son en iyi teklif, şema |
+| `notai watch-report <konu-id> [dosya\|-]` | Bulunan teklifler: `{"offers":[{"title":"…","price":"52999.00","url":"https://…","store":"Trendyol"}]}` |
+
+Sunucu teklifleri doğrular; **yalnız değişince** (ilk sonuç, fiyat düşüşü ≥ %0,5, daha uygun yeni
+bağlantı, hedefe inme) konuya NotAI mesajı yazar ve bildirim gönderir. Aynı/artan fiyat sessizce kaydedilir.
+
+Claude Code için `~/.claude/commands/notai-takip.md`:
+```markdown
+NotAI fiyat takiplerini çalıştır.
+1. `notai watches` çalıştır. Boş dizi dönerse "bakılacak takip yok" de ve bitir.
+2. Her takip için `query` ürününü verilen `urls` ve Türkiye'deki güvenilir mağazalarda ara (web araması /
+   sayfa okuma). Stokta olan, yeni ürün tekliflerini topla: ad, fiyat (TL), ürün sayfası, mağaza.
+3. `notai watch-report <topic_id> -` ile `schema`ya uyan JSON'u stdin'den gönder.
+4. Sonunda hangi takiplerde değişiklik olduğunu kısaca özetle.
+```
+Termux'ta günde bir çalıştırmak için `termux-job-scheduler` ya da n8n'de zamanlanmış akış kullanılabilir.
+
 ## Banka ekstreleri (kurallarla okunamayanlar)
 Ekstre PDF'leri önce ev sunucusunda/uygulamada **yerel** kurallarla okunur (banka verisi hiçbir
 AI'a gitmez). Biçim tanınmazsa ekstre ajan işi olarak bekler:

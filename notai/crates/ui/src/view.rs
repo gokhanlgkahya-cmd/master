@@ -159,6 +159,40 @@ pub fn show_entry_topic(current: Option<&str>, entry_topic: Option<&str>) -> boo
     }
 }
 
+/// Metni düz metin ve bağlantı parçalarına böler (NotAI mesajlarındaki alışveriş bağlantıları
+/// tıklanabilir olsun). Yalnız http(s) bağlantıları; satır sonları korunur.
+#[must_use]
+pub fn linkify(text: &str) -> Vec<(bool, String)> {
+    let mut out: Vec<(bool, String)> = Vec::new();
+    let mut plain = String::new();
+    for (i, line) in text.split('\n').enumerate() {
+        if i > 0 {
+            plain.push('\n');
+        }
+        for (j, word) in line.split(' ').enumerate() {
+            if j > 0 {
+                plain.push(' ');
+            }
+            if word.starts_with("https://") || word.starts_with("http://") {
+                if !plain.is_empty() {
+                    out.push((false, std::mem::take(&mut plain)));
+                }
+                out.push((true, word.to_owned()));
+            } else {
+                plain.push_str(word);
+            }
+        }
+    }
+    if !plain.is_empty() {
+        out.push((false, plain));
+    }
+    out
+}
+
+/// Takip aralığı seçenekleri (saat, ad).
+pub const WATCH_EVERY: [(u32, &str); 3] =
+    [(24, "Günde 1"), (12, "12 saatte 1"), (168, "Haftada 1")];
+
 /// Ana ekran hap filtresi.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum HomeFilter {
@@ -855,6 +889,7 @@ mod tests {
             parent_id: None,
             path: id.into(),
             children: 0,
+            watch: None,
             pinned: false,
             last_label: None,
             preview: None,
@@ -887,6 +922,17 @@ mod tests {
         assert!(HomeFilter::All.shows_review() && !HomeFilter::Unprocessed.shows_review());
         assert_eq!(HomeFilter::Areas.kind_param(), "areas");
         assert_eq!(plan_reason_class("overdue"), "plan__sub plan__sub--error");
+    }
+
+    #[test]
+    fn links_are_split_out() {
+        let parts = linkify("Fiyat düştü — Trendyol\n• Trendyol · 52.999 ₺ · https://t.com/1");
+        assert_eq!(parts.last().unwrap(), &(true, "https://t.com/1".to_owned()));
+        assert!(parts[0].1.contains('\n'), "satır sonu korunur");
+        assert_eq!(
+            linkify("bağlantı yok"),
+            vec![(false, "bağlantı yok".to_owned())]
+        );
     }
 
     #[test]
@@ -951,6 +997,7 @@ mod tests {
             parent_id: None,
             path: "x".into(),
             children: 0,
+            watch: None,
             pinned: false,
             last_label: None,
             preview: None,

@@ -1,6 +1,6 @@
 {
   "db_name": "SQLite",
-  "query": "SELECT id, text, source, captured_at, topic_id, status, trashed_at\n             FROM entries\n             WHERE ai_state = 'pending' AND status != 'trashed'\n               AND (ai_next_at IS NULL OR ai_next_at <= ?1)\n               AND id NOT IN (SELECT value FROM json_each(?2))\n             ORDER BY captured_at LIMIT 1",
+  "query": "SELECT id, text, source, captured_at, topic_id, status, trashed_at, author\n             FROM entries\n             WHERE ai_state = 'pending' AND status != 'trashed'\n               AND (ai_next_at IS NULL OR ai_next_at <= ?1)\n               AND id NOT IN (SELECT value FROM json_each(?2))\n             ORDER BY captured_at LIMIT 1",
   "describe": {
     "columns": [
       {
@@ -79,6 +79,17 @@
             "name": "trashed_at"
           }
         }
+      },
+      {
+        "name": "author",
+        "ordinal": 7,
+        "type_info": "Text",
+        "origin": {
+          "Table": {
+            "table": "entries",
+            "name": "author"
+          }
+        }
       }
     ],
     "parameters": {
@@ -91,8 +102,9 @@
       false,
       true,
       false,
+      true,
       true
     ]
   },
-  "hash": "02f2d9d741acb761ec30614788a04910ccc1b361d6503f06cb40a61dd827dea0"
+  "hash": "20a2143f55ae5c81774e3cf12d5cd34e8f70ce0dc44bb3b9b34bf4a2b8da01c0"
 }

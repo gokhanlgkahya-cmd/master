@@ -117,6 +117,9 @@ pub struct Topic {
     /// Üst konu (hiyerarşi: "Sabun işi" → "Malzeme hareketleri"). `None` = en üst.
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub parent: Option<TopicId>,
+    /// Fiyat / ürün takibi ayarı (varsa).
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub watch: Option<crate::watch::WatchConfig>,
     pub pinned: bool,
 }
 
@@ -130,6 +133,7 @@ impl Topic {
             icon: None,
             avatar: None,
             parent: None,
+            watch: None,
             pinned: false,
         }
     }

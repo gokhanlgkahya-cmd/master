@@ -59,10 +59,15 @@ pub(crate) async fn insert_topic(
     let due = topic.kind.due().map(date_str);
     let pinned = i64::from(topic.pinned);
     let parent = topic.parent.map(|p| p.to_string());
+    let watch = topic
+        .watch
+        .as_ref()
+        .map(serde_json::to_string)
+        .transpose()?;
     let now_s = ts(now);
     let res = sqlx::query!(
-        "INSERT INTO topics (id, name, name_key, kind, due_date, icon, avatar, pinned, created_at, updated_at, parent_id)
-         VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?9, ?7, ?8, ?8, ?10)
+        "INSERT INTO topics (id, name, name_key, kind, due_date, icon, avatar, pinned, created_at, updated_at, parent_id, watch)
+         VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?9, ?7, ?8, ?8, ?10, ?11)
          ON CONFLICT (name_key) DO NOTHING",
         id,
         name,
@@ -73,7 +78,8 @@ pub(crate) async fn insert_topic(
         pinned,
         now_s,
         topic.avatar,
-        parent
+        parent,
+        watch
     )
     .execute(&mut *conn)
     .await?;
@@ -94,7 +100,7 @@ pub(crate) async fn find_by_name(
     let key = name_key(parent, name);
     let row = sqlx::query_as!(
         TopicRow,
-        "SELECT id, name, kind, due_date, icon, avatar, parent_id, pinned FROM topics WHERE name_key = ?1",
+        "SELECT id, name, kind, due_date, icon, avatar, parent_id, watch, pinned FROM topics WHERE name_key = ?1",
         key
     )
     .fetch_optional(&mut *conn)
@@ -106,7 +112,7 @@ pub(crate) async fn get_topic(conn: &mut SqliteConnection, id: TopicId) -> Resul
     let id_s = id.to_string();
     let row = sqlx::query_as!(
         TopicRow,
-        "SELECT id, name, kind, due_date, icon, avatar, parent_id, pinned FROM topics WHERE id = ?1",
+        "SELECT id, name, kind, due_date, icon, avatar, parent_id, watch, pinned FROM topics WHERE id = ?1",
         id_s
     )
     .fetch_optional(&mut *conn)
@@ -180,6 +186,11 @@ impl Store {
             .await?
             .check_move(topic.id, topic.parent)?;
         let parent = topic.parent.map(|p| p.to_string());
+        let watch = topic
+            .watch
+            .as_ref()
+            .map(serde_json::to_string)
+            .transpose()?;
         let id = topic.id.to_string();
         let key = name_key(topic.parent, &topic.name);
         let name = topic.name.as_str();
@@ -190,7 +201,7 @@ impl Store {
         let mut tx = self.pool.begin().await?;
         let res = sqlx::query!(
             "UPDATE topics SET name = ?2, name_key = ?3, kind = ?4, due_date = ?5, icon = ?6,
-                    pinned = ?7, updated_at = ?8, avatar = ?9, parent_id = ?10
+                    pinned = ?7, updated_at = ?8, avatar = ?9, parent_id = ?10, watch = ?11
              WHERE id = ?1",
             id,
             name,
@@ -201,7 +212,8 @@ impl Store {
             pinned,
             now_s,
             topic.avatar,
-            parent
+            parent,
+            watch
         )
         .execute(&mut *tx)
         .await
@@ -223,7 +235,7 @@ impl Store {
     /// Ana ekran konu listesi: son kayıt önizlemesiyle, sabitlenenler önce, sonra son etkinliğe göre.
     pub async fn topic_list(&self, filter: KindFilter) -> Result<Vec<TopicActivity>> {
         let rows = sqlx::query!(
-            r#"SELECT t.id, t.name, t.kind, t.due_date, t.icon, t.avatar, t.parent_id, t.pinned,
+            r#"SELECT t.id, t.name, t.kind, t.due_date, t.icon, t.avatar, t.parent_id, t.watch, t.pinned,
                       (SELECT e.captured_at FROM entries e
                         WHERE e.topic_id = t.id AND e.status IN ('inbox', 'processed')
                         ORDER BY e.captured_at DESC LIMIT 1) AS "last_at: String",
@@ -269,6 +281,7 @@ impl Store {
                 icon: r.icon,
                 avatar: r.avatar,
                 parent_id: r.parent_id,
+                watch: r.watch,
                 pinned: r.pinned,
             })?;
             // Filtre toplamadan sonra uygulanır: alt konu başka türde olsa da üstüne toplansın.

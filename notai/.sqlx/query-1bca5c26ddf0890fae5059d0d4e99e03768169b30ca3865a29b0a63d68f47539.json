@@ -1,6 +1,6 @@
 {
   "db_name": "SQLite",
-  "query": "SELECT id, text, source, captured_at, topic_id, status, trashed_at\n             FROM entries WHERE status = 'trashed' ORDER BY trashed_at DESC",
+  "query": "SELECT id, text, source, captured_at, topic_id, status, trashed_at, author\n         FROM entries WHERE id = ?1",
   "describe": {
     "columns": [
       {
@@ -79,10 +79,21 @@
             "name": "trashed_at"
           }
         }
+      },
+      {
+        "name": "author",
+        "ordinal": 7,
+        "type_info": "Text",
+        "origin": {
+          "Table": {
+            "table": "entries",
+            "name": "author"
+          }
+        }
       }
     ],
     "parameters": {
-      "Right": 0
+      "Right": 1
     },
     "nullable": [
       false,
@@ -91,8 +102,9 @@
       false,
       true,
       false,
+      true,
       true
     ]
   },
-  "hash": "9675dc0d06167961c6dea5d59a9b9b7fb862cbad174fe85a5efc084d95166e9d"
+  "hash": "1bca5c26ddf0890fae5059d0d4e99e03768169b30ca3865a29b0a63d68f47539"
 }

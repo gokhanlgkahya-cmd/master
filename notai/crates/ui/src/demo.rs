@@ -60,6 +60,7 @@ fn topic(id: &str, name: &str, kind: &str, icon: &str, last: &str, preview: &str
         parent_id: None,
         path: name.into(),
         children: 0,
+        watch: None,
         pinned: false,
         last_label: Some(last.into()),
         preview: Some(preview.into()),
@@ -105,6 +106,7 @@ fn entry(e: E<'_>) -> EntryView {
         suggestions: e.suggestions,
         tags: vec![],
         people: vec![],
+        from_notai: false,
     }
 }
 

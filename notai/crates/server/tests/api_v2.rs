@@ -965,3 +965,126 @@ async fn bank_statement_pdf_import_report_and_dedup() {
     let (_, jobs) = h.get("/api/agent/statements").await;
     assert!(jobs.as_array().unwrap().is_empty());
 }
+
+#[tokio::test]
+async fn price_watch_reports_only_on_change_and_notifies() {
+    let ntfy = MockServer::start().await;
+    Mock::given(method("POST"))
+        .and(query_param("title", "Takip · Pixel 10 Pro"))
+        .respond_with(ResponseTemplate::new(200))
+        .expect(2)
+        .mount(&ntfy)
+        .await;
+    let mut cfg = Config::defaults();
+    cfg.ntfy_url = Some(ntfy.uri());
+    let h = h(cfg, ScriptedLlm::new(), false).await;
+    let (_, t) = h
+        .post(
+            "/api/topics",
+            json!({ "name": "Pixel 10 Pro", "kind": "resource" }),
+        )
+        .await;
+    let tid = t["id"].as_str().unwrap().to_owned();
+    // Geçersiz bağlantı reddedilir; geçerli ayar kaydedilir.
+    let (s, _) = h
+        .post(
+            &format!("/api/topics/{tid}/watch"),
+            json!({ "query": "Pixel 10 Pro", "urls": ["ftp://x"] }),
+        )
+        .await;
+    assert_eq!(s, StatusCode::BAD_REQUEST);
+    let (s, _) = h
+        .post(
+            &format!("/api/topics/{tid}/watch"),
+            json!({ "query": "Pixel 10 Pro 256 GB", "urls": ["https://example.com/p10"], "target_price": "50.000" }),
+        )
+        .await;
+    assert_eq!(s, StatusCode::OK);
+    let (_, topics) = h.get("/api/topics").await;
+    assert_eq!(topics["topics"][0]["watch"]["target_price"], "50.000,00");
+
+    let (_, jobs) = h.get("/api/agent/watches").await;
+    assert_eq!(jobs[0]["topic_id"], tid.as_str());
+    assert_eq!(jobs[0]["query"], "Pixel 10 Pro 256 GB");
+    assert!(
+        jobs[0]["schema"]["required"]
+            .as_array()
+            .unwrap()
+            .iter()
+            .any(|x| x == "offers")
+    );
+
+    let report = |price: &str| {
+        json!({ "offers": [
+            { "title": "Pixel 10 Pro 256 GB", "price": price, "url": "https://t.com/p10", "store": "Trendyol" },
+            { "title": "Pixel 10 Pro", "price": "abc", "url": "https://x.com", "store": null }
+        ] })
+    };
+    // 1) İlk sonuç: konuya NotAI mesajı + bildirim.
+    let (_, r) = h
+        .post(
+            &format!("/api/agent/watches/{tid}/report"),
+            report("54.999,00"),
+        )
+        .await;
+    assert_eq!(r["changed"], true);
+    assert_eq!(r["dropped"], 1, "bozuk fiyatlı teklif atılır");
+    let (_, j) = h
+        .get(&format!("/api/journal?filter=topic&topic_id={tid}"))
+        .await;
+    let item = &j["groups"][0]["items"][0];
+    assert_eq!(item["from_notai"], true);
+    assert!(item["text"].as_str().unwrap().contains("https://t.com/p10"));
+    let (_, jobs) = h.get("/api/agent/watches").await;
+    assert!(jobs.as_array().unwrap().is_empty(), "bugün tekrar bakılmaz");
+
+    // 2) Ertesi gün aynı fiyat: sessiz.
+    h.clock.set(t0() + Duration::hours(25));
+    let (_, r) = h
+        .post(
+            &format!("/api/agent/watches/{tid}/report"),
+            report("54.999,00"),
+        )
+        .await;
+    assert_eq!(r["changed"], false);
+
+    // 3) Düşüş: mesaj + bildirim; son bildirim takip.
+    h.clock.set(t0() + Duration::hours(50));
+    let (_, r) = h
+        .post(
+            &format!("/api/agent/watches/{tid}/report"),
+            report("52.499,00"),
+        )
+        .await;
+    assert_eq!(r["changed"], true);
+    assert!(r["message"].as_str().unwrap().starts_with("Fiyat düştü"));
+    let (_, n) = h.get("/api/notice").await;
+    assert_eq!(n["kind"], "watch");
+    assert_eq!(n["topic_id"], tid.as_str());
+    let (_, j) = h
+        .get(&format!("/api/journal?filter=topic&topic_id={tid}"))
+        .await;
+    let n_msgs: usize = j["groups"]
+        .as_array()
+        .unwrap()
+        .iter()
+        .map(|g| g["items"].as_array().unwrap().len())
+        .sum();
+    assert_eq!(n_msgs, 2, "aynı fiyat konuya yazılmadı");
+    // NotAI mesajı AI sınıflandırmasına girmez.
+    assert!(
+        h.state
+            .store
+            .next_ai_job(t0() + Duration::hours(50))
+            .await
+            .unwrap()
+            .is_none()
+    );
+
+    // Takibi kapat.
+    let (_, _) = h
+        .post(&format!("/api/topics/{tid}/watch"), json!({ "query": "" }))
+        .await;
+    let (_, topics) = h.get("/api/topics").await;
+    assert!(topics["topics"][0]["watch"].is_null());
+}

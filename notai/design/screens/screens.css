@@ -988,3 +988,9 @@ input:focus-visible + .checkbox__box, input:focus-visible + .toggle__track, .che
 .fin-tx__meta select { font: inherit; color: var(--color-text); background: var(--color-tile-bg); border: 0; border-radius: var(--radius-full); padding: 0 var(--space-2); min-height: var(--size-chip); }
 .fin-tx__amt { flex: none; font-size: var(--font-size-sm); line-height: var(--font-line-height-sm); font-weight: var(--font-weight-semibold); font-variant-numeric: var(--font-feature-tabular); }
 .fin-tx__amt--in { color: var(--color-success); }
+
+/* NotAI'nin konuya yazdığı mesaj (fiyat takibi vb.): sohbetteki karşı taraf gibi solda, nötr
+   zemin; satır sonları korunur, bağlantılar altı çizili. */
+.bubble--notai { background: var(--color-surface-sunken); white-space: pre-line; }
+.bubble--notai a { color: var(--color-text); text-decoration: underline; overflow-wrap: anywhere; }
+.entry--notai .meta { gap: var(--space-1); }

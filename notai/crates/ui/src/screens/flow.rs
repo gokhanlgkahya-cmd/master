@@ -64,7 +64,13 @@ pub fn Flow(topic: Option<TopicRef>) -> impl IntoView {
         move || match data.get() {
             Some(Ok((j, _, _))) if is_journal => view::unprocessed_line(j.unprocessed),
             _ => this_topic()
-                .map(|t| view::kind_line(&t.kind_label, t.due_date))
+                .map(|t| {
+                    let base = view::kind_line(&t.kind_label, t.due_date);
+                    match t.watch {
+                        Some(w) if w.active => format!("{base} · fiyat takibinde"),
+                        _ => base,
+                    }
+                })
                 .unwrap_or_default(),
         }
     };
@@ -296,11 +302,7 @@ fn chip(s: SuggestionView) -> impl IntoView {
     .into_any()
 }
 
-fn entry_row(
-    e: EntryView,
-    show_topic: bool,
-    looks: &HashMap<String, view::TopicLook>,
-) -> impl IntoView {
+fn entry_row(e: EntryView, show_topic: bool, looks: &HashMap<String, view::TopicLook>) -> AnyView {
     let c = ctx();
     let dot = e
         .unprocessed
@@ -323,6 +325,30 @@ fn entry_row(
     let chips = others.into_iter().map(chip).collect_view();
     let questions = questions.into_iter().map(ai_question).collect_view();
     let open = e.clone();
+    if e.from_notai {
+        // NotAI'nin mesajı (fiyat takibi vb.): sohbetteki karşı taraf gibi solda; bağlantılar açılır.
+        let body = view::linkify(&e.text)
+            .into_iter()
+            .map(|(link, s)| {
+                if link {
+                    view! { <a href=s.clone() target="_blank" rel="noopener noreferrer">{s.clone()}</a> }
+                        .into_any()
+                } else {
+                    view! { <span>{s}</span> }.into_any()
+                }
+            })
+            .collect_view();
+        return view! {
+            <article class="entry entry--left entry--notai">
+                <div class="entry__gutter"></div>
+                <div class="entry__main">
+                    <div class="meta"><span class="aimsg__who"><Icon name="spark" size="xs"/>"NotAI"</span><span aria-hidden="true">"·"</span><time class="tnum">{e.time.clone()}</time>{topic}</div>
+                    <div class="bubble bubble--notai" on:click=move |_| c.selected.set(Some(open.clone()))><p>{body}</p></div>
+                </div>
+            </article>
+        }
+        .into_any();
+    }
     view! {
         <article class="entry">
             <div class="entry__gutter">{dot}</div>
@@ -334,4 +360,5 @@ fn entry_row(
             </div>
         </article>
     }
+    .into_any()
 }

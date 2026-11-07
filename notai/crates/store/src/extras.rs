@@ -181,7 +181,7 @@ impl Store {
     /// Her konunun son hareketi (son kayıt ya da son görev güncellemesi).
     pub async fn topic_activity(&self) -> Result<Vec<TopicActivityTimes>> {
         let rows = sqlx::query!(
-            r#"SELECT t.id, t.name, t.kind, t.due_date, t.icon, t.avatar, t.parent_id, t.pinned,
+            r#"SELECT t.id, t.name, t.kind, t.due_date, t.icon, t.avatar, t.parent_id, t.watch, t.pinned,
                       (SELECT MAX(x) FROM (
                           SELECT MAX(e.captured_at) AS x FROM entries e WHERE e.topic_id = t.id
                           UNION ALL
@@ -202,6 +202,7 @@ impl Store {
                         icon: r.icon,
                         avatar: r.avatar,
                         parent_id: r.parent_id,
+                        watch: r.watch,
                         pinned: r.pinned,
                     })?,
                     last_activity: r.last.as_deref().map(|s| parse_ts("konu", s)).transpose()?,
@@ -319,7 +320,7 @@ impl Store {
         let limit = i64::from(limit.clamp(1, 200));
         let rows = sqlx::query_as!(
             EntryRow,
-            "SELECT e.id, e.text, e.source, e.captured_at, e.topic_id, e.status, e.trashed_at
+            "SELECT e.id, e.text, e.source, e.captured_at, e.topic_id, e.status, e.trashed_at, e.author
              FROM entries e LEFT JOIN entry_embeddings v ON v.entry_id = e.id AND v.model = ?1
              WHERE v.entry_id IS NULL AND e.status != 'trashed'
              ORDER BY e.captured_at DESC LIMIT ?2",
@@ -410,7 +411,7 @@ impl Store {
     pub async fn trash(&self) -> Result<Vec<Entry>> {
         let rows = sqlx::query_as!(
             EntryRow,
-            "SELECT id, text, source, captured_at, topic_id, status, trashed_at
+            "SELECT id, text, source, captured_at, topic_id, status, trashed_at, author
              FROM entries WHERE status = 'trashed' ORDER BY trashed_at DESC"
         )
         .fetch_all(&self.pool)
@@ -492,7 +493,7 @@ impl Store {
     pub async fn export_snapshot(&self) -> Result<ExportSnapshot> {
         let topic_rows = sqlx::query_as!(
             TopicRow,
-            "SELECT id, name, kind, due_date, icon, avatar, parent_id, pinned FROM topics ORDER BY name"
+            "SELECT id, name, kind, due_date, icon, avatar, parent_id, watch, pinned FROM topics ORDER BY name"
         )
         .fetch_all(&self.pool)
         .await?;
@@ -502,7 +503,7 @@ impl Store {
             .collect::<Result<Vec<_>>>()?;
         let entry_rows = sqlx::query_as!(
             EntryRow,
-            "SELECT id, text, source, captured_at, topic_id, status, trashed_at
+            "SELECT id, text, source, captured_at, topic_id, status, trashed_at, author
              FROM entries WHERE status != 'trashed' ORDER BY captured_at, id"
         )
         .fetch_all(&self.pool)

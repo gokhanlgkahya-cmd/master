@@ -252,8 +252,13 @@ pub fn render(
                     } else {
                         ""
                     };
+                    let who = if e.entry.from_notai {
+                        "**NotAI:** "
+                    } else {
+                        ""
+                    };
                     md.push_str(&format!(
-                        "- {} {}{}{archived} ^{}\n",
+                        "- {} {who}{}{}{archived} ^{}\n",
                         local.format("%H:%M"),
                         one_line(e.entry.text.as_str()),
                         labels(e),

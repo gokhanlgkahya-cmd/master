@@ -114,6 +114,9 @@ pub struct Entry {
     pub captured_at: DateTime<Utc>,
     topic: Option<TopicId>,
     status: EntryStatus,
+    /// NotAI'nin yazdığı kayıt (ör. fiyat takibi mesajı); kullanıcınınkinden ayrı gösterilir.
+    #[serde(default, skip_serializing_if = "std::ops::Not::not")]
+    pub from_notai: bool,
 }
 
 impl Entry {
@@ -138,6 +141,7 @@ impl Entry {
             captured_at,
             topic,
             status,
+            from_notai: false,
         }
     }
 
@@ -158,6 +162,7 @@ impl Entry {
             captured_at,
             topic,
             status,
+            from_notai: false,
         }
     }
 
