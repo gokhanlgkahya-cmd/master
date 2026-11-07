@@ -1,0 +1,4 @@
+[env]
+# sqlx derleme zamanı sorgu kontrolü: .sqlx/ önbelleğini kullan (scripts/prepare-sqlx.sh üretir).
+# Ortamda SQLX_OFFLINE tanımlıysa o geçerli olur (force = false).
+SQLX_OFFLINE = { value = "true", force = false }
