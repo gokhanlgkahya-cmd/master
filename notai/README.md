@@ -1,0 +1,85 @@
+# NotAI
+
+Gün içinde düşünmeden not/iş/fikir yakala; yapay zekâ seni tanıyarak sınıflandırsın, zamanı
+gelince hatırlatsın. Kurgu WhatsApp gibi: ana ekranda **Ana Günlük** ve konular, akışta en yeni
+kayıt en altta, altta sabit yazma çubuğu, kaydın altında AI öneri çipleri.
+
+- Ürün kuralları: [`CLAUDE.md`](CLAUDE.md)
+- Tasarım: [`design/`](design/) — brief, karar, token'lar, kılavuz, bileşenler, 14 ekran
+- İşlev planı: [`docs/FEATURE_PLAN.md`](docs/FEATURE_PLAN.md) · Durum: [`docs/PROGRESS.md`](docs/PROGRESS.md)
+- Mimari: [`docs/ARCHITECTURE.md`](docs/ARCHITECTURE.md)
+
+![Leptos arayüzü (tarayıcı önizlemesi, demo verisi)](docs/screenshots/ui-v0.1-leptos.png)
+
+## Kod düzeni (Cargo workspace, tamamı Rust)
+
+| Crate | Ne yapar |
+|---|---|
+| `crates/core` | Alan modeli ve kurallar (kayıt durum makinesi, PARA konuları, görev/tekrar/hatırlatma, AI önerisi → etki, günlük zaman çizelgesi, sabah planı, senkron birleştirme). I/O yok. |
+| `crates/store` | SQLite + sqlx (derleme zamanı denetimli sorgular). Her yazma transaction'da ve değişiklik günlüğünde; silme = çöp kutusu. |
+| `crates/ai` | Sağlayıcıdan bağımsız LLM istemcisi (Claude API, yerel Gemma/Ollama), Türkçe istem, katı JSON şema doğrulaması. |
+| `crates/sync` | Telefon ↔ masaüstü ↔ ev sunucusu senkronu (son yazan kazanır + alan kuralları). |
+| `crates/server` | Ev sunucusu (axum): REST, WhatsApp/MacroDroid webhook'u, AI işçisi, sabah planı zamanlayıcısı. |
+| `crates/api` | Sunucu, uygulama ve arayüzün paylaştığı JSON tipleri. |
+| `crates/tokens` | `design/tokens.json` → CSS üreticisi. |
+| `crates/ui` | Leptos arayüzü (Rust → WASM). Tasarım dosyalarını derlerken gömer. |
+| `crates/app` | Tauri 2 uygulama kabuğu (Android + Windows/Linux), yerel SQLite. |
+
+## Geliştirme
+
+```bash
+rustup target add wasm32-unknown-unknown
+cargo install trunk sqlx-cli --locked      # bir kez
+./scripts/check.sh                         # fmt + clippy -D warnings + tüm testler ("iş bitti" ölçütü)
+```
+
+- Şema ya da bir `sqlx::query!` değişirse: `./scripts/prepare-sqlx.sh` (`.sqlx/` önbelleğini günceller; commit edin).
+- `design/tokens.json` değişirse: `cargo run -p notai-tokens --bin gen-tokens` (`design/tokens.css`'i üretir).
+- Arayüzü tarayıcıda görmek için: `cd crates/ui && trunk serve` → http://localhost:8080 (Tauri dışında demo verisiyle açılır).
+- Linux masaüstü için Tauri kütüphaneleri: `libwebkit2gtk-4.1-dev libgtk-3-dev libsoup-3.0-dev librsvg2-dev`.
+
+## Ev sunucusu (S24 Ultra)
+
+```bash
+cargo build --release -p notai-server
+NOTAI_BIND=0.0.0.0:8787 \
+NOTAI_DATABASE_URL=sqlite://notai.db \
+NOTAI_API_TOKEN=uzun-rastgele-bir-değer \
+NOTAI_WEBHOOK_SECRET=macrodroid-icin-baska-bir-değer \
+NOTAI_AI=local NOTAI_AI_MODEL=gemma3:12b \
+NOTAI_NTFY_URL=http://127.0.0.1:8080/notai \
+./target/release/notai-server
+```
+
+| Değişken | Varsayılan | Açıklama |
+|---|---|---|
+| `NOTAI_BIND` | `127.0.0.1:8787` | Dinlenecek adres. Tailscale IP'sine bağlamak en güvenlisi. |
+| `NOTAI_DATABASE_URL` | `sqlite://notai.db` | Veritabanı dosyası. |
+| `NOTAI_API_TOKEN` | — | Uygulamanın `Authorization: Bearer` belirteci. Boşsa API açık kalır (yalnız güvenli ağda). |
+| `NOTAI_WEBHOOK_SECRET` | — | WhatsApp webhook'u için `X-NotAI-Secret`. Boşsa webhook kapalı. |
+| `NOTAI_AI` | `none` | `none` · `local` (Ollama/Gemma) · `anthropic` (`ANTHROPIC_API_KEY` gerekir). |
+| `NOTAI_AI_MODEL`, `NOTAI_AI_BASE_URL` | — / `http://127.0.0.1:11434` | Yerel model adı ve adresi; `anthropic` için varsayılan model `claude-opus-5-5`. |
+| `NOTAI_MORNING_AT`, `NOTAI_TZ` | `08:00`, `Europe/Istanbul` | Sabah planı saati ve saat dilimi. |
+| `NOTAI_NTFY_URL` | — | Sabah planını telefona bildirim olarak yollamak için ntfy konusu. |
+
+AI kapalıyken her şey çalışır; kayıtlar yalnız "işlenmemiş" kalır.
+
+### WhatsApp ile yakalama (MacroDroid)
+1. Tetikleyici: *Bildirim alındı* → WhatsApp, kendi sohbetin (ör. "Ş").
+2. Eylem: *HTTP isteği* → `POST http://<S24-Tailscale-IP>:8787/webhook/whatsapp`
+   - Başlık: `X-NotAI-Secret: <NOTAI_WEBHOOK_SECRET>` · `Content-Type: application/json`
+   - Gövde: `{"text": "[notification_text]"}`
+3. Aynı mesaj 5 dakika içinde iki kez gelirse ikinci kayıt açılmaz.
+
+## Uygulama
+
+```bash
+cargo install tauri-cli --version "^2" --locked
+cd crates/app
+cargo tauri build                 # masaüstü (deb/AppImage/msi)
+cargo tauri android init          # bir kez: Android Studio SDK + NDK gerekir
+cargo tauri android build --apk   # Android
+```
+
+Uygulama ilk açılışta tamamen yereldir. Ev sunucusu adresi ve belirteci girildiğinde dakikada bir
+senkronlanır (Ayarlar ekranı v0.2'de; şimdilik `set_sync` komutu).

@@ -6,7 +6,7 @@
 ---
 
 ## 1. İlkeler
-1. **Ekranda yalnız o anki iş.** Her ekranın tek bir ana eylemi var. Akışta bu eylem mikrofon ya da yazma, sheet'te "Görev olarak kaydet". Mürekkep dolgulu (koyu, dolu) öğe ekranda en fazla bir tane olur. Sayaç rozeti bunun dışındadır.
+1. **Ekranda yalnız o anki iş.** Her ekranın tek bir ana eylemi var. Akışta bu eylem mikrofon ya da yazma, sheet'te "Görev olarak kaydet". Mürekkep dolgulu (koyu, dolu) öğe ekranda en fazla bir tane olur. Yazma çubuğunun göründüğü her ekranda mürekkep dolgu yalnız mikrofona (ya da onun yerini alan Gönder'e) aittir; aynı ekrandaki kart düğmeleri ("Planı onayla" dahil) ikincil, yani çerçeveli çizilir. Sayaç rozeti ile sistem arayüzü (bildirim, kilit ekranı) bu sayıma girmez.
 2. **Kullanıcının kaydı önde, AI geride.** AI çipleri soluk, şeffaf ve kesikli kenarlıdır. Hiçbir zaman renkli, dolgulu ya da kalın olmaz.
 3. **Renk = anlam.** Palet sıcak taş grisidir (nötr). Renkli tonlar yalnız durum bildirir: hata (gecikmiş iş, silme uyarısı), uyarı (bugün veya yakın son tarih), başarı (tamamlandı, kısa kabul geri bildirimi), bilgi (senkron, çevrimdışı).
 4. **Ferah.** Ekranda 4–6 kayıt görünür. Meta bilgi (saat, konu) küçük ve soluktur.
@@ -102,7 +102,7 @@ DTCG notları: Renkler hex dizgisi olarak tutulur. `linear()` dizgisi ve `tabula
 - Mikrofon 48px, dolu ve yuvarlaktır (`--color-mic-bg`). Alanda yazı varsa aynı yerde aynı boyutta **Gönder** görünür. Gönderilen kayıt `translateY(16px) → 0` ve `scale(.96) → 1` hareketiyle (`--motion-spring-small`) yerine oturur. Çipler `--motion-delay-chips` sonra `--motion-stagger-chip` arayla belirir.
 
 **Diğer**
-- **Sabah planı kartı:** sol tarafta, tam genişlikte durur (`--color-plan-bg`, 1px `--color-plan-border`, `--radius-md`, iç dolgu `--space-4`). İçerik: ✦ + "Sabah planı" üst etiketi (`xs`, soluk), başlık `lg`, en çok 3 onay kutulu madde, "Planı onayla" (mürekkep) + "Düzenle" (metin). Gecikme yalnız metinle ve `--color-error` ile belirtilir ("1 gün gecikti").
+- **Sabah planı kartı:** sol tarafta, tam genişlikte durur (`--color-plan-bg`, 1px `--color-plan-border`, `--radius-md`, iç dolgu `--space-4`). İçerik: ✦ + "Sabah planı" üst etiketi (`xs`, soluk), başlık `lg`, en çok 3 onay kutulu madde, "Planı onayla" (çerçeveli, ikincil — §1 mürekkep kuralı) + "Düzenle" (metin). Fazlası için "+N görev daha" bağlantısı Görevler sekmesine gider. Gecikme yalnız metinle ve `--color-error` ile belirtilir ("1 gün gecikti").
 - **Ana ekran filtresi:** bölmeli kontrol (tek kutuda yan yana seçenekler) `Tümü | Proje | Alan | Kaynak`. Ray `--color-segment-track`, seçili parça `--color-segment-thumb` zemin ve 1px `--color-segment-thumb-border` kenar ile belirtilir. Ana Günlük her zaman en üstte sabittir ve işlenmemiş sayısı rozeti taşır. **Haftalık gözden geçirme** Ana Günlük'ün hemen altında sabit bir satırdır.
 - **Alternatif:** Gökhan balon yerine satır görünümü isterse token'ların hiçbiri değişmez, yalnız kayıt bileşeni değişir.
 

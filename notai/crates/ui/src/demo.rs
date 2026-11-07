@@ -117,7 +117,7 @@ fn task(
         priority_label: match priority {
             "high" => "Yüksek",
             "low" => "Düşük",
-            _ => "Normal",
+            _ => "Orta",
         }
         .into(),
         overdue_days: overdue,

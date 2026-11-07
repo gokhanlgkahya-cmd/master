@@ -40,7 +40,7 @@ impl Priority {
     pub const fn label(self) -> &'static str {
         match self {
             Self::Low => "Düşük",
-            Self::Normal => "Normal",
+            Self::Normal => "Orta",
             Self::High => "Yüksek",
         }
     }

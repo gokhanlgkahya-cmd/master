@@ -122,7 +122,7 @@ mod tests {
             due_date: NaiveDate::from_ymd_opt(2026, 11, 14),
             due_time: chrono::NaiveTime::from_hms_opt(10, 0, 0),
             priority: "normal".into(),
-            priority_label: "Normal".into(),
+            priority_label: "Orta".into(),
             overdue_days: 0,
             open: true,
             recurring: true,
