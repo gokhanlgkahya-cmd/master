@@ -67,6 +67,13 @@ NotAI gelen kutusunu sınıflandır.
 Hermes için de aynı adımlar geçerlidir (komut satırı aracı aynıdır). Ajanı periyodik çalıştırmak
 için Termux'ta `termux-job-scheduler` ya da n8n'de bir zamanlanmış akış kullanılabilir.
 
+## Obsidian kasası (okuma)
+Sunucu `NOTAI_VAULT_DIR` ile başlatılırsa tüm veri Markdown olarak `NotAI/` klasöründe durur ve
+her değişiklikte güncellenir. Ajanlar (Claude Code, Hermes) analiz için bu dosyaları doğrudan
+okuyabilir: her dosyada `notai_type`/`notai_id` ön bilgisi vardır, her kayıt tek yerde durur
+(`^n…` blok kimliği) — günlük notlardaki satırlar yalnız bağlantıdır, mükerrer sayma. Bu klasöre
+yazma; değişiklikler `notai capture` / `notai answer` ile yapılır.
+
 ## Güvenlik
 - Ajan yalnız `NOTAI_TOKEN` ile erişir; sunucu Tailscale/ev ağı dışına açılmamalı.
 - Ajanın cevabı hiçbir zaman doğrudan yazılmaz: önce doğrulanır, sonra yalnız **öneri** olur.

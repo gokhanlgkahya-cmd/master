@@ -45,6 +45,9 @@ pub struct Config {
     /// Tarayıcıdan doğrudan bağlanmaya izin verilen kökenler (CORS). Boşsa CORS kapalı
     /// (yalnız aynı köken, uygulama kabuğu ve komut satırı). `*` her kökene izin verir.
     pub cors_origins: Vec<String>,
+    /// Obsidian kasası klasörü (`NOTAI_VAULT_DIR`). Ayarlıysa sunucu `NotAI/` alt klasörünü
+    /// her değişiklikte günceller; boşsa kapalı.
+    pub vault_dir: Option<std::path::PathBuf>,
 }
 
 impl Config {
@@ -65,6 +68,7 @@ impl Config {
             stt: None,
             embed: None,
             cors_origins: Vec::new(),
+            vault_dir: None,
         }
     }
 
@@ -102,6 +106,7 @@ impl Config {
                 .map_err(|_| ConfigError::Invalid("NOTAI_MORNING_AT", v))?;
         }
         cfg.ntfy_url = non_empty("NOTAI_NTFY_URL");
+        cfg.vault_dir = non_empty("NOTAI_VAULT_DIR").map(std::path::PathBuf::from);
         if let Some(v) = non_empty("NOTAI_CORS_ORIGINS") {
             cfg.cors_origins = v
                 .split(',')

@@ -66,6 +66,7 @@ NOTAI_NTFY_URL=http://127.0.0.1:8080/notai \
 | `NOTAI_MORNING_AT`, `NOTAI_TZ` | `09:00`, `Europe/Istanbul` | Sabah planı saati ve saat dilimi. |
 | `NOTAI_NTFY_URL` | — | Sabah planı ve hatırlatmaları telefona bildirim olarak yollamak için ntfy konusu. |
 | `NOTAI_STT_MODEL`, `NOTAI_STT_BASE_URL` | — / `http://127.0.0.1:8000` | Sesli yakalama: Whisper uyumlu ses → yazı servisi (ör. faster-whisper-server). Boşsa sesli yakalama kapalı. |
+| `NOTAI_VAULT_DIR` | — | Obsidian kasası klasörü. Ayarlıysa sunucu `NotAI/` alt klasörünü her değişiklikte günceller (konular iç içe klasörler, `Ana Günlük/` günlük notları, görevler Tasks biçiminde). Kendi notlarına dokunulmaz. Anında yazmak için `POST /api/vault/export`. |
 | `NOTAI_CORS_ORIGINS` | — | Arayüzü tarayıcıda başka bir adresten açıp sunucuya doğrudan bağlanmak için izinli kökenler, virgülle (ör. `http://localhost:8080`). Boşsa kapalı; belirteç yine zorunludur. Uygulama kabuğu ve `notai` aracı için gerekmez. |
 | `NOTAI_EMBED_MODEL`, `NOTAI_EMBED_BASE_URL` | — / `http://127.0.0.1:11434` | Ara/Sor anlamsal arama: OpenAI uyumlu embeddings (ör. Ollama `bge-m3`). Boşsa yalnız tam metin arama. |
 

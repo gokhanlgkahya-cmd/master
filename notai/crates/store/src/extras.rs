@@ -468,3 +468,88 @@ pub(crate) fn decode_attachment(p: &AttachmentPayload) -> Result<Option<Vec<u8>>
         .map(|s| B64.decode(s).map_err(|e| StoreError::corrupt("ek", e)))
         .transpose()
 }
+
+/// Dışa aktarım (Obsidian kasası) için verinin tamamı.
+#[derive(Debug, Clone)]
+pub struct ExportSnapshot {
+    pub topics: Vec<Topic>,
+    pub entries: Vec<notai_core::vault::VaultEntry>,
+    pub tasks: Vec<Task>,
+    pub facts: Vec<notai_core::profile::ProfileFact>,
+}
+
+impl Store {
+    /// Değişiklik günlüğündeki son sıra numarası (dışa aktarımın güncel olup olmadığını anlamak için).
+    pub async fn change_seq(&self) -> Result<i64> {
+        Ok(
+            sqlx::query_scalar!(r#"SELECT COALESCE(MAX(seq), 0) AS "n!: i64" FROM change_log"#)
+                .fetch_one(&self.pool)
+                .await?,
+        )
+    }
+
+    /// Çöp dışındaki tüm kayıtlar, tüm konular (arşiv dahil), tüm görevler ve bilgiler.
+    pub async fn export_snapshot(&self) -> Result<ExportSnapshot> {
+        let topic_rows = sqlx::query_as!(
+            TopicRow,
+            "SELECT id, name, kind, due_date, icon, avatar, parent_id, pinned FROM topics ORDER BY name"
+        )
+        .fetch_all(&self.pool)
+        .await?;
+        let topics = topic_rows
+            .into_iter()
+            .map(Topic::try_from)
+            .collect::<Result<Vec<_>>>()?;
+        let entry_rows = sqlx::query_as!(
+            EntryRow,
+            "SELECT id, text, source, captured_at, topic_id, status, trashed_at
+             FROM entries WHERE status != 'trashed' ORDER BY captured_at, id"
+        )
+        .fetch_all(&self.pool)
+        .await?;
+        let label_rows =
+            sqlx::query!("SELECT entry_id, kind, name FROM entry_labels ORDER BY name")
+                .fetch_all(&self.pool)
+                .await?;
+        let mut tags: std::collections::HashMap<String, Vec<String>> =
+            std::collections::HashMap::new();
+        let mut people: std::collections::HashMap<String, Vec<String>> =
+            std::collections::HashMap::new();
+        for l in label_rows {
+            let map = if l.kind == "person" {
+                &mut people
+            } else {
+                &mut tags
+            };
+            map.entry(l.entry_id).or_default().push(l.name);
+        }
+        let mut entries = Vec::with_capacity(entry_rows.len());
+        for r in entry_rows {
+            let key = r.id.clone();
+            entries.push(notai_core::vault::VaultEntry {
+                entry: Entry::try_from(r)?,
+                tags: tags.remove(&key).unwrap_or_default(),
+                people: people.remove(&key).unwrap_or_default(),
+            });
+        }
+        let task_rows = sqlx::query_as!(
+            TaskRow,
+            "SELECT id, entry_id, title, topic_id, due_date, due_time, priority, recurrence, reminder,
+                    state, closed_at
+             FROM tasks WHERE state != 'cancelled'
+             ORDER BY state, due_date IS NULL, due_date, due_time, created_at"
+        )
+        .fetch_all(&self.pool)
+        .await?;
+        let tasks = task_rows
+            .into_iter()
+            .map(Task::try_from)
+            .collect::<Result<Vec<_>>>()?;
+        Ok(ExportSnapshot {
+            topics,
+            entries,
+            tasks,
+            facts: self.facts().await?,
+        })
+    }
+}

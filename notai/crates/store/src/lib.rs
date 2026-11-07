@@ -33,7 +33,8 @@ pub use suggestions::{MAX_QUESTIONS_PER_ENTRY, NewQuestion, QaContext};
 const NOTICE_KEY: &str = "last_notice";
 pub use error::{Result, StoreError};
 pub use extras::{
-    AttachmentKind, AttachmentMeta, DecisionExample, MAX_ATTACHMENT_BYTES, NewAttachment,
+    AttachmentKind, AttachmentMeta, DecisionExample, ExportSnapshot, MAX_ATTACHMENT_BYTES,
+    NewAttachment,
 };
 pub use suggestions::DecisionOutcome;
 pub use sync_apply::Applied;

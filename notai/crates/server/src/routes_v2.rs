@@ -53,6 +53,7 @@ pub fn api_routes() -> Router<AppState> {
         .route("/suggestions/{id}/undo", post(undo))
         .route("/suggestions/{id}/answer", post(answer_question))
         .route("/notice", get(get_notice))
+        .route("/vault/export", post(export_vault))
         .route("/notice/clear", post(clear_notice))
         .route("/settings", get(get_settings).post(set_settings))
         .route("/trash", get(trash))
@@ -156,6 +157,19 @@ async fn answer_question(
             .answer_question(id::<SuggestionId>(&sid)?, text, st.now())
             .await?,
     ))
+}
+
+/// Obsidian kasasını hemen (değişmemiş olsa da) yazar.
+async fn export_vault(State(st): State<AppState>) -> ApiResult<Json<Value>> {
+    if st.cfg.vault_dir.is_none() {
+        return Err(crate::error::ApiError::BadRequest(
+            "Obsidian kasası kapalı: sunucuda NOTAI_VAULT_DIR ayarlı değil".into(),
+        ));
+    }
+    let n = crate::vault::write_vault(&st, true)
+        .await
+        .map_err(|e| crate::error::ApiError::BadRequest(e.to_string()))?;
+    Ok(Json(json!({ "written": n.unwrap_or(0) })))
 }
 
 async fn get_notice(State(st): State<AppState>) -> ApiResult<Json<Option<notai_api::NoticeView>>> {

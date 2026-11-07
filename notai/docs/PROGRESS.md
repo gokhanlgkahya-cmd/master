@@ -44,6 +44,8 @@ core · store (SQLite+sqlx, `.sqlx/` çevrimdışı önbellek, migrations 0001+0
 
 **Revizyon 4 — konu hiyerarşisi (2026-11-07, Gökhan):** `topics.parent_id` (migration 0005; ad benzersizliği üst konu içinde), çekirdekte `topic::Tree` (alt dal, üstler, döngü/derinlik ≤5 denetimi, yol adı), akış alt dalı kapsar (özyinelemeli sorgu; kayıt tek, mükerrer yok), liste alt dalı toplar (rozet, son kayıt, alt konu sayısı, yol adı); AI istemi yol adlarıyla, konuya yazılan kayıt yalnız o dalın alt konularına dağıtılır (`parent_id` ile yeni alt konu); arayüzde konu açılışı (hub), "Alt konu ekle", "Üst konuyu değiştir", alt konudan gelen kayıtta konu işareti. Testler: core, ai, store, sync; tarayıcı 8/8.
 
+**Obsidian canlı klasörü (2026-11-07):** `NOTAI_VAULT_DIR` → sunucu her değişiklikte (30 sn'lik turda, değişiklik günlüğü ilerlediyse) `NotAI/` kasasını yazar: `Konular/<dal>/<Konu>.md` klasör notları (ön bilgi, üst bağlantı, alt konular, kendi kayıtları `^n…` blok kimliğiyle, görevler Tasks biçiminde), `Ana Günlük/YYYY-AA-GG.md` (konulu kayıtlar bağlantı + önizleme, konusuzlar burada), `Görevler.md`, `Profil.md`. Yalnız manifest'teki NotAI dosyaları güncellenir/silinir; içerik aynıysa yazılmaz; geçici dosya + taşıma ile yarım dosya kalmaz. `POST /api/vault/export` anında yazar. Saf üretici `core::vault` (test), sunucu testi (yazma, kendi notun korunması, yeniden adlandırma).
+
 **Doğrulama:** Rust testleri (core ~70, store ~27, ai ~23, server ~19 HTTP, sync 6 senaryo, app 3, ui 14, tokens 4); gerçek ikili duman testi; Linux'ta gerçek Tauri penceresi (Xvfb); arayüz gerçek sunucuya karşı Playwright ile 19/19 adım (`docs/screenshots/ui-v0.4-screens.png`).
 
 ## 4. Kararlar (Gökhan onayladı, 2026-11-07)

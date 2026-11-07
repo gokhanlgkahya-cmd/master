@@ -21,6 +21,7 @@ pub mod task;
 pub mod text;
 pub mod topic;
 pub mod tr;
+pub mod vault;
 
 pub use entry::{Entry, EntryStatus, Source};
 pub use error::CoreError;

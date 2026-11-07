@@ -713,3 +713,79 @@ async fn ai_asks_user_answers_and_entry_is_reclassified_with_notifications() {
     let (_, n) = h.get("/api/notice").await;
     assert!(n.is_null());
 }
+
+#[tokio::test]
+async fn obsidian_vault_is_written_and_kept_in_sync_without_touching_user_notes() {
+    let dir = std::env::temp_dir().join(format!("notai-kasa-{}", std::process::id()));
+    let _ = std::fs::remove_dir_all(&dir);
+    let mut cfg = Config::defaults();
+    cfg.vault_dir = Some(dir.clone());
+    let h = h(cfg, ScriptedLlm::new(), false).await;
+    let (_, sabun) = h
+        .post(
+            "/api/topics",
+            json!({ "name": "Sabun işi", "kind": "area" }),
+        )
+        .await;
+    let sid = sabun["id"].as_str().unwrap().to_owned();
+    let (_, para) = h
+        .post(
+            "/api/topics",
+            json!({ "name": "Para alışverişi", "kind": "area", "parent_id": sid }),
+        )
+        .await;
+    let pid = para["id"].as_str().unwrap().to_owned();
+    h.post(
+        "/api/entries",
+        json!({ "text": "Ayhan Kimya'ya 1.850 ₺ ödendi", "topic_id": pid }),
+    )
+    .await;
+
+    assert!(
+        notai_server::vault::sync_vault(&h.state)
+            .await
+            .unwrap()
+            .is_some()
+    );
+    let note = dir.join("NotAI/Konular/Sabun işi/Para alışverişi/Para alışverişi.md");
+    let text = std::fs::read_to_string(&note).unwrap();
+    assert!(text.contains("Ayhan Kimya'ya 1.850 ₺ ödendi"));
+    assert!(dir.join("NotAI/Ana Günlük/2026-11-06.md").exists());
+    // Kullanıcının kendi notu.
+    let mine = dir.join("NotAI/Benim notum.md");
+    std::fs::write(&mine, "kendi notum").unwrap();
+    // Değişiklik yoksa yazılmaz.
+    assert_eq!(
+        notai_server::vault::sync_vault(&h.state).await.unwrap(),
+        None
+    );
+
+    // Konu adı değişince eski dosya/klasör silinir, yenisi yazılır; kullanıcı notu kalır.
+    let (s, _) = h
+        .post(
+            &format!("/api/topics/{pid}/edit"),
+            json!({ "name": "Ödemeler" }),
+        )
+        .await;
+    assert_eq!(s, StatusCode::OK);
+    assert!(
+        notai_server::vault::sync_vault(&h.state)
+            .await
+            .unwrap()
+            .unwrap()
+            >= 2
+    );
+    assert!(!note.exists());
+    assert!(!dir.join("NotAI/Konular/Sabun işi/Para alışverişi").exists());
+    assert!(
+        dir.join("NotAI/Konular/Sabun işi/Ödemeler/Ödemeler.md")
+            .exists()
+    );
+    assert_eq!(std::fs::read_to_string(&mine).unwrap(), "kendi notum");
+
+    // Elle "şimdi yaz" ucu.
+    let (s, b) = h.post("/api/vault/export", json!({})).await;
+    assert_eq!(s, StatusCode::OK);
+    assert_eq!(b["written"], 0, "içerik aynıysa dosya yeniden yazılmaz");
+    let _ = std::fs::remove_dir_all(&dir);
+}

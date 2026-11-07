@@ -134,6 +134,11 @@ pub async fn run(state: AppState, mut shutdown: watch::Receiver<bool>) {
         if let Err(e) = tick(&state).await {
             tracing::error!(error = %e, "zamanlayıcı hatası");
         }
+        match crate::vault::sync_vault(&state).await {
+            Ok(Some(n)) => tracing::info!(files = n, "Obsidian kasası güncellendi"),
+            Ok(None) => {}
+            Err(e) => tracing::error!(error = %e, "Obsidian kasası yazılamadı"),
+        }
         tokio::select! {
             () = tokio::time::sleep(Duration::from_secs(30)) => {}
             _ = shutdown.changed() => break,
