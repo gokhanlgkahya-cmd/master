@@ -1,0 +1,26 @@
+{
+  "db_name": "SQLite",
+  "query": "SELECT undo FROM suggestions WHERE id = ?1",
+  "describe": {
+    "columns": [
+      {
+        "name": "undo",
+        "ordinal": 0,
+        "type_info": "Text",
+        "origin": {
+          "Table": {
+            "table": "suggestions",
+            "name": "undo"
+          }
+        }
+      }
+    ],
+    "parameters": {
+      "Right": 1
+    },
+    "nullable": [
+      true
+    ]
+  },
+  "hash": "89d868c7ae6ac81866bf9209bedb6697d98401fb259128ad29008f80d723fd58"
+}

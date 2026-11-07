@@ -1,0 +1,12 @@
+{
+  "db_name": "SQLite",
+  "query": "UPDATE tasks SET reminder_fired_at = ?2 WHERE id = ?1",
+  "describe": {
+    "columns": [],
+    "parameters": {
+      "Right": 2
+    },
+    "nullable": []
+  },
+  "hash": "0afcaec3c1e2783e5bef78681fb34c8eb1b06ba24b264e7a0a18a9dccf978f60"
+}

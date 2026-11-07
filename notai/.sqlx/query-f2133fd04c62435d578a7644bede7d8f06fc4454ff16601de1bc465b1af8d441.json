@@ -1,0 +1,38 @@
+{
+  "db_name": "SQLite",
+  "query": "SELECT mime, data FROM attachments WHERE id = ?1",
+  "describe": {
+    "columns": [
+      {
+        "name": "mime",
+        "ordinal": 0,
+        "type_info": "Text",
+        "origin": {
+          "Table": {
+            "table": "attachments",
+            "name": "mime"
+          }
+        }
+      },
+      {
+        "name": "data",
+        "ordinal": 1,
+        "type_info": "Blob",
+        "origin": {
+          "Table": {
+            "table": "attachments",
+            "name": "data"
+          }
+        }
+      }
+    ],
+    "parameters": {
+      "Right": 1
+    },
+    "nullable": [
+      false,
+      true
+    ]
+  },
+  "hash": "f2133fd04c62435d578a7644bede7d8f06fc4454ff16601de1bc465b1af8d441"
+}

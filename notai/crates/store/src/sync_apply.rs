@@ -411,6 +411,15 @@ impl Store {
                 }
                 wins && present
             }
+            ("attachment", Some(p)) => {
+                let a: crate::extras::AttachmentPayload = from_json("senkron eki", p)?;
+                let entry_ok = exists(&mut tx, "entry", &a.entry).await?;
+                if entry_ok {
+                    let data = crate::extras::decode_attachment(&a)?;
+                    crate::extras::insert_attachment(&mut tx, &a, data.as_deref(), c.at).await?;
+                }
+                entry_ok
+            }
             (other, _) => {
                 return Err(StoreError::corrupt(
                     "senkron",

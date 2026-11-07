@@ -323,6 +323,22 @@ impl Suggestion {
         Ok(effect)
     }
 
+    /// Kabul edilmiş öneriyi geri alır (ör. otonom modun uyguladığını kullanıcı beğenmedi).
+    /// Karar "yoksayıldı" olur: senkronda "karar asla bekliyor'a dönmez" kuralıyla tutarlı.
+    /// Etkinin tersini uygulamak deponun işidir.
+    pub fn undo_accept(&mut self, now: DateTime<Utc>) -> Result<(), CoreError> {
+        match self.decision {
+            Decision::Accepted { .. } => {
+                self.decision = Decision::Dismissed { at: now };
+                Ok(())
+            }
+            _ => Err(CoreError::InvalidTransition {
+                from: self.decision.name(),
+                to: "undone",
+            }),
+        }
+    }
+
     /// Öneriyi yoksayar (yalnız bu öneri; toplu ret yoktur).
     pub fn dismiss(&mut self, now: DateTime<Utc>) -> Result<(), CoreError> {
         if !self.is_pending() {
@@ -505,6 +521,23 @@ mod tests {
             name: Label::new("Ayhan Kimya").unwrap(),
         };
         assert_eq!(person.chip_text(TZ), "Kişi: Ayhan Kimya");
+    }
+
+    #[test]
+    fn undo_only_after_accept() {
+        let e = entry();
+        let mut s = Suggestion::new(
+            e.id,
+            SuggestionKind::Tag {
+                name: Label::new("sabun").unwrap(),
+            },
+            conf(),
+        );
+        assert!(s.undo_accept(now()).is_err());
+        s.accept(&e, now(), TZ).unwrap();
+        s.undo_accept(now()).unwrap();
+        assert_eq!(s.decision(), Decision::Dismissed { at: now() });
+        assert!(s.undo_accept(now()).is_err());
     }
 
     #[test]

@@ -1,0 +1,12 @@
+{
+  "db_name": "SQLite",
+  "query": "UPDATE suggestions SET undo = ?2, auto = ?3 WHERE id = ?1",
+  "describe": {
+    "columns": [],
+    "parameters": {
+      "Right": 3
+    },
+    "nullable": []
+  },
+  "hash": "99c1ded5fb47de0fc9d71a50fc6595a18fbfa09c3dc114771a262c14aa84181c"
+}

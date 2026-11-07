@@ -1,0 +1,12 @@
+{
+  "db_name": "SQLite",
+  "query": "DELETE FROM entry_labels WHERE entry_id = ?1 AND kind = ?2 AND name = ?3",
+  "describe": {
+    "columns": [],
+    "parameters": {
+      "Right": 3
+    },
+    "nullable": []
+  },
+  "hash": "e85008c343345e4b35eb9e5729a890fce6711712b1007997074bac2cabc0fab2"
+}

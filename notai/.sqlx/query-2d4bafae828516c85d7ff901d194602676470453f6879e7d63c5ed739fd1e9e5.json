@@ -1,0 +1,50 @@
+{
+  "db_name": "SQLite",
+  "query": "SELECT e.text, s.payload, s.decision FROM suggestions s JOIN entries e ON e.id = s.entry_id\n             WHERE s.decision != 'pending' AND s.auto = 0\n             ORDER BY s.decided_at DESC LIMIT ?1",
+  "describe": {
+    "columns": [
+      {
+        "name": "text",
+        "ordinal": 0,
+        "type_info": "Text",
+        "origin": {
+          "Table": {
+            "table": "entries",
+            "name": "text"
+          }
+        }
+      },
+      {
+        "name": "payload",
+        "ordinal": 1,
+        "type_info": "Text",
+        "origin": {
+          "Table": {
+            "table": "suggestions",
+            "name": "payload"
+          }
+        }
+      },
+      {
+        "name": "decision",
+        "ordinal": 2,
+        "type_info": "Text",
+        "origin": {
+          "Table": {
+            "table": "suggestions",
+            "name": "decision"
+          }
+        }
+      }
+    ],
+    "parameters": {
+      "Right": 1
+    },
+    "nullable": [
+      false,
+      false,
+      false
+    ]
+  },
+  "hash": "2d4bafae828516c85d7ff901d194602676470453f6879e7d63c5ed739fd1e9e5"
+}

@@ -5,12 +5,14 @@
 
 #![forbid(unsafe_code)]
 
+pub mod agenda;
 pub mod entry;
 pub mod error;
 pub mod ids;
 pub mod journal;
 pub mod morning;
 pub mod profile;
+pub mod reminders;
 pub mod suggestion;
 pub mod sync;
 pub mod task;

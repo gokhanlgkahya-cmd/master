@@ -1,0 +1,38 @@
+{
+  "db_name": "SQLite",
+  "query": "SELECT v.entry_id, v.vector FROM entry_embeddings v JOIN entries e ON e.id = v.entry_id\n             WHERE v.model = ?1 AND e.status != 'trashed'",
+  "describe": {
+    "columns": [
+      {
+        "name": "entry_id",
+        "ordinal": 0,
+        "type_info": "Text",
+        "origin": {
+          "Table": {
+            "table": "entry_embeddings",
+            "name": "entry_id"
+          }
+        }
+      },
+      {
+        "name": "vector",
+        "ordinal": 1,
+        "type_info": "Blob",
+        "origin": {
+          "Table": {
+            "table": "entry_embeddings",
+            "name": "vector"
+          }
+        }
+      }
+    ],
+    "parameters": {
+      "Right": 1
+    },
+    "nullable": [
+      false,
+      false
+    ]
+  },
+  "hash": "70772bda7c0256f6f360e34afa72dcd4e51fd061442c9c5297f12a493365868a"
+}

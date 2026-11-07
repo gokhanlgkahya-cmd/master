@@ -11,6 +11,7 @@
 mod codec;
 mod entries;
 mod error;
+mod extras;
 mod facts;
 mod suggestions;
 mod sync_apply;
@@ -28,6 +29,9 @@ use sqlx::{SqliteConnection, SqlitePool};
 
 pub use entries::{Captured, JournalItem, NewEntry, TopicRef};
 pub use error::{Result, StoreError};
+pub use extras::{
+    AttachmentKind, AttachmentMeta, DecisionExample, MAX_ATTACHMENT_BYTES, NewAttachment,
+};
 pub use suggestions::DecisionOutcome;
 pub use sync_apply::Applied;
 pub use tasks::TaskView;

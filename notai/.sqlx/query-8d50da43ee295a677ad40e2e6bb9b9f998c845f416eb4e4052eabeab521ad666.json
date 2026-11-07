@@ -1,0 +1,12 @@
+{
+  "db_name": "SQLite",
+  "query": "INSERT OR IGNORE INTO attachments (id, entry_id, kind, name, mime, data, value, created_at)\n         VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7, ?8)",
+  "describe": {
+    "columns": [],
+    "parameters": {
+      "Right": 8
+    },
+    "nullable": []
+  },
+  "hash": "8d50da43ee295a677ad40e2e6bb9b9f998c845f416eb4e4052eabeab521ad666"
+}

@@ -1,0 +1,315 @@
+//! v0.2–v0.4 depo işlevleri: hatırlatma, takvim, gözden geçirme, ekler, vektörler, geri alma.
+
+#![allow(clippy::unwrap_used, clippy::expect_used, clippy::panic)]
+
+use chrono::{DateTime, Duration, NaiveDate, TimeZone, Utc};
+use chrono_tz::Tz;
+use notai_core::agenda::weekly_review;
+use notai_core::entry::{EntryStatus, Source};
+use notai_core::reminders::{Snooze, due_now};
+use notai_core::suggestion::{Confidence, Suggestion, SuggestionKind, TopicTarget};
+use notai_core::task::{Due, NewTask, Priority, Reminder, TaskState};
+use notai_core::text::{EntryText, Label, TaskTitle, TopicName};
+use notai_core::topic::ParaKind;
+use notai_core::{EntryId, TopicId};
+use notai_store::changes::ChangeRecord;
+use notai_store::{AttachmentKind, NewAttachment, NewEntry, NewTopic, Store, StoreError};
+
+const TZ: Tz = chrono_tz::Europe::Istanbul;
+
+fn now() -> DateTime<Utc> {
+    Utc.with_ymd_and_hms(2026, 11, 6, 9, 0, 0).unwrap()
+}
+
+async fn store(origin: &str) -> Store {
+    Store::open_in_memory(origin).await.unwrap()
+}
+
+async fn capture(s: &Store, text: &str, topic: Option<TopicId>) -> EntryId {
+    s.capture(NewEntry {
+        text: EntryText::new(text).unwrap(),
+        source: Source::App,
+        topic,
+        captured_at: now(),
+        dedupe_key: None,
+    })
+    .await
+    .unwrap()
+    .entry()
+    .id
+}
+
+fn conf() -> Confidence {
+    Confidence::new(0.95).unwrap()
+}
+
+#[tokio::test]
+async fn reminders_fire_once_and_snooze() {
+    let s = store("telefon").await;
+    let mut n = NewTask::titled(TaskTitle::new("Muayene tarihini kontrol et").unwrap());
+    n.reminder = Some(Reminder::At {
+        at: now() - Duration::minutes(2),
+    });
+    let t = s.create_task(n, now()).await.unwrap();
+    s.create_task(
+        NewTask::titled(TaskTitle::new("Hatırlatmasız").unwrap()),
+        now(),
+    )
+    .await
+    .unwrap();
+
+    let list = s.reminder_tasks().await.unwrap();
+    assert_eq!(list.len(), 1);
+    let due = due_now(&list, now(), TZ);
+    assert_eq!(due.len(), 1);
+    s.mark_reminder_fired(t.id, due[0].1).await.unwrap();
+    assert!(
+        due_now(&s.reminder_tasks().await.unwrap(), now(), TZ).is_empty(),
+        "bir kez çalar"
+    );
+
+    let snoozed = s
+        .snooze_reminder(t.id, Snooze::Minutes10, now(), TZ)
+        .await
+        .unwrap();
+    assert_eq!(
+        snoozed.reminder,
+        Some(Reminder::At {
+            at: now() + Duration::minutes(10)
+        })
+    );
+    let later = now() + Duration::minutes(11);
+    assert_eq!(
+        due_now(&s.reminder_tasks().await.unwrap(), later, TZ).len(),
+        1,
+        "ertelenen yeniden çalar"
+    );
+}
+
+#[tokio::test]
+async fn calendar_range_and_review_inputs() {
+    let s = store("telefon").await;
+    let logo = s
+        .create_topic(
+            NewTopic::new(
+                TopicName::new("Logo ERP geçişi").unwrap(),
+                ParaKind::Project { due: None },
+            ),
+            now() - Duration::days(20),
+        )
+        .await
+        .unwrap();
+    let d = |day| NaiveDate::from_ymd_opt(2026, 11, day).unwrap();
+    for (title, day) in [("Pazartesi", 2), ("Cuma", 6), ("Gelecek ay", 30)] {
+        let mut n = NewTask::titled(TaskTitle::new(title).unwrap());
+        n.due = Some(Due::on(d(day)));
+        s.create_task(n, now()).await.unwrap();
+    }
+    let week = s.tasks_between(d(2), d(8)).await.unwrap();
+    assert_eq!(week.len(), 2);
+
+    let done = s.tasks_between(d(6), d(6)).await.unwrap()[0].id;
+    s.complete_task(done, now()).await.unwrap();
+    assert_eq!(
+        s.tasks_between(d(6), d(6)).await.unwrap().len(),
+        1,
+        "tamamlananlar takvimde kalır"
+    );
+    assert_eq!(s.done_since(now() - Duration::days(7)).await.unwrap(), 1);
+
+    let activity = s.topic_activity().await.unwrap();
+    assert_eq!(activity.len(), 1);
+    assert_eq!(activity[0].topic.id, logo.id);
+    let review = weekly_review(0, &activity, &s.open_tasks().await.unwrap(), 1, now(), TZ);
+    assert_eq!(review.stalled.len(), 1, "20 gündür hareketsiz proje");
+}
+
+#[tokio::test]
+async fn attachments_store_read_and_sync() {
+    let phone = store("telefon").await;
+    let server = store("sunucu").await;
+    let id = capture(&phone, "Ambalaj faturası", None).await;
+    let png = vec![0x89, b'P', b'N', b'G', 1, 2, 3];
+    let meta = phone
+        .add_attachment(
+            NewAttachment {
+                entry: id,
+                kind: AttachmentKind::Photo,
+                name: "fatura.png".into(),
+                mime: "image/png".into(),
+                data: Some(png.clone()),
+                value: None,
+            },
+            now(),
+        )
+        .await
+        .unwrap();
+    phone
+        .add_attachment(
+            NewAttachment {
+                entry: id,
+                kind: AttachmentKind::Location,
+                name: "Konum".into(),
+                mime: "text/plain".into(),
+                data: None,
+                value: Some("41.0082,28.9784".into()),
+            },
+            now(),
+        )
+        .await
+        .unwrap();
+    assert_eq!(meta.size, 7);
+    assert_eq!(phone.attachments_for(id).await.unwrap().len(), 2);
+    assert_eq!(
+        phone.attachment_data(&meta.id).await.unwrap(),
+        ("image/png".into(), png.clone())
+    );
+
+    let too_big = phone
+        .add_attachment(
+            NewAttachment {
+                entry: id,
+                kind: AttachmentKind::Document,
+                name: "büyük.pdf".into(),
+                mime: "application/pdf".into(),
+                data: Some(vec![0; notai_store::MAX_ATTACHMENT_BYTES + 1]),
+                value: None,
+            },
+            now(),
+        )
+        .await;
+    assert!(matches!(too_big, Err(StoreError::Conflict(_))));
+
+    // Senkron: ek içeriğiyle birlikte sunucuya taşınır.
+    for c in phone.own_changes_since(0, 100).await.unwrap() {
+        server.apply_remote(&c, false).await.unwrap();
+    }
+    assert_eq!(server.attachment_data(&meta.id).await.unwrap().1, png);
+}
+
+#[tokio::test]
+async fn embeddings_round_trip_and_queue() {
+    let s = store("sunucu").await;
+    let a = capture(&s, "Kostik fiyatı", None).await;
+    let _b = capture(&s, "Kombi bakımı", None).await;
+    assert_eq!(
+        s.entries_without_embedding("m1", 10).await.unwrap().len(),
+        2
+    );
+    s.save_embedding(a, "m1", &[0.5, -1.0, 2.25], now())
+        .await
+        .unwrap();
+    assert_eq!(
+        s.entries_without_embedding("m1", 10).await.unwrap().len(),
+        1
+    );
+    assert_eq!(
+        s.entries_without_embedding("m2", 10).await.unwrap().len(),
+        2,
+        "model değişince yeniden"
+    );
+    let v = s.embeddings("m1").await.unwrap();
+    assert_eq!(v, vec![(a, vec![0.5, -1.0, 2.25])]);
+    assert!(s.save_embedding(a, "m1", &[], now()).await.is_err());
+}
+
+#[tokio::test]
+async fn undo_reverses_topic_task_and_label() {
+    let s = store("sunucu").await;
+    let kostik = s
+        .create_topic(
+            NewTopic::new(TopicName::new("Kostik tedarik").unwrap(), ParaKind::Area),
+            now(),
+        )
+        .await
+        .unwrap();
+    let id = capture(&s, "Kostik tedarikçisini ara – perşembe", None).await;
+    let topic = Suggestion::new(
+        id,
+        SuggestionKind::Topic {
+            target: TopicTarget::Existing {
+                id: kostik.id,
+                name: kostik.name.clone(),
+            },
+        },
+        conf(),
+    );
+    let task = Suggestion::new(
+        id,
+        SuggestionKind::Task {
+            title: TaskTitle::new("Kostik firmasını ara").unwrap(),
+            due: None,
+            priority: Priority::High,
+        },
+        conf(),
+    );
+    let tag = Suggestion::new(
+        id,
+        SuggestionKind::Tag {
+            name: Label::new("tedarik").unwrap(),
+        },
+        conf(),
+    );
+    s.save_ai_suggestions(id, &[topic.clone(), task.clone(), tag.clone()], now())
+        .await
+        .unwrap();
+
+    // Otonom mod üçünü de uygular.
+    for x in [&topic, &task, &tag] {
+        s.decide_with(x.id, true, true, now(), TZ).await.unwrap();
+    }
+    assert_eq!(s.entry(id).await.unwrap().topic(), Some(kostik.id));
+    assert!(
+        s.decision_examples(10).await.unwrap().is_empty(),
+        "otonom kararlar örnek sayılmaz"
+    );
+
+    // Kullanıcı konu ve görevi geri alır.
+    let restored = s.undo_decision(topic.id, now()).await.unwrap();
+    assert_eq!(restored.topic(), None);
+    assert_eq!(restored.status(), EntryStatus::Inbox);
+    s.undo_decision(task.id, now()).await.unwrap();
+    let open: Vec<_> = s.open_tasks().await.unwrap();
+    assert!(open.is_empty(), "oluşan görev iptal edildi");
+    s.undo_decision(tag.id, now()).await.unwrap();
+    let suggs = s.suggestions_for(id).await.unwrap();
+    assert!(suggs.iter().all(|x| x.decision().name() == "dismissed"));
+    // İkinci geri alma reddedilir.
+    assert!(s.undo_decision(topic.id, now()).await.is_err());
+
+    // Kullanıcının kendi kararları öğrenme örneği olur.
+    let id2 = capture(&s, "Lavanta yağı siparişi", None).await;
+    let t2 = Suggestion::new(
+        id2,
+        SuggestionKind::Tag {
+            name: Label::new("sabun").unwrap(),
+        },
+        conf(),
+    );
+    s.save_ai_suggestions(id2, std::slice::from_ref(&t2), now())
+        .await
+        .unwrap();
+    s.decide(t2.id, true, now(), TZ).await.unwrap();
+    let ex = s.decision_examples(10).await.unwrap();
+    assert_eq!(ex.len(), 1);
+    assert!(ex[0].accepted);
+    assert_eq!(ex[0].entry_text, "Lavanta yağı siparişi");
+    let _ = TaskState::Open;
+}
+
+#[tokio::test]
+async fn trash_list_and_purge_only_trashed() {
+    let s = store("telefon").await;
+    let a = capture(&s, "Silinecek", None).await;
+    let b = capture(&s, "Kalacak", None).await;
+    assert!(
+        s.purge_entry(b, now()).await.is_err(),
+        "çöpte olmayan kalıcı silinmez"
+    );
+    s.trash_entry(a, now()).await.unwrap();
+    assert_eq!(s.trash().await.unwrap().len(), 1);
+    s.purge_entry(a, now()).await.unwrap();
+    assert!(s.trash().await.unwrap().is_empty());
+    let last: ChangeRecord = s.changes_since(0, 100).await.unwrap().pop().unwrap();
+    assert_eq!((last.entity.as_str(), last.payload), ("entry", None));
+}

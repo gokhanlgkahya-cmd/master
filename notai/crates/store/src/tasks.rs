@@ -173,6 +173,21 @@ async fn load_task(conn: &mut SqliteConnection, id: TaskId) -> Result<Task> {
         .ok_or_else(|| StoreError::not_found("görev", id))
 }
 
+/// Görevi (açıksa) iptal eder; çağıranın transaction'ı içinde.
+pub(crate) async fn cancel_in_tx(
+    conn: &mut SqliteConnection,
+    origin: &str,
+    id: TaskId,
+    now: DateTime<Utc>,
+) -> Result<()> {
+    let mut task = load_task(conn, id).await?;
+    if task.is_open() {
+        task.cancel(now)?;
+        update_task(conn, origin, &task, now).await?;
+    }
+    Ok(())
+}
+
 impl Store {
     pub async fn create_task(&self, new: NewTask, now: DateTime<Utc>) -> Result<Task> {
         let task = Task::create(new)?;

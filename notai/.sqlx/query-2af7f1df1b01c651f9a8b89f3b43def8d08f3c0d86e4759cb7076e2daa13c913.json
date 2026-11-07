@@ -1,0 +1,93 @@
+{
+  "db_name": "SQLite",
+  "query": "SELECT id, entry_id, kind, name, mime, COALESCE(length(data), 0) AS \"size!: i64\", value\n               FROM attachments WHERE entry_id = ?1 ORDER BY created_at",
+  "describe": {
+    "columns": [
+      {
+        "name": "id",
+        "ordinal": 0,
+        "type_info": "Text",
+        "origin": {
+          "Table": {
+            "table": "attachments",
+            "name": "id"
+          }
+        }
+      },
+      {
+        "name": "entry_id",
+        "ordinal": 1,
+        "type_info": "Text",
+        "origin": {
+          "Table": {
+            "table": "attachments",
+            "name": "entry_id"
+          }
+        }
+      },
+      {
+        "name": "kind",
+        "ordinal": 2,
+        "type_info": "Text",
+        "origin": {
+          "Table": {
+            "table": "attachments",
+            "name": "kind"
+          }
+        }
+      },
+      {
+        "name": "name",
+        "ordinal": 3,
+        "type_info": "Text",
+        "origin": {
+          "Table": {
+            "table": "attachments",
+            "name": "name"
+          }
+        }
+      },
+      {
+        "name": "mime",
+        "ordinal": 4,
+        "type_info": "Text",
+        "origin": {
+          "Table": {
+            "table": "attachments",
+            "name": "mime"
+          }
+        }
+      },
+      {
+        "name": "size!: i64",
+        "ordinal": 5,
+        "type_info": "Null",
+        "origin": "Expression"
+      },
+      {
+        "name": "value",
+        "ordinal": 6,
+        "type_info": "Text",
+        "origin": {
+          "Table": {
+            "table": "attachments",
+            "name": "value"
+          }
+        }
+      }
+    ],
+    "parameters": {
+      "Right": 1
+    },
+    "nullable": [
+      false,
+      false,
+      false,
+      false,
+      false,
+      null,
+      true
+    ]
+  },
+  "hash": "2af7f1df1b01c651f9a8b89f3b43def8d08f3c0d86e4759cb7076e2daa13c913"
+}

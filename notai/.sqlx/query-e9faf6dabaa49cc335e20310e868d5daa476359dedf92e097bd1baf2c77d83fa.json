@@ -1,0 +1,98 @@
+{
+  "db_name": "SQLite",
+  "query": "SELECT e.id, e.text, e.source, e.captured_at, e.topic_id, e.status, e.trashed_at\n             FROM entries e LEFT JOIN entry_embeddings v ON v.entry_id = e.id AND v.model = ?1\n             WHERE v.entry_id IS NULL AND e.status != 'trashed'\n             ORDER BY e.captured_at DESC LIMIT ?2",
+  "describe": {
+    "columns": [
+      {
+        "name": "id",
+        "ordinal": 0,
+        "type_info": "Text",
+        "origin": {
+          "Table": {
+            "table": "entries",
+            "name": "id"
+          }
+        }
+      },
+      {
+        "name": "text",
+        "ordinal": 1,
+        "type_info": "Text",
+        "origin": {
+          "Table": {
+            "table": "entries",
+            "name": "text"
+          }
+        }
+      },
+      {
+        "name": "source",
+        "ordinal": 2,
+        "type_info": "Text",
+        "origin": {
+          "Table": {
+            "table": "entries",
+            "name": "source"
+          }
+        }
+      },
+      {
+        "name": "captured_at",
+        "ordinal": 3,
+        "type_info": "Text",
+        "origin": {
+          "Table": {
+            "table": "entries",
+            "name": "captured_at"
+          }
+        }
+      },
+      {
+        "name": "topic_id",
+        "ordinal": 4,
+        "type_info": "Text",
+        "origin": {
+          "Table": {
+            "table": "entries",
+            "name": "topic_id"
+          }
+        }
+      },
+      {
+        "name": "status",
+        "ordinal": 5,
+        "type_info": "Text",
+        "origin": {
+          "Table": {
+            "table": "entries",
+            "name": "status"
+          }
+        }
+      },
+      {
+        "name": "trashed_at",
+        "ordinal": 6,
+        "type_info": "Text",
+        "origin": {
+          "Table": {
+            "table": "entries",
+            "name": "trashed_at"
+          }
+        }
+      }
+    ],
+    "parameters": {
+      "Right": 2
+    },
+    "nullable": [
+      false,
+      false,
+      false,
+      false,
+      true,
+      false,
+      true
+    ]
+  },
+  "hash": "e9faf6dabaa49cc335e20310e868d5daa476359dedf92e097bd1baf2c77d83fa"
+}

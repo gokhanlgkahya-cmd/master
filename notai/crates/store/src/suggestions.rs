@@ -16,6 +16,15 @@ use crate::tasks::insert_task;
 use crate::topics::{find_by_name, get_topic, insert_topic};
 use crate::{Store, log_change};
 
+/// Kabulün geri alınması için gereken önceki durum.
+#[derive(Debug, Clone, serde::Serialize, serde::Deserialize)]
+struct Undo {
+    prev_topic: Option<String>,
+    prev_status: String,
+    created_task: Option<String>,
+    label: Option<(String, String)>,
+}
+
 /// Kararın sonucu: güncel öneri ve kayıt, varsa oluşturulan görev/konu.
 #[derive(Debug, Clone, PartialEq)]
 pub struct DecisionOutcome {
@@ -176,11 +185,29 @@ impl Store {
         now: DateTime<Utc>,
         tz: Tz,
     ) -> Result<DecisionOutcome> {
+        self.decide_with(id, accept, false, now, tz).await
+    }
+
+    /// `decide` ile aynı; `auto = true` ise kararı otonom mod verdi (geri alınabilir).
+    pub async fn decide_with(
+        &self,
+        id: SuggestionId,
+        accept: bool,
+        auto: bool,
+        now: DateTime<Utc>,
+        tz: Tz,
+    ) -> Result<DecisionOutcome> {
         let mut tx = self.pool.begin().await?;
         let mut suggestion = load_suggestion(&mut tx, id).await?;
         let mut entry = load_entry(&mut tx, suggestion.entry).await?;
         let mut created_task = None;
         let mut created_topic = None;
+        let mut undo = Undo {
+            prev_topic: entry.topic().map(|t| t.to_string()),
+            prev_status: entry.status().name().to_owned(),
+            created_task: None,
+            label: None,
+        };
 
         if accept {
             match suggestion.accept(&entry, now, tz)? {
@@ -203,19 +230,35 @@ impl Store {
                 Effect::CreateTask { task } => {
                     let task = Task::create(task)?;
                     insert_task(&mut tx, &self.origin, &task, now).await?;
+                    undo.created_task = Some(task.id.to_string());
                     created_task = Some(task);
                 }
                 Effect::AddTag { entry: e, name } => {
                     add_label(&mut tx, &self.origin, e, "tag", &name, now).await?;
+                    undo.label = Some(("tag".into(), name.as_str().to_owned()));
                 }
                 Effect::AddPerson { entry: e, name } => {
                     add_label(&mut tx, &self.origin, e, "person", &name, now).await?;
+                    undo.label = Some(("person".into(), name.as_str().to_owned()));
                 }
             }
         } else {
             suggestion.dismiss(now)?;
         }
         write_decision(&mut tx, &self.origin, &suggestion, now).await?;
+        if accept {
+            let id_s = suggestion.id.to_string();
+            let undo_json = serde_json::to_string(&undo)?;
+            let auto_i = i64::from(auto);
+            sqlx::query!(
+                "UPDATE suggestions SET undo = ?2, auto = ?3 WHERE id = ?1",
+                id_s,
+                undo_json,
+                auto_i
+            )
+            .execute(&mut *tx)
+            .await?;
+        }
 
         let all = entry_suggestions(&mut tx, entry.id).await?;
         if all_decided(&all) && entry.is_unprocessed() {
@@ -229,5 +272,65 @@ impl Store {
             created_task,
             created_topic,
         })
+    }
+
+    /// Kabul edilmiş öneriyi geri alır: etkinin tersini uygular (konu eski haline döner,
+    /// oluşan görev iptal edilir, eklenen etiket kaldırılır) ve kararı "yoksayıldı" yapar.
+    pub async fn undo_decision(&self, id: SuggestionId, now: DateTime<Utc>) -> Result<Entry> {
+        let mut tx = self.pool.begin().await?;
+        let mut suggestion = load_suggestion(&mut tx, id).await?;
+        let id_s = id.to_string();
+        let undo_json = sqlx::query_scalar!("SELECT undo FROM suggestions WHERE id = ?1", id_s)
+            .fetch_one(&mut *tx)
+            .await?
+            .ok_or_else(|| StoreError::Conflict("bu öneri geri alınamaz".into()))?;
+        let undo: Undo = crate::codec::from_json("geri alma", &undo_json)?;
+        suggestion.undo_accept(now)?;
+        let entry = load_entry(&mut tx, suggestion.entry).await?;
+
+        let prev_topic = undo
+            .prev_topic
+            .as_deref()
+            .map(|t| crate::codec::parse_id("geri alma", t))
+            .transpose()?;
+        let prev_status = if undo.prev_status == "inbox" {
+            notai_core::EntryStatus::Inbox
+        } else {
+            entry.status()
+        };
+        let restored = Entry::from_parts(
+            entry.id,
+            entry.text.clone(),
+            entry.source,
+            entry.captured_at,
+            prev_topic,
+            if entry.is_trashed() {
+                entry.status()
+            } else {
+                prev_status
+            },
+        );
+        if let Some(task_id) = undo.created_task.as_deref() {
+            let task_id: notai_core::TaskId = crate::codec::parse_id("geri alma", task_id)?;
+            crate::tasks::cancel_in_tx(&mut tx, &self.origin, task_id, now).await?;
+        }
+        if let Some((kind, name)) = &undo.label {
+            let entry_s = entry.id.to_string();
+            sqlx::query!(
+                "DELETE FROM entry_labels WHERE entry_id = ?1 AND kind = ?2 AND name = ?3",
+                entry_s,
+                kind,
+                name
+            )
+            .execute(&mut *tx)
+            .await?;
+        }
+        write_decision(&mut tx, &self.origin, &suggestion, now).await?;
+        sqlx::query!("UPDATE suggestions SET undo = NULL WHERE id = ?1", id_s)
+            .execute(&mut *tx)
+            .await?;
+        update_entry(&mut tx, &self.origin, &restored, now).await?;
+        tx.commit().await?;
+        Ok(restored)
     }
 }
