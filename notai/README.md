@@ -80,7 +80,7 @@ AI kapalıyken her şey çalışır; kayıtlar yalnız "işlenmemiş" kalır. Ot
 cargo install tauri-cli --version "^2" --locked
 cd crates/app
 cargo tauri build                 # masaüstü (deb/AppImage/msi)
-cargo tauri android init          # bir kez: Android Studio SDK + NDK gerekir
+cargo tauri android init          # bir kez: Android Studio SDK + NDK gerekir (adım adım: docs/ANDROID.md)
 cargo tauri android build --apk   # Android
 ```
 

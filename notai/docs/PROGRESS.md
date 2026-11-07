@@ -12,7 +12,7 @@
 | 2 · İşlev kararı | ✅ | `docs/FEATURE_PLAN.md` |
 | 3 · v0.1 | ✅ | 7 dilim (core, store, ai, server, sync, ui, app) |
 | 3 · v0.2–v0.4 | ✅ (Android hariç) | bkz. §3 |
-| Android APK | ⛔ beklemede | bkz. §5 |
+| Android APK | 👤 Gökhan derleyecek | Kod hazır (mobil giriş noktası); bulut oturumunda SDK/NDK kurulumuna izin verilmedi, Gökhan kendi bilgisayarında derleyecek: `docs/ANDROID.md` |
 
 ## 2. Kod düzeni (Cargo workspace, `notai/crates/`)
 core · store (SQLite+sqlx, `.sqlx/` çevrimdışı önbellek, migrations 0001+0002) · ai · sync · server (axum) · api (ortak DTO + `convert` özelliği) · tokens (tokens.json→CSS) · ui (Leptos→WASM) · app (Tauri 2).
@@ -44,7 +44,7 @@ core · store (SQLite+sqlx, `.sqlx/` çevrimdışı önbellek, migrations 0001+0
 8. Takvim ucu tamamlanan görevleri de döndürür (üstü çizili gösterilir).
 
 ## 5. Sıradaki adımlar
-1. **Android APK** — otomatik güvenlik denetimi Android SDK/NDK indirip çalıştırmayı ("dışarıdan kod") engelledi; Gökhan'a soruldu, cevap: önce bağlam sıkıştırması. Sıkıştırmadan sonra Gökhan'a tekrar sor: izin verirse `scripts/android-setup.sh` (cmdline-tools 11076708 → platform-tools, platforms;android-34, build-tools;34.0.0, ndk;27.2.12479018; rust android hedefleri; `cargo install tauri-cli --version "^2"`) → `cd crates/app && cargo tauri android init && cargo tauri android build --apk`. Kabukta `#[cfg_attr(mobile, tauri::mobile_entry_point)]` hazır.
+1. **Android APK** — Gökhan kendi bilgisayarında derleyecek (karar: 2026-11-07). Adımlar `docs/ANDROID.md`. Derlemede hata çıkarsa çıktısı ile düzeltilecek.
 2. **CORS**: tarayıcıdan sunucuya doğrudan bağlanmak (`?api=http://sunucu:8787`) için sunucuya tower-http CorsLayer gerekebilir (şimdilik trunk proxy ile test edildi).
 3. Küçük eksikler: takvimde Ay görünümü yok; ekleme panelinde "Etkinlik" yok; `create_task` kimlik döndürmüyor (arayüz önce/sonra farkıyla buluyor); "tam zamanında" hatırlatma yok (en az 5 dk önce); demo'da ek yükleme hatası eksiz kayıt bırakır; otonom kararın geri alınması arayüzde gerçek AI ile sınanmadı (sunucu testinde sınandı); Manrope uygulamaya gömülmedi.
 4. Gökhan'a açık sorular: varsayılan AI (Gemma mı Claude mu), sabah 08:00 uygun mu, WhatsApp için MacroDroid mi n8n mi.
