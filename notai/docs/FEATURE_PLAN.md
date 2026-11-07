@@ -67,4 +67,4 @@ Her dilim: derlenir + `cargo fmt --check` + `cargo clippy --all-targets -- -D wa
 | Faz 0 | ✅ | design/brief.md (+ Revizyon 1: WhatsApp kurgusu) |
 | Faz 1 | ✅ (otonom onay) | design/decision.md (A tabanlı karışım), tokens.json/css, guidelines.md, components.html, screens/01–14, review-final.md (ort. 8,1). "Tasarım onaylandı" kararı `/goal tüm fazları işle` talimatıyla Claude tarafından verildi; Gökhan'ın sonradan gözden geçirmesi beklenir. |
 | Faz 2 | ✅ (otonom onay) | Bu belge. Açık sorular §4'te. |
-| Faz 3 | ✅ (v0.1 çekirdeği) | 7 dilimin hepsi tamam; ayrıntı ve kalanlar `docs/PROGRESS.md`'de. |
+| Faz 3 | ✅ v0.1–v0.4 (Android APK hariç) | Ayrıntı ve kalanlar `docs/PROGRESS.md`'de. |
