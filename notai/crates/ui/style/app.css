@@ -168,3 +168,7 @@ button.switch { cursor: pointer; }
 }
 .monthgrid .wday { min-height: var(--size-touch-min); padding: var(--space-1) 0; gap: 0; }
 .wday--out:not([aria-selected="true"]) .wday__num { color: var(--color-meta); font-weight: var(--font-weight-regular); }
+
+/* Tarayıcının kendi (mavi) arama temizle düğmesi gizlenir; yerine token renkli "Temizle". */
+input[type="search"]::-webkit-search-cancel-button,
+input[type="search"]::-webkit-search-decoration { -webkit-appearance: none; appearance: none; }

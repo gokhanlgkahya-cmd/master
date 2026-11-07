@@ -50,6 +50,12 @@ pub fn Search() -> impl IntoView {
                     placeholder="Kostik için en son hangi fiyatı almıştım?"
                     prop:value=move || q.get()
                     on:input=move |ev| q.set(event_target_value(&ev))/>
+                {move || (!q.get().is_empty()).then(|| view! {
+                    <button class="iconbtn" type="button" aria-label="Temizle"
+                        on:click=move |_| { q.set(String::new()); state.set(State::Idle); web::focus_later(input); }>
+                        <Icon name="x" size="sm"/>
+                    </button>
+                })}
             </label>
             <button class="iconbtn" type="submit" aria-label="Sor">
                 <Icon name="send"/>
