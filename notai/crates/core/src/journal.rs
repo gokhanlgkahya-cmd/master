@@ -124,6 +124,9 @@ pub struct TopicActivity {
     /// Renk yuvası 1–8 (`look::color_slots`; tüm konular üzerinden hesaplanır).
     #[serde(default)]
     pub color: u8,
+    /// Karar bekleyen önerisi olan kayıt sayısı (WhatsApp'taki okunmamış rozeti gibi).
+    #[serde(default)]
+    pub pending: u64,
 }
 
 /// Sabitlenenler önce; sonra son etkinliğe göre (yeni üstte); hiç kaydı olmayanlar en altta,
@@ -237,6 +240,7 @@ mod tests {
                 last_preview: None,
                 recent_texts: vec![],
                 color: 0,
+                pending: 0,
             },
             TopicActivity {
                 topic: t("İş", false),
@@ -244,6 +248,7 @@ mod tests {
                 last_preview: None,
                 recent_texts: vec![],
                 color: 0,
+                pending: 0,
             },
             TopicActivity {
                 topic: t("GemOlive", false),
@@ -251,6 +256,7 @@ mod tests {
                 last_preview: None,
                 recent_texts: vec![],
                 color: 0,
+                pending: 0,
             },
             TopicActivity {
                 topic: t("Ev", true),
@@ -258,6 +264,7 @@ mod tests {
                 last_preview: None,
                 recent_texts: vec![],
                 color: 0,
+                pending: 0,
             },
             TopicActivity {
                 topic: t("ılık", false),
@@ -265,6 +272,7 @@ mod tests {
                 last_preview: None,
                 recent_texts: vec![],
                 color: 0,
+                pending: 0,
             },
         ];
         order_topics(&mut list);

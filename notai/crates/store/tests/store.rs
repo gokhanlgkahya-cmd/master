@@ -677,3 +677,45 @@ async fn timestamps_round_trip_exactly() {
     let loaded = s.entry(captured.entry().id).await.unwrap();
     assert_eq!(&loaded, captured.entry());
 }
+
+#[tokio::test]
+async fn topic_list_counts_entries_waiting_for_a_decision() {
+    let s = store().await;
+    let kostik = topic(&s, "Kostik tedarik", ParaKind::Area).await;
+    let id = s
+        .capture(new_entry("Ayhan Kimya teklifi", at(6, 8, 0), Some(kostik)))
+        .await
+        .unwrap()
+        .entry()
+        .id;
+    let pending = |list: &[notai_core::journal::TopicActivity]| {
+        list.iter().find(|a| a.topic.id == kostik).unwrap().pending
+    };
+    assert_eq!(pending(&s.topic_list(KindFilter::All).await.unwrap()), 0);
+    let tag = |n: &str| {
+        Suggestion::new(
+            id,
+            SuggestionKind::Tag {
+                name: Label::new(n).unwrap(),
+            },
+            conf(0.8),
+        )
+    };
+    let (a, b) = (tag("teklif"), tag("kostik"));
+    s.save_ai_suggestions(id, &[a.clone(), b.clone()], at(6, 8, 1))
+        .await
+        .unwrap();
+    assert_eq!(
+        pending(&s.topic_list(KindFilter::All).await.unwrap()),
+        1,
+        "iki öneri, tek kayıt"
+    );
+    s.decide(a.id, true, at(6, 8, 2), chrono_tz::Europe::Istanbul)
+        .await
+        .unwrap();
+    assert_eq!(pending(&s.topic_list(KindFilter::All).await.unwrap()), 1);
+    s.decide(b.id, false, at(6, 8, 3), chrono_tz::Europe::Istanbul)
+        .await
+        .unwrap();
+    assert_eq!(pending(&s.topic_list(KindFilter::All).await.unwrap()), 0);
+}

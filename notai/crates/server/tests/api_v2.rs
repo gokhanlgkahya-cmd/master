@@ -245,6 +245,36 @@ async fn calendar_task_and_topic_editing() {
         .await;
     assert_eq!(s, StatusCode::BAD_REQUEST, "bitiş tarihli konu Alan olamaz");
 
+    // Profil fotoğrafı (Revizyon 3): küçük data URL kabul, başka şey ret, boş dizgi kaldırır.
+    let jpeg = "data:image/jpeg;base64,/9j/4AAQSkZJRgABAQ==";
+    let (s, _) = h
+        .post(
+            &format!("/api/topics/{tid}/edit"),
+            json!({ "avatar": jpeg }),
+        )
+        .await;
+    assert_eq!(s, StatusCode::OK);
+    let (_, list) = h.get("/api/topics").await;
+    assert_eq!(list["topics"][0]["avatar"], jpeg);
+    let (s, _) = h
+        .post(
+            &format!("/api/topics/{tid}/edit"),
+            json!({ "avatar": "https://example.com/x.jpg" }),
+        )
+        .await;
+    assert_eq!(s, StatusCode::BAD_REQUEST, "yalnız data:image");
+    let big = format!("data:image/png;base64,{}", "A".repeat(130_000));
+    let (s, _) = h
+        .post(&format!("/api/topics/{tid}/edit"), json!({ "avatar": big }))
+        .await;
+    assert_eq!(s, StatusCode::BAD_REQUEST, "boyut sınırı");
+    let (s, _) = h
+        .post(&format!("/api/topics/{tid}/edit"), json!({ "avatar": "" }))
+        .await;
+    assert_eq!(s, StatusCode::OK);
+    let (_, list) = h.get("/api/topics").await;
+    assert!(list["topics"][0]["avatar"].is_null());
+
     h.clock.set(t0() + Duration::days(10));
     let (_, review) = h.get("/api/weekly-review").await;
     assert_eq!(review["stalled"][0]["name"], "Logo ERP geçişi");

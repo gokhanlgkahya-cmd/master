@@ -1,6 +1,6 @@
 {
   "db_name": "SQLite",
-  "query": "SELECT id, name, kind, due_date, icon, pinned FROM topics WHERE name_key = ?1",
+  "query": "SELECT t.id, t.name, t.kind, t.due_date, t.icon, t.avatar, t.pinned,\n                      (SELECT MAX(x) FROM (\n                          SELECT MAX(e.captured_at) AS x FROM entries e WHERE e.topic_id = t.id\n                          UNION ALL\n                          SELECT MAX(k.updated_at) AS x FROM tasks k WHERE k.topic_id = t.id\n                      )) AS \"last: String\"\n               FROM topics t",
   "describe": {
     "columns": [
       {
@@ -59,8 +59,19 @@
         }
       },
       {
-        "name": "pinned",
+        "name": "avatar",
         "ordinal": 5,
+        "type_info": "Text",
+        "origin": {
+          "Table": {
+            "table": "topics",
+            "name": "avatar"
+          }
+        }
+      },
+      {
+        "name": "pinned",
+        "ordinal": 6,
         "type_info": "Integer",
         "origin": {
           "Table": {
@@ -68,10 +79,16 @@
             "name": "pinned"
           }
         }
+      },
+      {
+        "name": "last: String",
+        "ordinal": 7,
+        "type_info": "Text",
+        "origin": "Expression"
       }
     ],
     "parameters": {
-      "Right": 1
+      "Right": 0
     },
     "nullable": [
       false,
@@ -79,8 +96,10 @@
       false,
       true,
       true,
-      false
+      true,
+      false,
+      true
     ]
   },
-  "hash": "2dd01b55e165979ed38c9eaaa18b6bdd5d75be65e9f7efa8d048b7adfc1e6a88"
+  "hash": "5bbcc073e8e9903241a7ecd857436cafd95359b901f5b58d0ce8de74857fc210"
 }

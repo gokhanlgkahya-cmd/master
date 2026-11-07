@@ -1,111 +1,150 @@
-//! Ana ekran: Ana Günlük, haftalık gözden geçirme, konular (01-ana-ekran.html).
+//! Ana ekran (Revizyon 3: WhatsApp sohbet listesi düzeni): arama çubuğu, hap filtreler, tek
+//! liste — Ana Günlük ve Haftalık gözden geçirme iğneli satırlar, ardından konular (yuvarlak
+//! profil, ayraçsız, işlenmemiş rozeti) — ve sağ altta "Yeni kayıt" düğmesi.
 
 use leptos::prelude::*;
 use notai_api::{TopicRef, TopicsView};
 
-use crate::composer::Composer;
 use crate::sheets::NewTopicSheet;
-use crate::{ErrorNote, Icon, Screen, TabBar, backend, ctx, failed, loading, view};
+use crate::view::{HomeFilter, TopicLook};
+use crate::{Avatar, ErrorNote, Icon, Screen, TabBar, backend, ctx, failed, loading, view};
 
 #[component]
 pub fn Home() -> impl IntoView {
     let c = ctx();
-    let kind = RwSignal::new("all");
+    let filter = RwSignal::new(HomeFilter::All);
     let new_topic = RwSignal::new(false);
     let data = LocalResource::new(move || {
-        let k = kind.get();
+        let k = filter.get().kind_param();
         let _ = c.version.get();
         let b = backend();
         async move { b.topics(k).await }
     });
-    let seg = move |value: &'static str, label: &'static str| {
-        view! {
-            <button class="segmented__btn" role="tab"
-                aria-selected=move || (kind.get() == value).to_string()
-                on:click=move |_| kind.set(value)>{label}</button>
-        }
+    let unprocessed = move || match data.get() {
+        Some(Ok(v)) => v.unprocessed,
+        _ => 0,
     };
+    let pills = HomeFilter::ALL
+        .into_iter()
+        .map(|f| {
+            let badge = move || {
+                let n = unprocessed();
+                (f == HomeFilter::Unprocessed && n > 0)
+                    .then(|| view! { <span class="badge">{n}</span> })
+            };
+            view! {
+                <button class="pill" role="tab" aria-selected=move || (filter.get() == f).to_string()
+                    on:click=move |_| filter.set(f)>{f.label()}{badge}</button>
+            }
+        })
+        .collect_view();
     view! {
         <header class="topbar">
-            <h1 class="topbar__title">"Günlük"</h1>
+            <h1 class="topbar__title">"NotAI"</h1>
             <div class="topbar__actions">
-                <button class="iconbtn" aria-label="Ara" on:click=move |_| c.screen.set(Screen::Search)><Icon name="search"/></button>
                 <button class="iconbtn" aria-label="Yeni konu" on:click=move |_| new_topic.set(true)><Icon name="plus"/></button>
                 <button class="iconbtn" aria-label="Ayarlar" on:click=move |_| c.screen.set(Screen::Settings)><Icon name="dots"/></button>
             </div>
         </header>
-        <div class="segmented" role="tablist" aria-label="Konu türü">
-            {seg("all", "Tümü")}{seg("projects", "Proje")}{seg("areas", "Alan")}{seg("resources", "Kaynak")}
-        </div>
+        <button class="searchbar" aria-label="Ara" on:click=move |_| c.screen.set(Screen::Search)>
+            <Icon name="search"/><span>"Ara ya da notlarına sor"</span>
+        </button>
+        <div class="pills" role="tablist" aria-label="Filtre">{pills}</div>
         <div class="listpane scroll">
             {move || match data.get() {
                 None => loading(),
                 Some(Err(e)) => failed(e),
-                Some(Ok(v)) => home_list(v).into_any(),
+                Some(Ok(v)) => home_list(v, filter.get()).into_any(),
             }}
         </div>
+        <button class="fab" aria-label="Yeni kayıt"
+            on:click=move |_| { c.compose_focus.set(true); c.screen.set(Screen::Flow(None)); }>
+            <Icon name="pencil"/>
+        </button>
         <ErrorNote/>
-        <Composer placeholder="Ana Günlük’e yaz…" topic=None/>
         <TabBar/>
         <NewTopicSheet open=new_topic/>
     }
 }
 
-fn home_list(v: TopicsView) -> impl IntoView {
+fn pin_icon() -> impl IntoView {
+    view! { <span class="chat__pin" aria-label="Sabitlendi"><Icon name="pinned" size="xs"/></span> }
+}
+
+fn badge(n: u64, what: &'static str) -> Option<impl IntoView> {
+    (n > 0).then(|| view! { <span class="badge" aria-label=format!("{n} {what}")>{n}</span> })
+}
+
+fn home_list(v: TopicsView, filter: HomeFilter) -> impl IntoView {
     let c = ctx();
-    let badge = (v.unprocessed > 0).then(|| {
+    let journal = filter.shows_journal(v.unprocessed).then(|| {
         let n = v.unprocessed;
-        view! { <span class="badge" aria-label=format!("{n} işlenmemiş kayıt")>{n}</span> }
+        view! {
+            <button class="chat" on:click=move |_| c.screen.set(Screen::Flow(None))>
+                <Avatar look=TopicLook::plain("notebook")/>
+                <span class="chat__body">
+                    <span class="chat__top">
+                        <span class="chat__name">"Ana Günlük"</span>
+                        <span class="chat__time" class:chat__time--unread={n > 0}>{v.journal_last_label.clone().unwrap_or_default()}</span>
+                    </span>
+                    <span class="chat__bottom">
+                        <span class="chat__preview">{v.journal_preview.clone().unwrap_or_else(|| "Aklındakini yaz; gerisini NotAI düzenler.".into())}</span>
+                        {pin_icon()}{badge(n, "işlenmemiş kayıt")}
+                    </span>
+                </span>
+            </button>
+        }
     });
-    let no_topics = v.topics.is_empty();
-    let rows = v
-        .topics
+    let review = filter.shows_review().then(|| {
+        view! {
+            <button class="chat" on:click=move |_| c.screen.set(Screen::Review)>
+                <Avatar look=TopicLook::plain("calcheck")/>
+                <span class="chat__body">
+                    <span class="chat__top"><span class="chat__name">"Haftalık gözden geçirme"</span></span>
+                    <span class="chat__bottom">
+                        <span class="chat__preview">"İşlenmemişler, projeler, önümüzdeki hafta"</span>
+                        {pin_icon()}
+                    </span>
+                </span>
+            </button>
+        }
+    });
+    let topics: Vec<_> = v.topics.into_iter().filter(|t| filter.keeps(t)).collect();
+    let empty = (topics.is_empty() && journal.is_none()).then(|| {
+        let text = match filter {
+            HomeFilter::Unprocessed => "Karar bekleyen kayıt yok.",
+            HomeFilter::All => "Henüz konu yok. Sağ üstteki + ile proje, alan ya da kaynak ekle.",
+            _ => "Bu türde konu yok.",
+        };
+        view! { <p class="setnote">{text}</p> }
+    });
+    let rows = topics
         .into_iter()
         .map(|t| {
             let target = TopicRef {
                 id: t.id.clone(),
                 name: t.name.clone(),
             };
-            let look = view::TopicLook::of(&t);
-            let kind = view::kind_line(&t.kind_label, t.due_date);
-            let pin = t.pinned.then(|| {
-                view! { <span class="topic__pin" aria-label="Sabitlendi"><Icon name="pinned" size="xs"/></span> }
-            });
+            let look = TopicLook::of(&t);
+            let pending = t.pending;
+            let pin = t.pinned.then(pin_icon);
+            let preview = t.preview.clone().unwrap_or_else(|| view::kind_line(&t.kind_label, t.due_date));
             view! {
-                <button class="topic" on:click=move |_| c.screen.set(Screen::Flow(Some(target.clone())))>
-                    <span class=look.box_class()><Icon name=look.icon.clone()/></span>
-                    <span class="topic__body">
-                        <span class="topic__line"><span class="topic__name">{t.name}</span><span class="topic__kind">{kind}</span></span>
-                        <span class="topic__preview">{t.preview.unwrap_or_default()}</span>
+                <button class="chat" on:click=move |_| c.screen.set(Screen::Flow(Some(target.clone())))>
+                    <Avatar look=look/>
+                    <span class="chat__body">
+                        <span class="chat__top">
+                            <span class="chat__name">{t.name}</span>
+                            <span class="chat__time" class:chat__time--unread={pending > 0}>{t.last_label.unwrap_or_default()}</span>
+                        </span>
+                        <span class="chat__bottom">
+                            <span class="chat__preview">{preview}</span>
+                            {pin}{badge(pending, "karar bekleyen kayıt")}
+                        </span>
                     </span>
-                    <span class="topic__side"><span class="topic__time">{t.last_label.unwrap_or_default()}</span>{pin}</span>
                 </button>
             }
         })
         .collect_view();
-    let empty = no_topics.then(|| {
-        view! { <p class="setnote">"Henüz konu yok. Sağ üstteki + ile proje, alan ya da kaynak ekle."</p> }
-    });
-    view! {
-        <div class="card card--top">
-            <button class="topic" on:click=move |_| c.screen.set(Screen::Flow(None))>
-                <span class="topicicon"><Icon name="notebook"/></span>
-                <span class="topic__body">
-                    <span class="topic__line"><span class="topic__name">"Ana Günlük"</span></span>
-                    <span class="topic__preview">{v.journal_preview.unwrap_or_else(|| "Aklındakini yaz; gerisini NotAI düzenler.".into())}</span>
-                </span>
-                <span class="topic__side"><span class="topic__time">{v.journal_last_label.unwrap_or_default()}</span>{badge}</span>
-            </button>
-            <button class="topic" on:click=move |_| c.screen.set(Screen::Review)>
-                <span class="topicicon"><Icon name="calcheck"/></span>
-                <span class="topic__body">
-                    <span class="topic__line"><span class="topic__name">"Haftalık gözden geçirme"</span></span>
-                    <span class="topic__preview">"İşlenmemişler, projeler, önümüzdeki hafta"</span>
-                </span>
-            </button>
-        </div>
-        <h2 class="grouphead">"Konular"</h2>
-        <div class="topics">{rows}</div>
-        {empty}
-    }
+    view! { {journal}{review}{rows}{empty} }
 }

@@ -384,6 +384,94 @@ button { font: inherit; color: inherit; background: none; border: 0; padding: 0;
   border-radius: var(--radius-full); background: var(--color-mic-bg); color: var(--color-mic-icon);
 }
 
+
+/* ---------- Revizyon 3 (Gökhan, 2026-11-07): WhatsApp yapısı ----------
+   Liste ve akış iskeleti WhatsApp düzenini izler (yuvarlak profil, arama çubuğu, hap filtreler,
+   ayraçsız sohbet satırı, sağ altta yeni kayıt düğmesi, alan içinde ataç + kamera). Yazı tipi,
+   ikon seti ve renkler NotAI'nin kendi token'larıdır. */
+.avatar {
+  flex: none; position: relative; display: inline-flex; align-items: center; justify-content: center;
+  width: var(--size-avatar); height: var(--size-avatar); overflow: hidden;
+  border-radius: var(--radius-full); background: var(--color-tile-bg); color: var(--color-text);
+}
+.avatar--sm { width: var(--size-avatar-sm); height: var(--size-avatar-sm); }
+.avatar img { width: 100%; height: 100%; object-fit: cover; display: block; }
+.avatar--ink { background: var(--color-accent); color: var(--color-on-accent); }
+.avatar--c1 { background: var(--color-topic-1-bg); color: var(--color-topic-1-fg); }
+.avatar--c2 { background: var(--color-topic-2-bg); color: var(--color-topic-2-fg); }
+.avatar--c3 { background: var(--color-topic-3-bg); color: var(--color-topic-3-fg); }
+.avatar--c4 { background: var(--color-topic-4-bg); color: var(--color-topic-4-fg); }
+.avatar--c5 { background: var(--color-topic-5-bg); color: var(--color-topic-5-fg); }
+.avatar--c6 { background: var(--color-topic-6-bg); color: var(--color-topic-6-fg); }
+.avatar--c7 { background: var(--color-topic-7-bg); color: var(--color-topic-7-fg); }
+.avatar--c8 { background: var(--color-topic-8-bg); color: var(--color-topic-8-fg); }
+
+.searchbar {
+  flex: none; display: flex; align-items: center; gap: var(--space-3);
+  margin: 0 var(--space-4); min-height: var(--size-input); padding: 0 var(--space-4);
+  border-radius: var(--radius-full); background: var(--color-tile-bg); color: var(--color-meta);
+  font-size: var(--font-size-md); line-height: var(--font-line-height-md); text-align: left;
+}
+.pills {
+  flex: none; display: flex; gap: var(--space-2); overflow-x: auto; scrollbar-width: none;
+  padding: var(--space-3) var(--space-4) var(--space-2);
+}
+.pills::-webkit-scrollbar { display: none; }
+.pill {
+  flex: none; display: inline-flex; align-items: center; gap: var(--space-1);
+  min-height: var(--size-chip); padding: 0 var(--space-4); border-radius: var(--radius-full);
+  border: var(--border-width-hairline) solid var(--color-border-strong); color: var(--color-meta);
+  font-size: var(--font-size-sm); line-height: var(--font-line-height-sm); font-weight: var(--font-weight-medium);
+  white-space: nowrap;
+}
+.pill[aria-selected="true"] {
+  background: var(--color-accent); border-color: var(--color-accent); color: var(--color-on-accent);
+  font-weight: var(--font-weight-semibold);
+}
+.pill .badge { background: var(--color-on-accent); color: var(--color-accent); }
+.pill[aria-selected="false"] .badge { background: var(--color-badge-bg); color: var(--color-badge-text); }
+
+.chat {
+  display: flex; align-items: center; gap: var(--space-3); width: 100%;
+  min-height: var(--size-touch-min); padding: var(--space-3) var(--space-4); color: var(--color-text); text-align: left;
+}
+.chat__body { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: var(--space-1); }
+.chat__top, .chat__bottom { display: flex; align-items: center; gap: var(--space-2); min-width: 0; }
+.chat__name {
+  flex: 1; min-width: 0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+  font-size: var(--font-size-md); line-height: var(--font-line-height-md); font-weight: var(--font-weight-semibold);
+}
+.chat__time { flex: none; font-size: var(--font-size-xs); line-height: var(--font-line-height-xs); color: var(--color-meta); font-variant-numeric: var(--font-feature-tabular); }
+.chat__time--unread { color: var(--color-text); font-weight: var(--font-weight-semibold); }
+.chat__preview {
+  flex: 1; min-width: 0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+  font-size: var(--font-size-sm); line-height: var(--font-line-height-sm); color: var(--color-meta);
+}
+.chat__pin { flex: none; display: inline-flex; color: var(--color-meta); }
+
+.fab {
+  position: absolute; z-index: var(--z-panel);
+  right: var(--space-4); bottom: calc(var(--size-tabbar) + var(--space-4));
+  display: inline-flex; align-items: center; justify-content: center;
+  width: var(--size-fab); height: var(--size-fab); border-radius: var(--radius-lg);
+  background: var(--color-mic-bg); color: var(--color-mic-icon); box-shadow: var(--shadow-floating);
+}
+
+/* Yazma çubuğu (WhatsApp düzeni): hap alan; ataç ve kamera alanın içinde sağda; yanında
+   ayrı yuvarlak mikrofon/Gönder. */
+.field--pill {
+  gap: var(--space-1); padding: 0 var(--space-1) 0 var(--space-4);
+  border-radius: var(--radius-full); color: var(--color-text);
+}
+.field--pill:focus-within { border: var(--border-width-focus) solid var(--color-focus-ring); }
+.field__input {
+  flex: 1; min-width: 0; height: 100%; min-height: var(--size-input);
+  border: 0; outline: none; background: transparent; padding: 0;
+  font: inherit; color: var(--color-text);
+}
+.field__input::placeholder { color: var(--color-placeholder); opacity: 1; }
+.field--pill .iconbtn { color: var(--color-meta); }
+
 /* ---------- 9. Sekme çubuğu ---------- */
 .tabbar {
   flex: none; height: var(--size-tabbar); display: grid; grid-template-columns: repeat(5, 1fr);
@@ -809,4 +897,15 @@ input:focus-visible + .checkbox__box, input:focus-visible + .toggle__track, .che
   @keyframes chip-pop { 0%, 100% { transform: none; } }
   @keyframes chip-in { from { opacity: 0; } to { opacity: 1; } }
   .toggle__track::after, .switch::after { transition: background var(--motion-duration-fast) linear; }
+}
+
+/* Revizyon 3: konu menüsünde simge seçimi (yuvarlak profiller ızgarası). */
+.icongrid {
+  display: grid; grid-template-columns: repeat(auto-fill, minmax(72px, 1fr)); gap: var(--space-2);
+  margin-top: var(--space-3); max-height: calc(var(--size-avatar) * 5); overflow-y: auto;
+}
+.icongrid__item {
+  display: flex; flex-direction: column; align-items: center; gap: var(--space-1);
+  min-height: var(--size-touch-min); padding: var(--space-1) 0; color: var(--color-meta);
+  font-size: var(--font-size-xs); line-height: var(--font-line-height-xs); text-align: center;
 }

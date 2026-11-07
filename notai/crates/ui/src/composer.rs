@@ -52,6 +52,11 @@ pub fn Composer(
     let camera = NodeRef::<Input>::new();
     let document = NodeRef::<Input>::new();
 
+    if !task_mode && c.compose_focus.get_untracked() {
+        // Ana ekrandaki "Yeni kayıt" düğmesiyle gelindi: klavye açık başlasın.
+        c.compose_focus.set(false);
+        web::focus_later(field);
+    }
     if task_mode {
         // Ataç → Görev ile gelindiyse ekleme alanına odaklan.
         Effect::new(move |_| {
@@ -274,41 +279,37 @@ pub fn Composer(
         move || {
             let submit = submit.clone();
             let submit2 = submit.clone();
-            let lead = if task_mode {
-                view! {
-                    <button class="iconbtn" aria-label="Görev ekle" on:click=move |_| web::focus_later(field)><Icon name="plus"/></button>
-                }
-                .into_any()
-            } else {
+            // WhatsApp düzeni: hap alanın içinde sağda ataç (+ kamera); Görevler ekranında yalnız alan.
+            let tools = (!task_mode).then(|| {
                 view! {
                     <button class="iconbtn" aria-expanded=move || (panel.get() != Panel::Closed).to_string()
                         aria-label=move || if panel.get() == Panel::Closed { "Ekle" } else { "Ekleme panelini kapat" }
                         on:click=move |_| panel.update(|p| *p = if *p == Panel::Closed { Panel::Grid } else { Panel::Closed })>
                         {move || if panel.get() == Panel::Closed { view! { <Icon name="clip"/> } } else { view! { <Icon name="x"/> } }}
                     </button>
+                    {move || text.get().trim().is_empty().then(|| view! {
+                        <button class="iconbtn" aria-label="Kamera" on:click=move |_| pick(camera)><Icon name="camera"/></button>
+                    })}
                 }
-                .into_any()
-            };
-            let cam = (!task_mode).then(|| {
-                view! { <button class="iconbtn" aria-label="Kamera" on:click=move |_| pick(camera)><Icon name="camera"/></button> }
             });
             view! {
                 <div class="composer">
-                    {lead}
-                    <input
-                        class="field"
-                        type="text"
-                        lang="tr"
-                        enterkeyhint="send"
-                        node_ref=field
-                        aria-label=placeholder.clone()
-                        placeholder=placeholder.clone()
-                        prop:value=move || text.get()
-                        on:focus=move |_| panel.set(Panel::Closed)
-                        on:input=move |ev| text.set(event_target_value(&ev))
-                        on:keydown=move |ev| if ev.key() == "Enter" { submit() }
-                    />
-                    {cam}
+                    <label class="field field--pill">
+                        <input
+                            class="field__input"
+                            type="text"
+                            lang="tr"
+                            enterkeyhint="send"
+                            node_ref=field
+                            aria-label=placeholder.clone()
+                            placeholder=placeholder.clone()
+                            prop:value=move || text.get()
+                            on:focus=move |_| panel.set(Panel::Closed)
+                            on:input=move |ev| text.set(event_target_value(&ev))
+                            on:keydown=move |ev| if ev.key() == "Enter" { submit() }
+                        />
+                        {tools}
+                    </label>
                     {move || if text.get().trim().is_empty() {
                         view! { <button class="mic" aria-label="Sesli yakala" on:click=move |_| start_voice()><Icon name="mic"/></button> }.into_any()
                     } else {

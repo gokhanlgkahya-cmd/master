@@ -7,7 +7,7 @@ use notai_api::{
 };
 
 use crate::view::{self, TaskForm};
-use crate::{Icon, Screen, backend, ctx, run, run_then, web};
+use crate::{Avatar, Icon, Screen, backend, ctx, run, run_then, web};
 
 /// Karartma + sayfa kabuğu. `class`: `sheet--peek` | `sheet--full` | `sheet--auto`.
 fn shell(
@@ -187,7 +187,7 @@ fn TopicPicker(entry: String, current: Option<String>) -> impl IntoView {
         <h3 class="sheet__label">"Konuya taşı"</h3>
         <div class="card pick">
             <button class="topic" aria-current=journal_current.then_some("true") on:click=move |_| pick_journal(None)>
-                <span class="topicicon"><Icon name="notebook"/></span>
+                <Avatar look=view::TopicLook::plain("notebook") small=true/>
                 <span class="topic__body"><span class="topic__name">"Ana Günlük"</span></span>
                 {journal_current.then(|| view! { <Icon name="check" size="sm"/> })}
             </button>
@@ -201,7 +201,7 @@ fn TopicPicker(entry: String, current: Option<String>) -> impl IntoView {
                     let look = view::TopicLook::of(&t);
                     view! {
                         <button class="topic" aria-current=is_current.then_some("true") on:click=move |_| pick(Some(id.clone()))>
-                            <span class=look.box_class()><Icon name=look.icon.clone()/></span>
+                            <Avatar look=look small=true/>
                             <span class="topic__body">
                                 <span class="topic__line"><span class="topic__name">{t.name}</span><span class="topic__kind">{t.kind_label}</span></span>
                             </span>
@@ -395,10 +395,102 @@ fn TopicMenuBody(topic: TopicRef, open: RwSignal<bool>) -> impl IntoView {
         let b = backend();
         async move { b.topics("all").await }
     });
+    let tid2 = tid.clone();
     let pinned = Memo::new(move |_| match rows.get() {
         Some(Ok(v)) => v.topics.iter().find(|t| t.id == tid).map(|t| t.pinned),
         _ => None,
     });
+    let row = Memo::new(move |_| match rows.get() {
+        Some(Ok(v)) => v.topics.into_iter().find(|t| t.id == tid2),
+        _ => None,
+    });
+    let choosing_icon = RwSignal::new(false);
+    let photo = NodeRef::<leptos::html::Input>::new();
+    // Bağlam (bağlantı) burada yakalanır: fotoğraf küçültme `await`'inden sonra `use_context`
+    // okunamaz (`run_then` notu).
+    let edit = {
+        let id = topic.id.clone();
+        let b = backend();
+        move |req: TopicEditRequest| {
+            let id = id.clone();
+            open.set(false);
+            crate::run_in(
+                c,
+                b.clone(),
+                move |b| async move { b.edit_topic(id, req).await },
+                |()| {},
+            );
+        }
+    };
+    let on_photo = {
+        let edit = edit.clone();
+        move |_ev: leptos::ev::Event| {
+            let Some(el) = photo.get_untracked() else {
+                return;
+            };
+            let edit = edit.clone();
+            leptos::task::spawn_local(async move {
+                match web::avatar_from_input(&el, 96).await {
+                    Ok(Some(data)) => edit(TopicEditRequest {
+                        avatar: Some(data),
+                        ..TopicEditRequest::default()
+                    }),
+                    Ok(None) => {}
+                    Err(e) => c.error.set(Some(e)),
+                }
+            });
+        }
+    };
+    let remove_photo = {
+        let edit = edit.clone();
+        move |_| {
+            edit(TopicEditRequest {
+                avatar: Some(String::new()),
+                ..TopicEditRequest::default()
+            });
+        }
+    };
+    let set_icon = {
+        let edit = edit.clone();
+        move |icon: &str| {
+            edit(TopicEditRequest {
+                icon: Some(icon.to_owned()),
+                ..TopicEditRequest::default()
+            });
+        }
+    };
+    let icon_grid = {
+        let set_icon = set_icon.clone();
+        move || {
+            let current = row.get();
+            let color = current.as_ref().map_or(0, |t| t.color);
+            let auto = {
+                let set_icon = set_icon.clone();
+                view! {
+                    <button class="icongrid__item" aria-label="Otomatik simge" on:click=move |_| set_icon("")>
+                        <span class="avatar avatar--sm"><Icon name="sparkle"/></span><span>"Otomatik"</span>
+                    </button>
+                }
+            };
+            let items = notai_api::TOPIC_ICON_CHOICES
+                .iter()
+                .map(|&(icon, label)| {
+                    let set_icon = set_icon.clone();
+                    let look = view::TopicLook {
+                        icon: icon.to_owned(),
+                        color,
+                        avatar: None,
+                    };
+                    view! {
+                        <button class="icongrid__item" aria-label=format!("Simge: {label}") on:click=move |_| set_icon(icon)>
+                            <Avatar look=look small=true/><span>{label}</span>
+                        </button>
+                    }
+                })
+                .collect_view();
+            view! { <div class="icongrid" role="group" aria-label="Simge seç">{auto}{items}</div> }
+        }
+    };
     let id_pin = topic.id.clone();
     let toggle_pin = move |_| {
         let Some(p) = pinned.get_untracked() else {
@@ -449,7 +541,29 @@ fn TopicMenuBody(topic: TopicRef, open: RwSignal<bool>) -> impl IntoView {
                     <span class="setrow__ic"><Icon name="pencil"/></span>
                     <span class="setrow__txt"><span class="setrow__title">"Yeniden adlandır"</span></span>
                 </button>
+                <button class="setrow" on:click=move |_| { if let Some(el) = photo.get_untracked() { el.click(); } }>
+                    <span class="setrow__ic"><Icon name="image"/></span>
+                    <span class="setrow__txt"><span class="setrow__title">"Profil fotoğrafı"</span>
+                        <span class="setrow__sub">"Yuvarlak içinde simgenin yerine görünür"</span></span>
+                </button>
+                {move || row.get().and_then(|t| t.avatar).map(|_| {
+                    let remove_photo = remove_photo.clone();
+                    view! {
+                        <button class="setrow" on:click=remove_photo>
+                            <span class="setrow__ic"><Icon name="trash"/></span>
+                            <span class="setrow__txt"><span class="setrow__title">"Fotoğrafı kaldır"</span></span>
+                        </button>
+                    }
+                })}
+                <button class="setrow" aria-expanded=move || choosing_icon.get().to_string()
+                    on:click=move |_| choosing_icon.update(|v| *v = !*v)>
+                    <span class="setrow__ic"><Icon name="grid"/></span>
+                    <span class="setrow__txt"><span class="setrow__title">"Simgeyi değiştir"</span>
+                        <span class="setrow__sub">"Seçmezsen addan ve kayıtlardan otomatik seçilir"</span></span>
+                </button>
             </div>
+            <input class="filepick" type="file" accept="image/*" tabindex="-1" aria-hidden="true" node_ref=photo on:change=on_photo/>
+            {move || choosing_icon.get().then(icon_grid.clone())}
             <form class="formfield formfield--sheet" class:hidden=move || !renaming.get()
                 on:submit=move |ev| { ev.prevent_default(); rename() }>
                 <span class="formfield__label">"Yeni ad"</span>

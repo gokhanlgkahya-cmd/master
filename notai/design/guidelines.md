@@ -215,3 +215,12 @@ Formül: WCAG 2.x göreli parlaklık, `(L1 + 0,05) / (L2 + 0,05)`. Değerler do�
 **Sonuç:** 106 denetim (53 çift × 2 tema), 0 başarısız. En dar pay: Bölmeli kontrol başparmak kenarı / ray (açık tema) 3,20 / hedef 3:1
 
 Yeni bir renk çifti eklendiğinde kontrast betiğine eklenir. 4,5:1 (metin) ya da 3:1 (grafik) altında kalan çift kullanılmaz.
+
+## Revizyon 3 — WhatsApp yapısı (2026-11-07)
+Yapı WhatsApp'ı izler, görsel dil NotAI'nindir. Bileşenler `screens.css` "Revizyon 3" bölümünde:
+`.avatar` (yuvarlak profil; `--size-avatar` 52 px liste, `--size-avatar-sm` 40 px başlık/seçim; renk
+`avatar--cN`, fotoğraf `img`), `.searchbar`, `.pills/.pill` (seçili hap mürekkep dolgu), `.chat` satırı
+(ad + saat üstte, önizleme + iğne/rozet altta, ayraç yok; rozetliyse saat koyu), `.fab`
+(`--size-fab`, sağ alt, sekme çubuğunun üstünde), `.field--pill` (ataç + kamera alanın içinde).
+Ana ekranda yazma çubuğu yoktur; "Yeni kayıt" düğmesi Ana Günlük'ü klavye açık açar.
+

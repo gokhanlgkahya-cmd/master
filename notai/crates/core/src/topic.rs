@@ -98,6 +98,10 @@ impl KindFilter {
     }
 }
 
+/// Profil fotoğrafının en büyük boyutu (data URL karakteri). Arayüz görseli ≈96 px'e küçültür
+/// (tipik 4–8 KB); bu sınır yalnız kötüye kullanıma karşıdır.
+pub const AVATAR_MAX: usize = 120_000;
+
 /// Bir konu.
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 pub struct Topic {
@@ -106,6 +110,10 @@ pub struct Topic {
     pub kind: ParaKind,
     /// Simge anahtarı (ör. "drop", "flask", "house"); arayüz ikon setinden çözer.
     pub icon: Option<String>,
+    /// Profil fotoğrafı (küçültülmüş görsel, `data:image/…;base64,…`). Varsa simgenin yerine
+    /// yuvarlak içinde gösterilir.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub avatar: Option<String>,
     pub pinned: bool,
 }
 
@@ -117,8 +125,34 @@ impl Topic {
             name,
             kind,
             icon: None,
+            avatar: None,
             pinned: false,
         }
+    }
+
+    /// Profil fotoğrafını doğrular: yalnız küçük `data:image/(jpeg|png|webp);base64,` görseli.
+    pub fn check_avatar(s: &str) -> Result<(), crate::CoreError> {
+        let ok_prefix = [
+            "data:image/jpeg;base64,",
+            "data:image/png;base64,",
+            "data:image/webp;base64,",
+        ]
+        .iter()
+        .any(|p| s.starts_with(p));
+        if !ok_prefix {
+            return Err(crate::CoreError::UnknownVariant {
+                field: "profil fotoğrafı",
+                value: s.chars().take(24).collect(),
+            });
+        }
+        if s.len() > AVATAR_MAX {
+            return Err(crate::CoreError::TooLong {
+                field: "profil fotoğrafı",
+                max: AVATAR_MAX,
+                actual: s.len(),
+            });
+        }
+        Ok(())
     }
 
     /// Konuyu arşive taşır (PARA'nın "A"sı).

@@ -87,6 +87,8 @@ pub fn topic_row(a: TopicActivity, now: DateTime<Utc>, tz: Tz) -> TopicRowView {
         due_date: a.topic.kind.due(),
         icon: Some(notai_core::look::icon_for(&a.topic, &a.recent_texts)),
         color: a.color,
+        avatar: a.topic.avatar.clone(),
+        pending: a.pending,
         pinned: a.topic.pinned,
         last_label: a.last_at.map(|t| list_time_label(t, now, tz)),
         preview: a.last_preview,
@@ -427,6 +429,14 @@ pub fn apply_topic_edit(topic: &mut notai_core::Topic, e: &TopicEditRequest) -> 
     }
     if let Some(i) = &e.icon {
         topic.icon = (!i.is_empty()).then(|| i.clone());
+    }
+    if let Some(av) = &e.avatar {
+        topic.avatar = if av.is_empty() {
+            None
+        } else {
+            notai_core::Topic::check_avatar(av).map_err(|x| x.to_string())?;
+            Some(av.clone())
+        };
     }
     if let Some(p) = e.pinned {
         topic.pinned = p;

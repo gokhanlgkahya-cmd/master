@@ -38,6 +38,8 @@ core · store (SQLite+sqlx, `.sqlx/` çevrimdışı önbellek, migrations 0001+0
 
 **Revizyon 2 — konu simgeleri (2026-11-07, Gökhan):** simge konu adından + son 20 kayıttan Türkçe anahtar kelimelerle seçilir (`crates/core/src/look.rs`; elle seçilen sabit; addan eşleşme yoksa ≥2 kayıt gerekir; yoksa türün varsayılanı), her konu oluşturulma sırasıyla 8 renkli paletten kalıcı renk alır (`tokens.json` `topic-1…8`, AA). 19 yeni simge (`design/screens/15-konu-simgeleri.html`). API `TopicRowView.color`; ana ekran, akış başlığı, kayıt üstü konu adı ve konu seçme listesi renkli. Testler: core (simge/renk kuralları + sprite'ta her simge var), store (kayıt geldikçe simge değişir), sunucu (`/api/topics` simge + renk).
 
+**Revizyon 3 — WhatsApp yapısı (2026-11-07, Gökhan):** yuvarlak profil (renkli daire + simge ya da profil fotoğrafı; konu menüsünde "Profil fotoğrafı", "Fotoğrafı kaldır", "Simgeyi değiştir"), ana ekranda arama çubuğu + hap filtreler (Tümü · İşlenmemiş · Proje · Alan · Kaynak), tek liste (Ana Günlük + Haftalık iğneli), konu başına karar bekleyen kayıt rozeti, sağ altta "Yeni kayıt" düğmesi (ana ekranda yazma çubuğu yok), akışta WhatsApp yazma çubuğu. Şema: `0003_topic_avatar.sql` (topics.avatar, ≤120 000 karakter `data:image/…`). Tarayıcı testi (gerçek sunucu): 9/9.
+
 **Doğrulama:** Rust testleri (core ~70, store ~27, ai ~23, server ~19 HTTP, sync 6 senaryo, app 3, ui 14, tokens 4); gerçek ikili duman testi; Linux'ta gerçek Tauri penceresi (Xvfb); arayüz gerçek sunucuya karşı Playwright ile 19/19 adım (`docs/screenshots/ui-v0.4-screens.png`).
 
 ## 4. Kararlar (Gökhan onayladı, 2026-11-07)

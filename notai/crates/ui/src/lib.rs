@@ -54,6 +54,8 @@ struct Ctx {
     error: RwSignal<Option<String>>,
     /// Görevler ekranı açılınca ekleme alanına odaklan (ön metinle).
     task_draft: RwSignal<Option<String>>,
+    /// Ana ekrandaki "Yeni kayıt" düğmesiyle gelindi: akışın yazma alanına odaklan.
+    compose_focus: RwSignal<bool>,
 }
 
 fn new_ctx() -> Ctx {
@@ -64,6 +66,7 @@ fn new_ctx() -> Ctx {
         editing: RwSignal::new(None),
         error: RwSignal::new(None),
         task_draft: RwSignal::new(None),
+        compose_focus: RwSignal::new(false),
     }
 }
 
@@ -114,6 +117,16 @@ where
     Fut: std::future::Future<Output = Result<(), String>> + 'static,
 {
     run_then(f, |()| {});
+}
+
+/// Yuvarlak konu profili: fotoğraf varsa o, yoksa konunun renginde daire içinde simge.
+#[component]
+fn Avatar(look: view::TopicLook, #[prop(optional)] small: bool) -> impl IntoView {
+    let class = look.avatar_class(small);
+    match look.avatar {
+        Some(src) => view! { <span class=class><img src=src alt=""/></span> }.into_any(),
+        None => view! { <span class=class><Icon name=look.icon/></span> }.into_any(),
+    }
 }
 
 #[component]

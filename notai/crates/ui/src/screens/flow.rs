@@ -7,7 +7,7 @@ use notai_api::{EntryView, JournalView, MorningPlanView, SuggestionView, TopicRe
 
 use crate::composer::Composer;
 use crate::sheets::TopicMenu;
-use crate::{ErrorNote, Icon, Screen, backend, ctx, failed, loading, run, view};
+use crate::{Avatar, ErrorNote, Icon, Screen, backend, ctx, failed, loading, run, view};
 
 #[component]
 pub fn Flow(topic: Option<TopicRef>) -> impl IntoView {
@@ -70,16 +70,10 @@ pub fn Flow(topic: Option<TopicRef>) -> impl IntoView {
     };
     let header_look = move || {
         if is_journal {
-            view::TopicLook {
-                icon: "notebook".to_owned(),
-                color: 0,
-            }
+            view::TopicLook::plain("notebook")
         } else {
             this_topic().map_or_else(
-                || view::TopicLook {
-                    icon: "folder".to_owned(),
-                    color: 0,
-                },
+                || view::TopicLook::plain("folder"),
                 |t| view::TopicLook::of(&t),
             )
         }
@@ -93,7 +87,7 @@ pub fn Flow(topic: Option<TopicRef>) -> impl IntoView {
         <header class="flowbar">
             <button class="iconbtn" aria-label="Geri" on:click=move |_| c.screen.set(Screen::Home)><Icon name="back"/></button>
             <div class="flowbar__who">
-                {move || { let l = header_look(); let class = l.box_class(); view! { <span class=class><Icon name=l.icon/></span> } }}
+                {move || view! { <Avatar look=header_look() small=true/> }}
                 <div class="flowbar__text"><span class="flowbar__name">{title.clone()}</span><span class="flowbar__sub">{sub}</span></div>
             </div>
             {menu_btn}
@@ -229,10 +223,10 @@ fn entry_row(
         .unprocessed
         .then(|| view! { <span class="dot" role="img" aria-label="İşlenmedi"></span> });
     let topic = e.topic.clone().filter(|_| show_topic).map(|t| {
-        let look = looks.get(&t.id).cloned().unwrap_or_else(|| view::TopicLook {
-            icon: "folder".to_owned(),
-            color: 0,
-        });
+        let look = looks
+            .get(&t.id)
+            .cloned()
+            .unwrap_or_else(|| view::TopicLook::plain("folder"));
         view! { <span aria-hidden="true">"·"</span><span class=look.meta_class()><Icon name=look.icon.clone() size="xs"/><span>{t.name}</span></span> }
     });
     let failed = e

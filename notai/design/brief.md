@@ -83,3 +83,20 @@ WhatsApp'ın **düzen ve etkileşim kalıbı** alınır; yeşil marka rengi, duv
 - Tur 3'teki "tek renk ikon" kararı **konu simgeleri için** değişti: her konu paletten kalıcı bir renk alır (8 yumuşak renk, açık/koyu temada simge ≥4,5:1). Diğer ikonlar, metin ve AI çipleri nötr kalır.
 - Konu simgesi elle seçilmediyse **konu adından ve konuya düşen kayıtlardan** anlamlı bir simge seçilir; kayıt geldikçe değişebilir. Seçenekler: "Addan anlamlı simge" (seçildi) / "Baş harfli rozet" / "İkisi birden"; renk için "Her konuya kendi rengi" (seçildi) / "Türe göre renk".
 - Ayrıntı: `guidelines.md` §ikonlar, `screens/15-konu-simgeleri.html`, `tokens.json` (`color.theme.*.topic-N-*`).
+
+## Revizyon 3 — WhatsApp yapısı (Gökhan, 2026-11-07)
+Gökhan: "Kişilerin profilleri gibi yuvarlak içinde görmeliyiz; genel tasarım neden WhatsApp'a
+benzemedi (yazı tipi, ikon, renk değil)." Revizyon 1'de kurgu WhatsApp alınmış, ama ekran
+düzeni bilinçli olarak WhatsApp'tan ayrıştırılmıştı; bu revizyon **yapıyı** WhatsApp'a yaklaştırır.
+Yazı tipi, ikon seti ve renkler NotAI'nin kendi token'ları olarak kalır.
+- **Yuvarlak profil:** konu = renkli daire + simge; istenirse profil fotoğrafı (konu menüsü →
+  Profil fotoğrafı; ≈96 px'e küçültülür, senkronlanır). Simge elle de değiştirilebilir ("Otomatik"e dönülebilir).
+- **Ana ekran:** başlık + tam genişlik arama çubuğu + kaydırılabilir hap filtreler (Tümü · İşlenmemiş ·
+  Proje · Alan · Kaynak); tek liste: Ana Günlük ve Haftalık gözden geçirme iğneli satır, sonra konular;
+  satır ayracı, "KONULAR" başlığı ve tür etiketi yok; her konuda karar bekleyen kayıt rozeti;
+  sağ altta "Yeni kayıt" düğmesi (ana ekranda yazma çubuğu yok — yakalama 2 dokunuş, Gökhan onayladı).
+- **Akış:** başlıkta yuvarlak profil; yazma çubuğu hap alan, ataç + kamera alanın içinde, yanında
+  ayrı yuvarlak mikrofon/Gönder.
+- Ekran görüntüleri: `screens/r3-ana-ekran.png`, `r3-ana-ekran-koyu.png`, `r3-konu-akisi.png`.
+  01/02/03 HTML prototipleri bu revizyondan öncedir; bileşenlerin tek kaynağı `screens.css`'tir.
+

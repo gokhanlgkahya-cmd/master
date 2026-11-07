@@ -27,11 +27,13 @@ pub fn topic_icon(icon: Option<&str>, kind: &str) -> String {
     )
 }
 
-/// Konunun görünümü: simge ve renk yuvası (sunucu/kabuk `notai_core::look` ile hesaplar).
+/// Konunun görünümü: simge, renk yuvası ve varsa profil fotoğrafı (sunucu/kabuk
+/// `notai_core::look` ile hesaplar).
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct TopicLook {
     pub icon: String,
     pub color: u8,
+    pub avatar: Option<String>,
 }
 
 impl TopicLook {
@@ -40,17 +42,31 @@ impl TopicLook {
         Self {
             icon: topic_icon(t.icon.as_deref(), &t.kind),
             color: t.color,
+            avatar: t.avatar.clone(),
         }
     }
 
-    /// Simge kutusunun sınıfı ("topicicon topicicon--c3").
+    /// Renksiz, yalnız simgeli görünüm (Ana Günlük, yükleniyor).
     #[must_use]
-    pub fn box_class(&self) -> String {
-        if self.color == 0 {
-            "topicicon".to_owned()
-        } else {
-            format!("topicicon topicicon--c{}", self.color)
+    pub fn plain(icon: &str) -> Self {
+        Self {
+            icon: icon.to_owned(),
+            color: 0,
+            avatar: None,
         }
+    }
+
+    /// Yuvarlak profilin sınıfı ("avatar avatar--c3", küçükse "+ avatar--sm").
+    #[must_use]
+    pub fn avatar_class(&self, small: bool) -> String {
+        let mut c = String::from("avatar");
+        if self.color > 0 {
+            c.push_str(&format!(" avatar--c{}", self.color));
+        }
+        if small {
+            c.push_str(" avatar--sm");
+        }
+        c
     }
 
     /// Kayıt üstündeki konu adının sınıfı (yalnız simge renk alır).
@@ -60,6 +76,72 @@ impl TopicLook {
             "meta__topic".to_owned()
         } else {
             format!("meta__topic meta__topic--c{}", self.color)
+        }
+    }
+}
+
+/// Ana ekran hap filtresi.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum HomeFilter {
+    All,
+    Unprocessed,
+    Projects,
+    Areas,
+    Resources,
+}
+
+impl HomeFilter {
+    pub const ALL: [Self; 5] = [
+        Self::All,
+        Self::Unprocessed,
+        Self::Projects,
+        Self::Areas,
+        Self::Resources,
+    ];
+
+    #[must_use]
+    pub const fn label(self) -> &'static str {
+        match self {
+            Self::All => "Tümü",
+            Self::Unprocessed => "İşlenmemiş",
+            Self::Projects => "Proje",
+            Self::Areas => "Alan",
+            Self::Resources => "Kaynak",
+        }
+    }
+
+    /// Sunucudaki konu türü filtresi.
+    #[must_use]
+    pub const fn kind_param(self) -> &'static str {
+        match self {
+            Self::All | Self::Unprocessed => "all",
+            Self::Projects => "projects",
+            Self::Areas => "areas",
+            Self::Resources => "resources",
+        }
+    }
+
+    /// Ana Günlük ve Haftalık gözden geçirme satırları bu filtrede görünür mü?
+    #[must_use]
+    pub const fn shows_journal(self, unprocessed: u64) -> bool {
+        match self {
+            Self::All => true,
+            Self::Unprocessed => unprocessed > 0,
+            _ => false,
+        }
+    }
+
+    #[must_use]
+    pub const fn shows_review(self) -> bool {
+        matches!(self, Self::All)
+    }
+
+    /// Konu satırı bu filtrede görünür mü? (Tür filtresini sunucu uygular.)
+    #[must_use]
+    pub const fn keeps(self, t: &TopicRowView) -> bool {
+        match self {
+            Self::Unprocessed => t.pending > 0,
+            _ => true,
         }
     }
 }
@@ -687,6 +769,8 @@ mod tests {
             due_date: None,
             icon: icon.map(Into::into),
             color: 3,
+            avatar: None,
+            pending: 0,
             pinned: false,
             last_label: None,
             preview: None,
@@ -700,14 +784,42 @@ mod tests {
             "akış başlığı ana ekranla aynı simge"
         );
         assert_eq!(looks["o"].icon, "book");
-        assert_eq!(looks["k"].box_class(), "topicicon topicicon--c3");
+        assert_eq!(looks["k"].avatar_class(false), "avatar avatar--c3");
+        assert_eq!(
+            looks["k"].avatar_class(true),
+            "avatar avatar--c3 avatar--sm"
+        );
         assert_eq!(looks["k"].meta_class(), "meta__topic meta__topic--c3");
-        let plain = TopicLook {
-            icon: "folder".into(),
-            color: 0,
-        };
-        assert_eq!(plain.box_class(), "topicicon");
+        assert_eq!(TopicLook::plain("notebook").avatar_class(false), "avatar");
+        // Hap filtreleri
+        let mut t = looks_row_pending(0);
+        assert!(HomeFilter::All.keeps(&t));
+        assert!(!HomeFilter::Unprocessed.keeps(&t));
+        t.pending = 2;
+        assert!(HomeFilter::Unprocessed.keeps(&t));
+        assert!(HomeFilter::Unprocessed.shows_journal(1));
+        assert!(!HomeFilter::Unprocessed.shows_journal(0));
+        assert!(!HomeFilter::Projects.shows_journal(5));
+        assert!(HomeFilter::All.shows_review() && !HomeFilter::Unprocessed.shows_review());
+        assert_eq!(HomeFilter::Areas.kind_param(), "areas");
         assert_eq!(plan_reason_class("overdue"), "plan__sub plan__sub--error");
+    }
+
+    fn looks_row_pending(pending: u64) -> TopicRowView {
+        TopicRowView {
+            id: "x".into(),
+            name: "x".into(),
+            kind: "area".into(),
+            kind_label: "Alan".into(),
+            due_date: None,
+            icon: None,
+            color: 1,
+            avatar: None,
+            pending,
+            pinned: false,
+            last_label: None,
+            preview: None,
+        }
     }
 
     #[test]

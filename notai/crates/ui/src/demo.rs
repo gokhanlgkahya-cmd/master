@@ -55,6 +55,8 @@ fn topic(id: &str, name: &str, kind: &str, icon: &str, last: &str, preview: &str
             .fold(0u8, |a, b| a.wrapping_mul(31).wrapping_add(b))
             % 8
             + 1,
+        avatar: None,
+        pending: u64::from(id == "t-kostik"),
         pinned: false,
         last_label: Some(last.into()),
         preview: Some(preview.into()),

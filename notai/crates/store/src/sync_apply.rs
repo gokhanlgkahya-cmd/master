@@ -194,8 +194,8 @@ async fn insert_topic_snapshot(
     let pinned = i64::from(t.pinned);
     let at_s = ts(at);
     sqlx::query!(
-        "INSERT INTO topics (id, name, name_key, kind, due_date, icon, pinned, created_at, updated_at)
-         VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7, ?8, ?8)",
+        "INSERT INTO topics (id, name, name_key, kind, due_date, icon, avatar, pinned, created_at, updated_at)
+         VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?9, ?7, ?8, ?8)",
         id,
         name_s,
         key,
@@ -203,7 +203,8 @@ async fn insert_topic_snapshot(
         due,
         t.icon,
         pinned,
-        at_s
+        at_s,
+        t.avatar
     )
     .execute(&mut *conn)
     .await?;
@@ -232,20 +233,22 @@ async fn update_topic_snapshot(
     .await?;
     if clash > 0 {
         sqlx::query!(
-            "UPDATE topics SET kind = ?2, due_date = ?3, icon = ?4, pinned = ?5, updated_at = ?6 WHERE id = ?1",
+            "UPDATE topics SET kind = ?2, due_date = ?3, icon = ?4, pinned = ?5, updated_at = ?6, avatar = ?7
+             WHERE id = ?1",
             id,
             kind,
             due,
             t.icon,
             pinned,
-            at_s
+            at_s,
+            t.avatar
         )
         .execute(&mut *conn)
         .await?;
     } else {
         sqlx::query!(
             "UPDATE topics SET name = ?2, name_key = ?3, kind = ?4, due_date = ?5, icon = ?6, pinned = ?7,
-                    updated_at = ?8
+                    updated_at = ?8, avatar = ?9
              WHERE id = ?1",
             id,
             name,
@@ -254,7 +257,8 @@ async fn update_topic_snapshot(
             due,
             t.icon,
             pinned,
-            at_s
+            at_s,
+            t.avatar
         )
         .execute(&mut *conn)
         .await?;

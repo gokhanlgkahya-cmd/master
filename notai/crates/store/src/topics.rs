@@ -52,8 +52,8 @@ pub(crate) async fn insert_topic(
     let pinned = i64::from(topic.pinned);
     let now_s = ts(now);
     let res = sqlx::query!(
-        "INSERT INTO topics (id, name, name_key, kind, due_date, icon, pinned, created_at, updated_at)
-         VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7, ?8, ?8)
+        "INSERT INTO topics (id, name, name_key, kind, due_date, icon, avatar, pinned, created_at, updated_at)
+         VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?9, ?7, ?8, ?8)
          ON CONFLICT (name_key) DO NOTHING",
         id,
         name,
@@ -62,7 +62,8 @@ pub(crate) async fn insert_topic(
         due,
         topic.icon,
         pinned,
-        now_s
+        now_s,
+        topic.avatar
     )
     .execute(&mut *conn)
     .await?;
@@ -82,7 +83,7 @@ pub(crate) async fn find_by_name(
     let key = name_key(name);
     let row = sqlx::query_as!(
         TopicRow,
-        "SELECT id, name, kind, due_date, icon, pinned FROM topics WHERE name_key = ?1",
+        "SELECT id, name, kind, due_date, icon, avatar, pinned FROM topics WHERE name_key = ?1",
         key
     )
     .fetch_optional(&mut *conn)
@@ -94,7 +95,7 @@ pub(crate) async fn get_topic(conn: &mut SqliteConnection, id: TopicId) -> Resul
     let id_s = id.to_string();
     let row = sqlx::query_as!(
         TopicRow,
-        "SELECT id, name, kind, due_date, icon, pinned FROM topics WHERE id = ?1",
+        "SELECT id, name, kind, due_date, icon, avatar, pinned FROM topics WHERE id = ?1",
         id_s
     )
     .fetch_optional(&mut *conn)
@@ -139,7 +140,7 @@ impl Store {
         let mut tx = self.pool.begin().await?;
         let res = sqlx::query!(
             "UPDATE topics SET name = ?2, name_key = ?3, kind = ?4, due_date = ?5, icon = ?6,
-                    pinned = ?7, updated_at = ?8
+                    pinned = ?7, updated_at = ?8, avatar = ?9
              WHERE id = ?1",
             id,
             name,
@@ -148,7 +149,8 @@ impl Store {
             due,
             topic.icon,
             pinned,
-            now_s
+            now_s,
+            topic.avatar
         )
         .execute(&mut *tx)
         .await
@@ -170,13 +172,17 @@ impl Store {
     /// Ana ekran konu listesi: son kayıt önizlemesiyle, sabitlenenler önce, sonra son etkinliğe göre.
     pub async fn topic_list(&self, filter: KindFilter) -> Result<Vec<TopicActivity>> {
         let rows = sqlx::query!(
-            r#"SELECT t.id, t.name, t.kind, t.due_date, t.icon, t.pinned,
+            r#"SELECT t.id, t.name, t.kind, t.due_date, t.icon, t.avatar, t.pinned,
                       (SELECT e.captured_at FROM entries e
                         WHERE e.topic_id = t.id AND e.status IN ('inbox', 'processed')
                         ORDER BY e.captured_at DESC LIMIT 1) AS "last_at: String",
                       (SELECT e.text FROM entries e
                         WHERE e.topic_id = t.id AND e.status IN ('inbox', 'processed')
-                        ORDER BY e.captured_at DESC LIMIT 1) AS "last_text: String"
+                        ORDER BY e.captured_at DESC LIMIT 1) AS "last_text: String",
+                      (SELECT COUNT(DISTINCT s.entry_id) FROM suggestions s
+                         JOIN entries e ON e.id = s.entry_id
+                        WHERE e.topic_id = t.id AND s.decision = 'pending'
+                          AND e.status IN ('inbox', 'processed')) AS "pending!: i64"
                FROM topics t"#
         )
         .fetch_all(&self.pool)
@@ -210,12 +216,14 @@ impl Store {
                 kind: r.kind,
                 due_date: r.due_date,
                 icon: r.icon,
+                avatar: r.avatar,
                 pinned: r.pinned,
             })?;
             if !filter.matches(topic.kind) {
                 continue;
             }
             let color = slots.get(&topic.id).copied().unwrap_or(0);
+            let pending = u64::try_from(r.pending).unwrap_or(0);
             let last_at = r
                 .last_at
                 .as_deref()
@@ -233,6 +241,7 @@ impl Store {
                 last_preview,
                 recent_texts,
                 color,
+                pending,
             });
         }
         order_topics(&mut out);

@@ -87,6 +87,12 @@ pub struct TopicRowView {
     /// Kalıcı renk yuvası 1–8 (tokens `topic-N-*`); 0 = renksiz (eski sunucu).
     #[serde(default)]
     pub color: u8,
+    /// Profil fotoğrafı (`data:image/…`); varsa simgenin yerine yuvarlak içinde gösterilir.
+    #[serde(default)]
+    pub avatar: Option<String>,
+    /// Karar bekleyen önerisi olan kayıt sayısı (rozet).
+    #[serde(default)]
+    pub pending: u64,
     pub pinned: bool,
     /// "12:05", "Dün", "Çarşamba", "2 Kas".
     pub last_label: Option<String>,
@@ -295,6 +301,9 @@ pub struct TopicEditRequest {
     pub kind: Option<String>,
     pub due_date: Option<String>,
     pub icon: Option<String>,
+    /// Profil fotoğrafı (`data:image/…;base64,…`); boş dizgi kaldırır.
+    #[serde(default)]
+    pub avatar: Option<String>,
     pub pinned: Option<bool>,
 }
 
@@ -302,6 +311,44 @@ pub struct TopicEditRequest {
 pub struct MoveRequest {
     pub topic_id: Option<String>,
 }
+
+/// Konu menüsündeki "Simgeyi değiştir" seçenekleri: (simge, Türkçe ad). Otomatik seçimin
+/// kullandığı simgelerle aynı küme (`notai_core::look::auto_icons`; testle eşitlenir) + türlerin
+/// varsayılanları.
+pub const TOPIC_ICON_CHOICES: &[(&str, &str)] = &[
+    ("flask", "Kimya"),
+    ("drop", "Yağ, sabun"),
+    ("leaf", "Bahçe"),
+    ("cube", "Ürün"),
+    ("truck", "Kargo"),
+    ("factory", "Üretim"),
+    ("chart", "Satış, yatırım"),
+    ("wallet", "Para"),
+    ("cart", "Alışveriş"),
+    ("house", "Ev"),
+    ("car", "Araba"),
+    ("plane", "Seyahat"),
+    ("pill", "Sağlık"),
+    ("dumbbell", "Spor"),
+    ("heart", "İlişki"),
+    ("users", "Aile"),
+    ("grad", "Eğitim"),
+    ("book", "Okuma"),
+    ("code", "Yazılım"),
+    ("server", "Sunucu"),
+    ("cpu", "Bilgisayar"),
+    ("wrench", "Tamir"),
+    ("briefcase", "İş"),
+    ("music", "Müzik"),
+    ("gift", "Hediye"),
+    ("paw", "Evcil hayvan"),
+    ("utensils", "Yemek"),
+    ("camera", "Fotoğraf"),
+    ("calendar", "Etkinlik"),
+    ("folder", "Klasör"),
+    ("layers", "Katman"),
+    ("archive", "Arşiv"),
+];
 
 #[cfg(test)]
 mod tests {
@@ -317,6 +364,15 @@ mod tests {
             confidence: 0.8,
         };
         assert!(s.is_pending());
+    }
+
+    #[cfg(feature = "convert")]
+    #[test]
+    fn icon_choices_cover_every_auto_icon() {
+        let choices: Vec<&str> = TOPIC_ICON_CHOICES.iter().map(|(i, _)| *i).collect();
+        for i in notai_core::look::auto_icons() {
+            assert!(choices.contains(&i), "seçeneklerde yok: {i}");
+        }
     }
 
     #[test]

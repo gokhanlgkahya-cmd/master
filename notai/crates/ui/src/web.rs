@@ -116,6 +116,57 @@ pub async fn read_first_file(input: &web_sys::HtmlInputElement) -> Result<Option
     }))
 }
 
+/// Seçilen görseli kare kırpıp `size` px JPEG'e küçültür (konu profil fotoğrafı). Sonuç
+/// `data:image/jpeg;base64,…` (tipik 4–8 KB); konu kaydıyla senkronlanır.
+pub async fn avatar_from_input(
+    input: &web_sys::HtmlInputElement,
+    size: u32,
+) -> Result<Option<String>, String> {
+    let Some(file) = input.files().and_then(|f| f.get(0)) else {
+        return Ok(None);
+    };
+    let url = web_sys::Url::create_object_url_with_blob(&file).map_err(|e| js_err(&e))?;
+    let img = web_sys::HtmlImageElement::new().map_err(|e| js_err(&e))?;
+    img.set_src(&url);
+    let decoded = JsFuture::from(img.decode()).await;
+    let _ = web_sys::Url::revoke_object_url(&url);
+    decoded.map_err(|_| "görsel açılamadı (desteklenmeyen biçim)".to_owned())?;
+    let (w, h) = (
+        f64::from(img.natural_width()),
+        f64::from(img.natural_height()),
+    );
+    if w < 1.0 || h < 1.0 {
+        return Err("görsel boş".into());
+    }
+    let side = w.min(h);
+    let (sx, sy) = ((w - side) / 2.0, (h - side) / 2.0);
+    let doc = web_sys::window()
+        .and_then(|w| w.document())
+        .ok_or("belge yok")?;
+    let canvas: web_sys::HtmlCanvasElement = doc
+        .create_element("canvas")
+        .map_err(|e| js_err(&e))?
+        .dyn_into()
+        .map_err(|_| "tuval oluşturulamadı".to_owned())?;
+    canvas.set_width(size);
+    canvas.set_height(size);
+    let ctx: web_sys::CanvasRenderingContext2d = canvas
+        .get_context("2d")
+        .map_err(|e| js_err(&e))?
+        .ok_or("tuval bağlamı yok")?
+        .dyn_into()
+        .map_err(|_| "tuval bağlamı yok".to_owned())?;
+    let d = f64::from(size);
+    ctx.draw_image_with_html_image_element_and_sw_and_sh_and_dx_and_dy_and_dw_and_dh(
+        &img, sx, sy, side, side, 0.0, 0.0, d, d,
+    )
+    .map_err(|e| js_err(&e))?;
+    canvas
+        .to_data_url_with_type_and_encoder_options("image/jpeg", &JsValue::from_f64(0.85))
+        .map(Some)
+        .map_err(|e| js_err(&e))
+}
+
 /// Cihaz konumu (enlem, boylam). İzin reddi Türkçe hata olarak döner.
 pub async fn current_position() -> Result<(f64, f64), String> {
     let geo = web_sys::window()
