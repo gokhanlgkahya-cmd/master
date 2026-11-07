@@ -93,6 +93,9 @@ pub struct TopicsView {
     pub topics: Vec<TopicRowView>,
     /// Ana Günlük rozeti.
     pub unprocessed: u64,
+    /// Ana Günlük satırı: son kaydın önizlemesi ve zaman etiketi.
+    pub journal_preview: Option<String>,
+    pub journal_last_label: Option<String>,
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]

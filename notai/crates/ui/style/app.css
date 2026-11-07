@@ -1,0 +1,36 @@
+/* Uygulama eklemeleri: design/screens/screens.css (bileşenlerin tek kaynağı) üzerine yalnız
+   gerçek uygulamaya özgü farklar. Değerler yalnız tokens.css değişkenlerinden gelir. */
+
+html, body { height: 100%; }
+body { background: var(--color-bg); }
+
+/* Prototipte telefon çerçevesi sabit ölçülü; uygulamada ekranın kendisi. Sistem durum ve
+   gezinme çubuklarını işletim sistemi çizer. */
+.app.phone {
+  width: 100%;
+  max-width: calc(var(--size-phone-width) * 1.5);
+  height: 100dvh;
+  margin: 0 auto;
+  border-radius: 0;
+}
+
+/* Yazma alanı gerçek bir giriş kutusu. */
+input.field {
+  font: inherit;
+  color: var(--color-text);
+  outline: none;
+}
+input.field::placeholder { color: var(--color-placeholder); opacity: 1; }
+input.field:focus { border: var(--border-width-focus) solid var(--color-focus-ring); }
+
+.loading, .error-note {
+  padding: var(--space-6);
+  text-align: center;
+  color: var(--color-meta);
+  font-size: var(--font-size-sm);
+  line-height: var(--font-line-height-sm);
+}
+.error-note { color: var(--color-error); }
+
+.topic[aria-disabled="true"] { cursor: default; }
+.entry .bubble { cursor: pointer; }

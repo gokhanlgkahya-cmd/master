@@ -402,6 +402,8 @@ async fn entry_actions_and_topics_list() {
     assert_eq!(topics["topics"][0]["name"], "GemOlive");
     assert_eq!(topics["topics"][0]["last_label"], "09:12");
     assert_eq!(topics["topics"][0]["preview"], "Ambalaj faturası · 1.850 ₺");
+    assert_eq!(topics["journal_preview"], "Ambalaj faturası · 1.850 ₺");
+    assert_eq!(topics["journal_last_label"], "09:12");
 
     let (_, flow) = h
         .get(&format!("/api/journal?filter=topic&topic_id={gem_id}"))

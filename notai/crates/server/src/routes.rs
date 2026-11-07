@@ -8,7 +8,7 @@ use axum::routing::{get, post};
 use axum::{Json, Router};
 use chrono::{DateTime, NaiveDate, NaiveTime, Utc};
 use notai_core::entry::Source;
-use notai_core::journal::JournalFilter;
+use notai_core::journal::{JournalFilter, list_time_label};
 use notai_core::profile::ProfileFact;
 use notai_core::task::{Due, NewTask, Priority};
 use notai_core::text::{EntryText, FactText, TaskTitle, TopicName};
@@ -212,9 +212,13 @@ async fn topics(
         .map(|a| convert::topic_row(a, now, st.cfg.tz))
         .collect();
     let unprocessed = st.store.unprocessed_count().await?;
+    let last = st.store.journal(JournalFilter::All, None, 1).await?;
+    let last = last.last();
     Ok(Json(TopicsView {
         topics: rows,
         unprocessed,
+        journal_preview: last.map(|i| i.entry.text.preview(80)),
+        journal_last_label: last.map(|i| list_time_label(i.entry.captured_at, now, st.cfg.tz)),
     }))
 }
 
