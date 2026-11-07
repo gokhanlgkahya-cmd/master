@@ -1,0 +1,19 @@
+[package]
+name = "notai-tokens"
+description = "design/tokens.json (W3C DTCG) → CSS değişkenleri üreticisi (kurallar: design/guidelines.md §2)"
+version.workspace = true
+edition.workspace = true
+rust-version.workspace = true
+publish.workspace = true
+license.workspace = true
+
+[[bin]]
+name = "gen-tokens"
+path = "src/main.rs"
+
+[dependencies]
+serde_json = { version = "1.0.154", features = ["preserve_order"] }
+thiserror.workspace = true
+
+[lints]
+workspace = true
