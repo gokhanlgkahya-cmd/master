@@ -42,7 +42,7 @@ pub fn Flow(topic: Option<TopicRef>) -> impl IntoView {
     Effect::new(move |_| {
         if data.get().is_some() {
             request_animation_frame(move || {
-                if let Some(el) = scroller.get() {
+                if let Some(el) = scroller.get_untracked() {
                     el.set_scroll_top(el.scroll_height());
                 }
             });

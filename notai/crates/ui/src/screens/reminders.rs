@@ -78,7 +78,7 @@ fn group(g: ReminderGroupView, names: &HashMap<String, String>) -> impl IntoView
                 .and_then(|t| names.get(t))
                 .cloned()
                 .unwrap_or_default();
-            row(r, topic, due || g.key == "today")
+            row(r, topic, due)
         })
         .collect_view();
     view! {

@@ -256,9 +256,9 @@ impl Recorder {
 
 /// Öğeye odaklanır (bir sonraki karede; öğe henüz çizilmemiş olabilir).
 pub fn focus_later(el: leptos::prelude::NodeRef<leptos::html::Input>) {
-    use leptos::prelude::Get;
+    use leptos::prelude::GetUntracked;
     leptos::prelude::request_animation_frame(move || {
-        if let Some(i) = el.get() {
+        if let Some(i) = el.get_untracked() {
             let _ = i.focus();
         }
     });

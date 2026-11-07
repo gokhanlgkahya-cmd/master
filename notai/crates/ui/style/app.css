@@ -34,3 +34,100 @@ input.field:focus { border: var(--border-width-focus) solid var(--color-focus-ri
 
 .topic[aria-disabled="true"] { cursor: default; }
 .entry .bubble { cursor: pointer; }
+
+/* ---------- v0.2–v0.4 eklemeleri ---------- */
+.hidden { display: none !important; }
+.note {
+  margin: 0;
+  padding: var(--space-4);
+  text-align: center;
+  color: var(--color-meta);
+  font-size: var(--font-size-sm);
+  line-height: var(--font-line-height-sm);
+}
+.error-note { cursor: pointer; }
+
+/* .body taşmayı gizler; kaydırılan gövdelerde .scroll geçerli olsun. */
+.body.scroll { overflow-y: auto; }
+.body--flush { display: flex; flex-direction: column; }
+.body--flush .timeline { flex: 1; min-height: 0; padding-bottom: var(--space-4); }
+
+/* Düğmeye dönüşen satır gövdeleri (görev, zaman çizelgesi, gözden geçirme). */
+button.task__body, button.tl__txt, button.urow, button.setrow { width: 100%; text-align: left; }
+button.tl__txt { flex: 1; }
+.tl__item { padding-left: 0; }
+.urow { color: var(--color-text); }
+.urow > .ic { color: var(--color-meta); }
+
+/* Gerçek giriş kutuları (prototipte metin taklidi). */
+.field--input { gap: var(--space-2); }
+.field--input input {
+  flex: 1; min-width: 0; min-height: var(--size-input);
+  padding: 0; border: 0; background: transparent; outline: 0;
+  font: inherit; color: var(--color-text);
+}
+.field--input input::placeholder { color: var(--color-placeholder); opacity: 1; }
+.field--input:focus-within { border: var(--border-width-focus) solid var(--color-focus-ring); }
+.textarea {
+  width: 100%; min-height: calc(var(--size-input) * 2.5);
+  padding: var(--space-2) var(--space-3);
+  background: var(--color-input-bg); color: var(--color-text);
+  border: var(--border-width-hairline) solid var(--color-input-border); border-radius: var(--radius-md);
+  font: inherit; resize: vertical;
+}
+.textarea:focus-visible { outline: var(--border-width-focus) solid var(--color-focus-ring); outline-offset: calc(-1 * var(--border-width-focus)); }
+.fieldbox { cursor: pointer; }
+.fieldbox__val input, .fieldbox__val select {
+  flex: 1; min-width: 0; padding: 0; border: 0; background: transparent; outline: 0;
+  font: inherit; color: var(--color-text); appearance: none; -webkit-appearance: none;
+}
+.fieldbox__val select option { background: var(--color-surface); color: var(--color-text); }
+.fieldbox:focus-within { outline: var(--border-width-focus) solid var(--color-focus-ring); outline-offset: calc(-1 * var(--border-width-focus)); }
+.fieldbox__val input::-webkit-calendar-picker-indicator { opacity: var(--opacity-disabled); }
+.range { width: 100%; min-height: var(--size-touch-min); accent-color: var(--color-accent); }
+
+/* Bottom sheet: uygulamada telefon yüksekliği yerine görünüm yüksekliği. */
+.sheet--peek { height: calc(100dvh * var(--size-sheet-peek)); }
+.sheet--full { height: calc(100dvh * var(--size-sheet-full)); }
+.sheet--auto { height: auto; max-height: calc(100dvh * var(--size-sheet-full)); }
+.sheet--auto .sheet__body { padding-bottom: var(--space-4); }
+.sheet__actions--3 { grid-template-columns: repeat(3, 1fr); }
+.sheet__actions button[aria-pressed="true"] { color: var(--color-text); font-weight: var(--font-weight-bold); }
+.sheet__foot--row { display: flex; gap: var(--space-2); }
+.sheet__foot--row .btn--primary { flex: 1; }
+.sheet__foot--flat { padding-left: 0; padding-right: 0; }
+.formfield--sheet { margin-top: var(--space-4); }
+.sheet__body .fields { margin-top: var(--space-1); }
+.linkeds { display: grid; gap: var(--space-2); }
+.sugg--done > .ic { color: var(--color-accept); }
+.card.pick, .card.menu { margin: var(--space-2) 0 0; }
+.topic[aria-current="true"] .topic__name { font-weight: var(--font-weight-bold); }
+
+/* Ayarlar */
+.setrow__acts { display: flex; flex-wrap: wrap; align-items: center; gap: var(--space-2); }
+.setrow__ask { flex-basis: 100%; color: var(--color-error); }
+.setrow .input { flex: 1; }
+.setnote--ok { color: var(--color-success); }
+.setnote--error { color: var(--color-error); }
+.card .setnote { margin: 0; padding: var(--space-2) var(--space-4) var(--space-3); }
+.btn--danger-text { color: var(--color-error); }
+button.switch { cursor: pointer; }
+
+/* Gözden geçirme */
+.stepcard__act { padding: 0 var(--space-4) var(--space-2); }
+.stepcard + .stepcard { margin-top: var(--space-3); }
+
+/* Ekleme paneli formları */
+.attach--form { display: grid; gap: var(--space-3); }
+.attach--form .attach__label { margin: 0; }
+.attach__acts { display: flex; justify-content: flex-end; gap: var(--space-2); }
+
+/* Gizli dosya seçiciler (ataç / kamera karoları tetikler). */
+.filepick { position: absolute; width: 0; height: 0; overflow: hidden; }
+
+/* Ses şeridi: kayıt sürerken dalga yalnız opaklıkla nabız atar. */
+.voicestrip__send { margin-left: auto; }
+.wave--live i { animation: wave-pulse var(--motion-spring-panel-duration) var(--motion-easing-standard) infinite alternate; }
+.wave--live i:nth-child(odd) { animation-delay: var(--motion-stagger-tile); }
+@keyframes wave-pulse { from { opacity: var(--opacity-disabled); } to { opacity: 1; } }
+.tl__item--done .tl__title { text-decoration: line-through; color: var(--color-meta); }

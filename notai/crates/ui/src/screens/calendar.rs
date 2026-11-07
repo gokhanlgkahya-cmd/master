@@ -28,7 +28,7 @@ pub fn Calendar() -> impl IntoView {
         selected.set(today);
     };
     let count_on = move |d: NaiveDate| match data.get() {
-        Some(Ok(v)) => day_items(&v, d).len(),
+        Some(Ok(v)) => day_items(&v, d).iter().filter(|t| t.open).count(),
         _ => 0,
     };
     let strip = move || {
@@ -117,19 +117,33 @@ fn timeline(items: Vec<TaskRowView>, is_today: bool) -> impl IntoView {
             rows.push(nowline(now));
         }
         let id = t.id.clone();
-        let open = t.clone();
+        let edit = t.clone();
+        let done = !t.open;
         let sub = format!("Görev · {}", t.priority_label);
+        let check = if done {
+            view! {
+                <span class="task__check" role="img" aria-label=format!("Tamamlandı: {}", t.title)>
+                    <span class="check check--done"><Icon name="check" size="xs"/></span>
+                </span>
+            }
+            .into_any()
+        } else {
+            view! {
+                <button class="task__check" aria-label=format!("Tamamla: {}", t.title)
+                    on:click=move |_| { let id = id.clone(); run(move |b| async move { b.complete_task(id).await }) }>
+                    <span class="check"></span>
+                </button>
+            }
+            .into_any()
+        };
         rows.push(
             view! {
                 <div class="tl">
                     <span class="tl__time">{view::timeline_time(&t)}</span>
-                    <div class="tl__item">
-                        <button class="task__check" aria-label=format!("Tamamla: {}", t.title)
-                            on:click=move |_| { let id = id.clone(); run(move |b| async move { b.complete_task(id).await }) }>
-                            <span class="check"></span>
-                        </button>
+                    <div class="tl__item" class:tl__item--done=done>
+                        {check}
                         <button class="tl__txt" aria-label=format!("Düzenle: {}", t.title)
-                            on:click=move |_| c.editing.set(Some(open.clone()))>
+                            on:click=move |_| c.editing.set(Some(edit.clone()))>
                             <span class="tl__title">{t.title.clone()}</span>
                             <span class="tl__sub">{sub}</span>
                         </button>
