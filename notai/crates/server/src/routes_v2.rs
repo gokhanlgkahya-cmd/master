@@ -7,7 +7,7 @@ use axum::http::{HeaderMap, StatusCode, header};
 use axum::response::IntoResponse;
 use axum::routing::{get, post};
 use axum::{Json, Router};
-use chrono::{Days, Duration, NaiveDate, NaiveTime};
+use chrono::{Days, Duration, NaiveDate};
 use notai_ai::ask::{AskContext, AskSource, ask};
 use notai_ai::media::top_k;
 use notai_api::{
@@ -17,9 +17,7 @@ use notai_api::{
 use notai_core::agenda::{agenda, week_start, weekly_review};
 use notai_core::entry::Source;
 use notai_core::reminders::{Snooze, group};
-use notai_core::task::{Due, MonthDay, Priority, Recurrence, Reminder};
-use notai_core::text::{EntryText, TaskTitle, TopicName};
-use notai_core::topic::ParaKind;
+use notai_core::text::EntryText;
 use notai_core::{Entry, EntryId, ProfileFactId, SuggestionId, TaskId, TopicId};
 use notai_store::{AttachmentKind, NewAttachment, NewEntry, Store};
 use serde::Deserialize;
@@ -184,126 +182,18 @@ async fn snooze(
 
 // ---------- Görev ve konu düzenleme ----------
 
-/// Düzenleme isteğini göreve uygular (sunucu ve uygulama kabuğu ortak kullanır).
-pub fn apply_task_edit(task: &mut notai_core::Task, e: &TaskEditRequest) -> Result<(), String> {
-    if let Some(t) = &e.title {
-        task.title = TaskTitle::new(t).map_err(|x| x.to_string())?;
-    }
-    if let Some(p) = &e.priority {
-        task.priority = Priority::parse(p).map_err(|x| x.to_string())?;
-    }
-    if let Some(d) = &e.due_date {
-        task.due = if d.is_empty() {
-            None
-        } else {
-            let date = NaiveDate::parse_from_str(d, "%Y-%m-%d")
-                .map_err(|_| format!("geçersiz tarih: {d}"))?;
-            Some(Due {
-                date,
-                time: task.due.and_then(|x| x.time),
-            })
-        };
-    }
-    if let Some(t) = &e.due_time {
-        let time = if t.is_empty() {
-            None
-        } else {
-            Some(NaiveTime::parse_from_str(t, "%H:%M").map_err(|_| format!("geçersiz saat: {t}"))?)
-        };
-        match (&mut task.due, time) {
-            (Some(d), time) => d.time = time,
-            (None, None) => {}
-            (None, Some(_)) => return Err("saat için tarih gerekli".into()),
-        }
-    }
-    if let Some(r) = &e.repeat {
-        let on = task.due.map(|d| chrono::Datelike::weekday(&d.date));
-        task.recurrence = match (r.as_str(), on) {
-            ("none" | "", _) => None,
-            ("day", _) => Some(Recurrence::Day),
-            ("weekday", _) => Some(Recurrence::Weekday),
-            ("week", Some(on)) => Some(Recurrence::Week { on }),
-            ("month", Some(_)) => {
-                let day = task.due.map_or(1, |d| {
-                    u8::try_from(chrono::Datelike::day(&d.date))
-                        .unwrap_or(1)
-                        .min(28)
-                });
-                Some(Recurrence::Month {
-                    day: MonthDay::new(day).map_err(|x| x.to_string())?,
-                })
-            }
-            (_, None) => return Err("tekrar için tarih gerekli".into()),
-            (other, _) => return Err(format!("bilinmeyen tekrar: {other}")),
-        };
-    }
-    if let Some(m) = e.remind_before_minutes {
-        task.reminder = (m > 0).then_some(Reminder::Before { minutes: m });
-    }
-    if let Some(t) = &e.topic_id {
-        task.topic = if t.is_empty() {
-            None
-        } else {
-            Some(t.parse::<TopicId>().map_err(|x| x.to_string())?)
-        };
-    }
-    // Tutarlılık: tarihsiz göreve tekrar ya da "önce" hatırlatması olamaz.
-    notai_core::Task::from_parts(
-        task.id,
-        task.entry,
-        task.title.clone(),
-        task.topic,
-        task.due,
-        task.priority,
-        task.recurrence,
-        task.reminder,
-        task.state(),
-    )
-    .map(|_| ())
-    .map_err(|x| x.to_string())
-}
-
 async fn edit_task(
     State(st): State<AppState>,
     Path(tid): Path<String>,
     Json(e): Json<TaskEditRequest>,
 ) -> ApiResult<Json<notai_api::TaskRowView>> {
     let mut task = st.store.task(id::<TaskId>(&tid)?).await?;
-    apply_task_edit(&mut task, &e).map_err(ApiError::BadRequest)?;
+    convert::apply_task_edit(&mut task, &e).map_err(ApiError::BadRequest)?;
     if let Some(topic) = task.topic {
         st.store.topic(topic).await?;
     }
     st.store.save_task(&task, st.now()).await?;
     Ok(Json(convert::task_row(&task, today(&st))))
-}
-
-/// Konu düzenleme isteğini uygular.
-pub fn apply_topic_edit(topic: &mut notai_core::Topic, e: &TopicEditRequest) -> Result<(), String> {
-    if let Some(n) = &e.name {
-        topic.name = TopicName::new(n).map_err(|x| x.to_string())?;
-    }
-    if e.kind.is_some() || e.due_date.is_some() {
-        let kind = e
-            .kind
-            .clone()
-            .unwrap_or_else(|| topic.kind.name().to_owned());
-        let due = match &e.due_date {
-            Some(d) if d.is_empty() => None,
-            Some(d) => Some(
-                NaiveDate::parse_from_str(d, "%Y-%m-%d")
-                    .map_err(|_| format!("geçersiz tarih: {d}"))?,
-            ),
-            None => topic.kind.due(),
-        };
-        topic.kind = ParaKind::from_parts(&kind, due).map_err(|x| x.to_string())?;
-    }
-    if let Some(i) = &e.icon {
-        topic.icon = (!i.is_empty()).then(|| i.clone());
-    }
-    if let Some(p) = e.pinned {
-        topic.pinned = p;
-    }
-    Ok(())
 }
 
 async fn edit_topic(
@@ -312,7 +202,7 @@ async fn edit_topic(
     Json(e): Json<TopicEditRequest>,
 ) -> ApiResult<Json<notai_core::Topic>> {
     let mut topic = st.store.topic(id::<TopicId>(&tid)?).await?;
-    apply_topic_edit(&mut topic, &e).map_err(ApiError::BadRequest)?;
+    convert::apply_topic_edit(&mut topic, &e).map_err(ApiError::BadRequest)?;
     st.store.update_topic(&topic, st.now()).await?;
     Ok(Json(topic))
 }
@@ -601,15 +491,7 @@ async fn fact_action(
         "delete" => st.store.delete_fact(f, st.now()).await?,
         other => return Err(bad(format!("bilinmeyen eylem: {other}"))),
     }
-    let facts = st.store.facts().await?;
     Ok(Json(
-        facts
-            .into_iter()
-            .map(|f| FactView {
-                id: f.id.to_string(),
-                text: f.text.as_str().to_owned(),
-                confirmed: f.status == notai_core::profile::FactStatus::Confirmed,
-            })
-            .collect(),
+        st.store.facts().await?.iter().map(convert::fact).collect(),
     ))
 }

@@ -371,8 +371,10 @@ async fn search(
     Ok(Json(json!({ "results": st.store.search(&q.q, 30).await? })))
 }
 
-async fn facts(State(st): State<AppState>) -> ApiResult<Json<Value>> {
-    Ok(Json(json!({ "facts": st.store.facts().await? })))
+async fn facts(State(st): State<AppState>) -> ApiResult<Json<Vec<notai_api::FactView>>> {
+    Ok(Json(
+        st.store.facts().await?.iter().map(convert::fact).collect(),
+    ))
 }
 
 #[derive(Debug, Deserialize)]
@@ -387,7 +389,7 @@ async fn add_fact(
 ) -> ApiResult<(StatusCode, Json<Value>)> {
     let fact = ProfileFact::confirmed(FactText::new(&b.text)?, b.topic_id);
     st.store.add_fact(&fact, st.now()).await?;
-    Ok((StatusCode::CREATED, Json(json!(fact))))
+    Ok((StatusCode::CREATED, Json(json!(convert::fact(&fact)))))
 }
 
 // ---------- Senkron ----------
