@@ -60,9 +60,12 @@ NOTAI_NTFY_URL=http://127.0.0.1:8080/notai \
 | `NOTAI_AI` | `none` | `none` · `local` (Ollama/Gemma) · `anthropic` (`ANTHROPIC_API_KEY` gerekir). |
 | `NOTAI_AI_MODEL`, `NOTAI_AI_BASE_URL` | — / `http://127.0.0.1:11434` | Yerel model adı ve adresi; `anthropic` için varsayılan model `claude-opus-5-5`. |
 | `NOTAI_MORNING_AT`, `NOTAI_TZ` | `08:00`, `Europe/Istanbul` | Sabah planı saati ve saat dilimi. |
-| `NOTAI_NTFY_URL` | — | Sabah planını telefona bildirim olarak yollamak için ntfy konusu. |
+| `NOTAI_NTFY_URL` | — | Sabah planı ve hatırlatmaları telefona bildirim olarak yollamak için ntfy konusu. |
+| `NOTAI_STT_MODEL`, `NOTAI_STT_BASE_URL` | — / `http://127.0.0.1:8000` | Sesli yakalama: Whisper uyumlu ses → yazı servisi (ör. faster-whisper-server). Boşsa sesli yakalama kapalı. |
+| `NOTAI_EMBED_MODEL`, `NOTAI_EMBED_BASE_URL` | — / `http://127.0.0.1:11434` | Ara/Sor anlamsal arama: OpenAI uyumlu embeddings (ör. Ollama `bge-m3`). Boşsa yalnız tam metin arama. |
 
-AI kapalıyken her şey çalışır; kayıtlar yalnız "işlenmemiş" kalır.
+AI kapalıyken her şey çalışır; kayıtlar yalnız "işlenmemiş" kalır. Otonom mod (yüksek güvenli
+önerileri kendiliğinden uygulama, geri alınabilir) uygulamada Ayarlar → AI bölümünden açılır.
 
 ### WhatsApp ile yakalama (MacroDroid)
 1. Tetikleyici: *Bildirim alındı* → WhatsApp, kendi sohbetin (ör. "Ş").
@@ -81,5 +84,7 @@ cargo tauri android init          # bir kez: Android Studio SDK + NDK gerekir
 cargo tauri android build --apk   # Android
 ```
 
-Uygulama ilk açılışta tamamen yereldir. Ev sunucusu adresi ve belirteci girildiğinde dakikada bir
-senkronlanır (Ayarlar ekranı v0.2'de; şimdilik `set_sync` komutu).
+Uygulama ilk açılışta tamamen yereldir: kayıt, konu, görev, hatırlatma (yerel bildirim), takvim,
+haftalık gözden geçirme, ekler ve tam metin arama internetsiz çalışır. Ayarlar → Ev sunucusu bölümüne
+adres ve belirteç girildiğinde dakikada bir senkronlanır; AI sınıflandırma, Ara/Sor cevabı ve sesli
+yakalama ev sunucusunda çalışır.

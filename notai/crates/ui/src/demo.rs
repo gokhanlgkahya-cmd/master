@@ -371,6 +371,12 @@ impl Demo {
         Ok(())
     }
 
+    /// En son yakalanan kaydın kimliği.
+    #[must_use]
+    pub fn last_entry_id(&self) -> Option<String> {
+        self.entries.last().map(|e| e.id.clone())
+    }
+
     pub fn decide(&mut self, suggestion_id: &str, accept: bool) -> Result<(), String> {
         let topics = self.topics.clone();
         let entry = self
