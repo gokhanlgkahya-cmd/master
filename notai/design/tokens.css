@@ -238,7 +238,7 @@
     --color-panel-bg: #26231F; /* {color.theme.dark.surface} */
     --color-tile-bg: #3A3530; /* {color.theme.dark.surface-sunken} */
     --color-plan-bg: #3A3530; /* {color.theme.dark.surface-sunken} */
-    --color-plan-border: #3A3530; /* {color.theme.dark.border} */
+    --color-plan-border: #554F45; /* {color.neutral.700} */
     --color-voice-live: #F3F0EB; /* {color.theme.dark.text} */
     --color-voice-settled: #B3AA9C; /* {color.theme.dark.text-muted} */
     --color-accept: #9CC48F; /* {color.semantic.dark.success.fg} */
@@ -307,7 +307,7 @@
   --color-panel-bg: #26231F; /* {color.theme.dark.surface} */
   --color-tile-bg: #3A3530; /* {color.theme.dark.surface-sunken} */
   --color-plan-bg: #3A3530; /* {color.theme.dark.surface-sunken} */
-  --color-plan-border: #3A3530; /* {color.theme.dark.border} */
+  --color-plan-border: #554F45; /* {color.neutral.700} */
   --color-voice-live: #F3F0EB; /* {color.theme.dark.text} */
   --color-voice-settled: #B3AA9C; /* {color.theme.dark.text-muted} */
   --color-accept: #9CC48F; /* {color.semantic.dark.success.fg} */
