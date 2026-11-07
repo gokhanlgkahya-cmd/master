@@ -444,12 +444,14 @@ impl Store {
         Ok(())
     }
 
-    /// AI denemesinin başarısız olduğunu kaydeder. Yeniden deneme zamanlanır; denemeler
-    /// tükenince kayıt "AI işleyemedi" olur. Dönüş: iş tamamen başarısız oldu mu?
+    /// AI denemesinin başarısız olduğunu kaydeder. Yeniden denenebilir hatada bekleme süresiyle
+    /// tekrar kuyruğa alınır; denemeler tükenince ya da hata kalıcıysa (`retryable = false`)
+    /// kayıt "AI işleyemedi" olur (kayıt kaybolmaz). Dönüş: iş tamamen başarısız oldu mu?
     pub async fn record_ai_failure(
         &self,
         entry_id: EntryId,
         error: &str,
+        retryable: bool,
         now: DateTime<Utc>,
     ) -> Result<bool> {
         let id = entry_id.to_string();
@@ -461,8 +463,8 @@ impl Store {
         let attempts = attempts + 1;
         let idx = usize::try_from(attempts - 1).unwrap_or(usize::MAX);
         let (state, next_at) = match AI_RETRY_MINUTES.get(idx) {
-            Some(mins) => ("pending", Some(ts(now + Duration::minutes(*mins)))),
-            None => ("failed", None),
+            Some(mins) if retryable => ("pending", Some(ts(now + Duration::minutes(*mins)))),
+            _ => ("failed", None),
         };
         let now_s = ts(now);
         sqlx::query!(

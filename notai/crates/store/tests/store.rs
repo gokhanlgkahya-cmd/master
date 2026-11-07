@@ -401,16 +401,30 @@ async fn ai_failures_back_off_then_fail_without_losing_the_entry() {
     let t0 = now();
     assert_eq!(s.next_ai_job(t0).await.unwrap().unwrap().id, id);
 
-    assert!(!s.record_ai_failure(id, "zaman aşımı", t0).await.unwrap());
+    assert!(
+        !s.record_ai_failure(id, "zaman aşımı", true, t0)
+            .await
+            .unwrap()
+    );
     assert!(s.next_ai_job(t0).await.unwrap().is_none(), "1 dk beklemeli");
     let t1 = t0 + Duration::minutes(1);
     assert!(s.next_ai_job(t1).await.unwrap().is_some());
-    assert!(!s.record_ai_failure(id, "zaman aşımı", t1).await.unwrap());
+    assert!(
+        !s.record_ai_failure(id, "zaman aşımı", true, t1)
+            .await
+            .unwrap()
+    );
     let t2 = t1 + Duration::minutes(5);
-    assert!(!s.record_ai_failure(id, "şema hatası", t2).await.unwrap());
+    assert!(
+        !s.record_ai_failure(id, "şema hatası", true, t2)
+            .await
+            .unwrap()
+    );
     let t3 = t2 + Duration::minutes(25);
     assert!(
-        s.record_ai_failure(id, "şema hatası", t3).await.unwrap(),
+        s.record_ai_failure(id, "şema hatası", true, t3)
+            .await
+            .unwrap(),
         "denemeler tükendi"
     );
     assert!(
@@ -429,6 +443,12 @@ async fn ai_failures_back_off_then_fail_without_losing_the_entry() {
 
     s.retry_ai(id, t3).await.unwrap();
     assert!(s.next_ai_job(t3).await.unwrap().is_some());
+    // Kalıcı hata (ör. model reddi) beklemeden başarısız sayılır.
+    assert!(
+        s.record_ai_failure(id, "reddedildi", false, t3)
+            .await
+            .unwrap()
+    );
 }
 
 #[tokio::test]
@@ -608,4 +628,17 @@ async fn file_database_persists_across_reopen() {
     };
     let s = Store::open(&url, "telefon").await.unwrap();
     assert_eq!(s.entry(id).await.unwrap().text.as_str(), "Kalıcı mı?");
+}
+
+#[tokio::test]
+async fn timestamps_round_trip_exactly() {
+    let s = store().await;
+    let precise =
+        Utc.with_ymd_and_hms(2026, 11, 6, 6, 12, 0).unwrap() + Duration::nanoseconds(123_456_789);
+    let captured = s
+        .capture(new_entry("Hassas zaman", precise, None))
+        .await
+        .unwrap();
+    let loaded = s.entry(captured.entry().id).await.unwrap();
+    assert_eq!(&loaded, captured.entry());
 }

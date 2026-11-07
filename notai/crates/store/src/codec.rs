@@ -13,7 +13,7 @@ use crate::error::{Result, StoreError};
 
 /// Sabit biçimli UTC zaman metni (sözlük sırası = zaman sırası).
 pub(crate) fn ts(at: DateTime<Utc>) -> String {
-    at.to_rfc3339_opts(SecondsFormat::Micros, true)
+    at.to_rfc3339_opts(SecondsFormat::Nanos, true)
 }
 
 pub(crate) fn parse_ts(what: &'static str, s: &str) -> Result<DateTime<Utc>> {
@@ -202,7 +202,7 @@ mod tests {
         let a = ts(Utc.with_ymd_and_hms(2026, 11, 6, 9, 5, 0).unwrap());
         let b = ts(Utc.with_ymd_and_hms(2026, 11, 6, 10, 0, 0).unwrap());
         assert!(a < b);
-        assert_eq!(a, "2026-11-06T09:05:00.000000Z");
+        assert_eq!(a, "2026-11-06T09:05:00.000000000Z");
         assert_eq!(
             parse_ts("t", &a).unwrap(),
             Utc.with_ymd_and_hms(2026, 11, 6, 9, 5, 0).unwrap()

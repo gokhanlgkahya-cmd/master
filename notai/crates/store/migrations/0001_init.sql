@@ -1,4 +1,4 @@
--- NotAI ilk şema. Zamanlar UTC, sabit biçimli RFC3339 metin ("2026-11-06T09:12:00.000000Z"):
+-- NotAI ilk şema. Zamanlar UTC, sabit biçimli RFC3339 metin ("2026-11-06T09:12:00.000000000Z"):
 -- sözlük sırası = zaman sırası. Kimlikler UUID v7 metni.
 
 CREATE TABLE topics (

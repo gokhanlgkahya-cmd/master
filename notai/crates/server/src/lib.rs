@@ -1,0 +1,47 @@
+//! NotAI ev sunucusu (S24 Ultra üzerinde 7/24).
+//!
+//! REST API + WhatsApp/MacroDroid webhook'u + AI işçisi + zamanlayıcı.
+//! Erişim yalnız ev ağı / Tailscale üzerinden önerilir; API anahtarları yalnız burada.
+
+#![forbid(unsafe_code)]
+
+pub mod config;
+pub mod error;
+pub mod routes;
+pub mod scheduler;
+pub mod state;
+pub mod views;
+pub mod worker;
+
+use std::sync::Arc;
+
+use notai_ai::{
+    AnthropicClient, AnthropicConfig, LlmClient, OpenAiCompatClient, OpenAiCompatConfig, SecretKey,
+};
+
+pub use config::{AiProvider, Config};
+pub use routes::router;
+pub use state::{AppState, Clock, ManualClock, SystemClock};
+
+/// Yapılandırmadaki sağlayıcıdan LLM istemcisi kurar.
+pub fn build_llm(
+    provider: &AiProvider,
+    anthropic_key: Option<String>,
+) -> Result<Option<Arc<dyn LlmClient>>, notai_ai::AiError> {
+    Ok(match provider {
+        AiProvider::None => None,
+        AiProvider::Anthropic { model } => {
+            let key = anthropic_key.ok_or_else(|| {
+                notai_ai::AiError::Config("ANTHROPIC_API_KEY tanımlı değil".into())
+            })?;
+            let mut cfg = AnthropicConfig::new(SecretKey::new(key)?);
+            if let Some(m) = model {
+                cfg.model.clone_from(m);
+            }
+            Some(Arc::new(AnthropicClient::new(cfg)?))
+        }
+        AiProvider::Local { base_url, model } => Some(Arc::new(OpenAiCompatClient::new(
+            OpenAiCompatConfig::new(base_url.clone(), model.clone()),
+        )?)),
+    })
+}

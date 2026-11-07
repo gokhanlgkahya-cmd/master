@@ -1,0 +1,152 @@
+//! Ortam değişkenlerinden yapılandırma. API anahtarları yalnız sunucuda durur.
+
+use std::net::SocketAddr;
+
+use chrono::NaiveTime;
+use chrono_tz::Tz;
+
+use crate::error::ConfigError;
+
+/// AI sağlayıcı seçimi.
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub enum AiProvider {
+    /// AI kapalı: kayıtlar gelen kutusunda kalır, uygulama AI'sız tam çalışır.
+    None,
+    /// Anthropic Claude API (`ANTHROPIC_API_KEY`).
+    Anthropic { model: Option<String> },
+    /// OpenAI-uyumlu yerel uç (Ollama + Gemma).
+    Local { base_url: String, model: String },
+}
+
+#[derive(Debug, Clone)]
+pub struct Config {
+    pub bind: SocketAddr,
+    pub database_url: String,
+    /// Bu sunucunun değişiklik günlüğündeki adı.
+    pub origin: String,
+    /// `/api` için `Authorization: Bearer` belirteci. Boşsa kimlik doğrulama kapalı
+    /// (yalnız Tailscale/ev ağı içinde önerilir).
+    pub api_token: Option<String>,
+    /// WhatsApp/MacroDroid webhook'u için paylaşılan gizli değer (`X-NotAI-Secret`).
+    pub webhook_secret: Option<String>,
+    pub tz: Tz,
+    pub user_name: String,
+    pub morning_at: NaiveTime,
+    pub ai: AiProvider,
+    /// Sabah planı bildirimi için ntfy konusu URL'si (ör. `http://s24:8080/notai`).
+    pub ntfy_url: Option<String>,
+}
+
+impl Config {
+    /// Varsayılan değerlerle (testler ve ilk kurulum için).
+    #[must_use]
+    pub fn defaults() -> Self {
+        Self {
+            bind: SocketAddr::from(([127, 0, 0, 1], 8787)),
+            database_url: "sqlite://notai.db".into(),
+            origin: "sunucu".into(),
+            api_token: None,
+            webhook_secret: None,
+            tz: notai_core::DEFAULT_TZ,
+            user_name: "Gökhan".into(),
+            morning_at: NaiveTime::from_hms_opt(8, 0, 0).unwrap_or(NaiveTime::MIN),
+            ai: AiProvider::None,
+            ntfy_url: None,
+        }
+    }
+
+    /// `NOTAI_*` ortam değişkenlerinden okur.
+    pub fn from_env() -> Result<Self, ConfigError> {
+        Self::from_lookup(|k| std::env::var(k).ok())
+    }
+
+    /// Sınanabilir okuma: değişken adı → değer.
+    pub fn from_lookup(get: impl Fn(&str) -> Option<String>) -> Result<Self, ConfigError> {
+        let mut cfg = Self::defaults();
+        let non_empty = |k: &str| get(k).filter(|v| !v.trim().is_empty());
+
+        if let Some(v) = non_empty("NOTAI_BIND") {
+            cfg.bind = v
+                .parse()
+                .map_err(|_| ConfigError::Invalid("NOTAI_BIND", v))?;
+        }
+        if let Some(v) = non_empty("NOTAI_DATABASE_URL") {
+            cfg.database_url = v;
+        }
+        if let Some(v) = non_empty("NOTAI_ORIGIN") {
+            cfg.origin = v;
+        }
+        cfg.api_token = non_empty("NOTAI_API_TOKEN");
+        cfg.webhook_secret = non_empty("NOTAI_WEBHOOK_SECRET");
+        if let Some(v) = non_empty("NOTAI_TZ") {
+            cfg.tz = v.parse().map_err(|_| ConfigError::Invalid("NOTAI_TZ", v))?;
+        }
+        if let Some(v) = non_empty("NOTAI_USER_NAME") {
+            cfg.user_name = v;
+        }
+        if let Some(v) = non_empty("NOTAI_MORNING_AT") {
+            cfg.morning_at = NaiveTime::parse_from_str(&v, "%H:%M")
+                .map_err(|_| ConfigError::Invalid("NOTAI_MORNING_AT", v))?;
+        }
+        cfg.ntfy_url = non_empty("NOTAI_NTFY_URL");
+        cfg.ai = match non_empty("NOTAI_AI").as_deref() {
+            None | Some("none") => AiProvider::None,
+            Some("anthropic") => AiProvider::Anthropic {
+                model: non_empty("NOTAI_AI_MODEL"),
+            },
+            Some("local") => AiProvider::Local {
+                base_url: non_empty("NOTAI_AI_BASE_URL")
+                    .unwrap_or_else(|| "http://127.0.0.1:11434".into()),
+                model: non_empty("NOTAI_AI_MODEL").ok_or(ConfigError::Missing("NOTAI_AI_MODEL"))?,
+            },
+            Some(other) => return Err(ConfigError::Invalid("NOTAI_AI", other.to_owned())),
+        };
+        Ok(cfg)
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use std::collections::HashMap;
+
+    fn cfg(pairs: &[(&str, &str)]) -> Result<Config, ConfigError> {
+        let map: HashMap<String, String> = pairs
+            .iter()
+            .map(|(k, v)| ((*k).to_owned(), (*v).to_owned()))
+            .collect();
+        Config::from_lookup(|k| map.get(k).cloned())
+    }
+
+    #[test]
+    fn defaults_are_safe() {
+        let c = cfg(&[]).unwrap();
+        assert_eq!(c.bind.to_string(), "127.0.0.1:8787");
+        assert_eq!(c.ai, AiProvider::None);
+        assert_eq!(c.tz, chrono_tz::Europe::Istanbul);
+        assert_eq!(c.morning_at.format("%H:%M").to_string(), "08:00");
+    }
+
+    #[test]
+    fn parses_values_and_rejects_bad_ones() {
+        let c = cfg(&[
+            ("NOTAI_AI", "local"),
+            ("NOTAI_AI_MODEL", "gemma3:12b"),
+            ("NOTAI_MORNING_AT", "07:30"),
+            ("NOTAI_API_TOKEN", "gizli"),
+        ])
+        .unwrap();
+        assert_eq!(
+            c.ai,
+            AiProvider::Local {
+                base_url: "http://127.0.0.1:11434".into(),
+                model: "gemma3:12b".into()
+            }
+        );
+        assert_eq!(c.api_token.as_deref(), Some("gizli"));
+        assert!(cfg(&[("NOTAI_AI", "local")]).is_err());
+        assert!(cfg(&[("NOTAI_TZ", "Mars/Olympus")]).is_err());
+        assert!(cfg(&[("NOTAI_MORNING_AT", "sabah")]).is_err());
+        assert!(cfg(&[("NOTAI_AI", "gpt")]).is_err());
+    }
+}
