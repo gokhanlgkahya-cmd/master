@@ -42,6 +42,9 @@ pub struct Config {
     pub stt: Option<(String, String)>,
     /// Anlamsal arama vektör servisi (OpenAI uyumlu embeddings): (adres, model).
     pub embed: Option<(String, String)>,
+    /// Tarayıcıdan doğrudan bağlanmaya izin verilen kökenler (CORS). Boşsa CORS kapalı
+    /// (yalnız aynı köken, uygulama kabuğu ve komut satırı). `*` her kökene izin verir.
+    pub cors_origins: Vec<String>,
 }
 
 impl Config {
@@ -61,6 +64,7 @@ impl Config {
             ntfy_url: None,
             stt: None,
             embed: None,
+            cors_origins: Vec::new(),
         }
     }
 
@@ -98,6 +102,22 @@ impl Config {
                 .map_err(|_| ConfigError::Invalid("NOTAI_MORNING_AT", v))?;
         }
         cfg.ntfy_url = non_empty("NOTAI_NTFY_URL");
+        if let Some(v) = non_empty("NOTAI_CORS_ORIGINS") {
+            cfg.cors_origins = v
+                .split(',')
+                .map(|o| o.trim().trim_end_matches('/').to_owned())
+                .filter(|o| !o.is_empty())
+                .collect();
+            let valid = |o: &str| {
+                o == "*"
+                    || ((o.starts_with("http://") || o.starts_with("https://"))
+                        && o.is_ascii()
+                        && !o.contains([' ', '"']))
+            };
+            if !cfg.cors_origins.iter().all(|o| valid(o)) {
+                return Err(ConfigError::Invalid("NOTAI_CORS_ORIGINS", v));
+            }
+        }
         cfg.stt = non_empty("NOTAI_STT_MODEL").map(|m| {
             (
                 non_empty("NOTAI_STT_BASE_URL").unwrap_or_else(|| "http://127.0.0.1:8000".into()),
@@ -180,6 +200,20 @@ mod tests {
             c.embed,
             Some(("http://127.0.0.1:11434".into(), "bge-m3".into()))
         );
+        let c = cfg(&[(
+            "NOTAI_CORS_ORIGINS",
+            "http://localhost:8080/, http://100.64.0.2:8080",
+        )])
+        .unwrap();
+        assert_eq!(
+            c.cors_origins,
+            ["http://localhost:8080", "http://100.64.0.2:8080"]
+        );
+        assert!(
+            cfg(&[]).unwrap().cors_origins.is_empty(),
+            "varsayılan: CORS kapalı"
+        );
+        assert!(cfg(&[("NOTAI_CORS_ORIGINS", "localhost:8080")]).is_err());
         assert!(cfg(&[("NOTAI_AI", "local")]).is_err());
         assert!(cfg(&[("NOTAI_TZ", "Mars/Olympus")]).is_err());
         assert!(cfg(&[("NOTAI_MORNING_AT", "sabah")]).is_err());

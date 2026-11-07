@@ -279,8 +279,8 @@ pub struct TaskEditRequest {
     pub priority: Option<String>,
     /// day | weekday | week | month | none
     pub repeat: Option<String>,
-    /// Görevden kaç dakika önce hatırlat (0 = kaldır).
-    pub remind_before_minutes: Option<u32>,
+    /// Görevden kaç dakika önce hatırlat: 0 = tam zamanında, negatif = hatırlatmayı kaldır.
+    pub remind_before_minutes: Option<i32>,
     pub topic_id: Option<String>,
 }
 

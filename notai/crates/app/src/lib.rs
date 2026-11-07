@@ -82,7 +82,7 @@ async fn sync_now(st: State<'_, AppState>) -> Result<Option<(u32, u32)>, String>
 }
 
 #[tauri::command]
-async fn create_task(st: State<'_, AppState>, req: service::NewTaskReq) -> Result<(), String> {
+async fn create_task(st: State<'_, AppState>, req: service::NewTaskReq) -> Result<String, String> {
     service::create_task(&st.store, req, Utc::now()).await
 }
 

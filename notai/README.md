@@ -37,6 +37,9 @@ cargo install trunk sqlx-cli --locked      # bir kez
 - Şema ya da bir `sqlx::query!` değişirse: `./scripts/prepare-sqlx.sh` (`.sqlx/` önbelleğini günceller; commit edin).
 - `design/tokens.json` değişirse: `cargo run -p notai-tokens --bin gen-tokens` (`design/tokens.css`'i üretir).
 - Arayüzü tarayıcıda görmek için: `cd crates/ui && trunk serve` → http://localhost:8080 (Tauri dışında demo verisiyle açılır).
+  Gerçek sunucuya bağlamak için: sunucuyu `NOTAI_CORS_ORIGINS=http://localhost:8080` ile başlat, sonra
+  http://localhost:8080/?api=http://127.0.0.1:8787&token=<belirteç> adresini aç.
+- Manrope yazı tipi (OFL) `crates/ui/fonts/` altında uygulamayla gelir; internete gidilmez.
 - Linux masaüstü için Tauri kütüphaneleri: `libwebkit2gtk-4.1-dev libgtk-3-dev libsoup-3.0-dev librsvg2-dev`.
 
 ## Ev sunucusu (S24 Ultra)
@@ -63,6 +66,7 @@ NOTAI_NTFY_URL=http://127.0.0.1:8080/notai \
 | `NOTAI_MORNING_AT`, `NOTAI_TZ` | `09:00`, `Europe/Istanbul` | Sabah planı saati ve saat dilimi. |
 | `NOTAI_NTFY_URL` | — | Sabah planı ve hatırlatmaları telefona bildirim olarak yollamak için ntfy konusu. |
 | `NOTAI_STT_MODEL`, `NOTAI_STT_BASE_URL` | — / `http://127.0.0.1:8000` | Sesli yakalama: Whisper uyumlu ses → yazı servisi (ör. faster-whisper-server). Boşsa sesli yakalama kapalı. |
+| `NOTAI_CORS_ORIGINS` | — | Arayüzü tarayıcıda başka bir adresten açıp sunucuya doğrudan bağlanmak için izinli kökenler, virgülle (ör. `http://localhost:8080`). Boşsa kapalı; belirteç yine zorunludur. Uygulama kabuğu ve `notai` aracı için gerekmez. |
 | `NOTAI_EMBED_MODEL`, `NOTAI_EMBED_BASE_URL` | — / `http://127.0.0.1:11434` | Ara/Sor anlamsal arama: OpenAI uyumlu embeddings (ör. Ollama `bge-m3`). Boşsa yalnız tam metin arama. |
 
 AI kapalıyken her şey çalışır; kayıtlar yalnız "işlenmemiş" kalır. Otonom mod (yüksek güvenli

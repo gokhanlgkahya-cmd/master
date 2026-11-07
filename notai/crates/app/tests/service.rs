@@ -149,7 +149,7 @@ async fn v2_v4_local_features() {
     );
 
     // Görev ekle, düzenle (saat + 15 dk önce hatırlat), hatırlatmalar ve takvim.
-    service::create_task(
+    let tid = service::create_task(
         &s,
         service::NewTaskReq {
             title: "Kombi servisini ara".into(),
@@ -160,9 +160,7 @@ async fn v2_v4_local_features() {
     )
     .await
     .unwrap();
-    let tid = service::tasks(&s, now, tz).await.unwrap().today[0]
-        .id
-        .clone();
+    assert_eq!(service::tasks(&s, now, tz).await.unwrap().today[0].id, tid);
     let edit = TaskEditRequest {
         due_time: Some("10:00".into()),
         remind_before_minutes: Some(15),

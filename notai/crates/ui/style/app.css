@@ -1,6 +1,25 @@
 /* Uygulama eklemeleri: design/screens/screens.css (bileşenlerin tek kaynağı) üzerine yalnız
    gerçek uygulamaya özgü farklar. Değerler yalnız tokens.css değişkenlerinden gelir. */
 
+/* Manrope değişken yazı tipi (OFL, fonts/OFL.txt) uygulamayla gelir; Google Fonts'a gidilmez.
+   latin-ext alt kümesi ğ, ş, İ ve ₺ içerir; ı latin alt kümesindedir. */
+@font-face {
+  font-family: "Manrope";
+  font-style: normal;
+  font-display: swap;
+  font-weight: 200 800;
+  src: url("fonts/manrope-latin-ext-wght-normal.woff2") format("woff2");
+  unicode-range: U+0100-02BA, U+02BD-02C5, U+02C7-02CC, U+02CE-02D7, U+02DD-02FF, U+0304, U+0308, U+0329, U+1D00-1DBF, U+1E00-1E9F, U+1EF2-1EFF, U+2020, U+20A0-20AB, U+20AD-20C0, U+2113, U+2C60-2C7F, U+A720-A7FF;
+}
+@font-face {
+  font-family: "Manrope";
+  font-style: normal;
+  font-display: swap;
+  font-weight: 200 800;
+  src: url("fonts/manrope-latin-wght-normal.woff2") format("woff2");
+  unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+0304, U+0308, U+0329, U+2000-206F, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD;
+}
+
 html, body { height: 100%; }
 body { background: var(--color-bg); }
 
@@ -131,3 +150,21 @@ button.switch { cursor: pointer; }
 .wave--live i:nth-child(odd) { animation-delay: var(--motion-stagger-tile); }
 @keyframes wave-pulse { from { opacity: var(--opacity-disabled); } to { opacity: 1; } }
 .tl__item--done .tl__title { text-decoration: line-through; color: var(--color-meta); }
+
+/* Takvim · Ay görünümü: hafta şeridinin gün düğmesi (.wday) 6 × 7 ızgarada, sıkı. */
+.monthgrid {
+  display: grid;
+  grid-template-columns: repeat(7, 1fr);
+  gap: var(--space-1);
+  padding: var(--space-2) var(--space-2) var(--space-3);
+  border-bottom: var(--border-width-hairline) solid var(--color-border);
+}
+.monthgrid__wd {
+  text-align: center;
+  font-size: var(--font-size-xs);
+  line-height: var(--font-line-height-xs);
+  font-weight: var(--font-weight-medium);
+  color: var(--color-meta);
+}
+.monthgrid .wday { min-height: var(--size-touch-min); padding: var(--space-1) 0; gap: 0; }
+.wday--out:not([aria-selected="true"]) .wday__num { color: var(--color-meta); font-weight: var(--font-weight-regular); }

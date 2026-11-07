@@ -466,3 +466,87 @@ async fn trash_and_facts() {
     let (_, settings) = h.get("/api/settings").await;
     assert_eq!(settings["ai_provider"], "Kapalı");
 }
+
+#[tokio::test]
+async fn cors_only_for_configured_origins_and_token_still_required() {
+    let mut cfg = Config::defaults();
+    cfg.api_token = Some("gizli".into());
+    cfg.cors_origins = vec!["http://localhost:8080".into()];
+    let h = h(cfg, ScriptedLlm::new(), false).await;
+
+    let preflight = |origin: &str| {
+        Request::builder()
+            .method("OPTIONS")
+            .uri("/api/entries")
+            .header("origin", origin)
+            .header("access-control-request-method", "POST")
+            .header(
+                "access-control-request-headers",
+                "authorization,content-type",
+            )
+            .body(Body::empty())
+            .unwrap()
+    };
+    // İzinli köken: ön kontrol kimlik doğrulamasız geçer.
+    let r = h
+        .app
+        .clone()
+        .oneshot(preflight("http://localhost:8080"))
+        .await
+        .unwrap();
+    assert!(r.status().is_success());
+    assert_eq!(
+        r.headers()["access-control-allow-origin"],
+        "http://localhost:8080"
+    );
+    // Başka köken izin başlığı almaz.
+    let r = h
+        .app
+        .clone()
+        .oneshot(preflight("http://kotu.example"))
+        .await
+        .unwrap();
+    assert!(!r.headers().contains_key("access-control-allow-origin"));
+
+    // Asıl istek: belirteç yine zorunlu.
+    let get = |auth: Option<&str>| {
+        let mut b = Request::builder()
+            .uri("/api/journal")
+            .header("origin", "http://localhost:8080");
+        if let Some(a) = auth {
+            b = b.header("authorization", a);
+        }
+        b.body(Body::empty()).unwrap()
+    };
+    let r = h.app.clone().oneshot(get(None)).await.unwrap();
+    assert_eq!(r.status(), StatusCode::UNAUTHORIZED);
+    let r = h
+        .app
+        .clone()
+        .oneshot(get(Some("Bearer gizli")))
+        .await
+        .unwrap();
+    assert_eq!(r.status(), StatusCode::OK);
+    assert_eq!(
+        r.headers()["access-control-allow-origin"],
+        "http://localhost:8080"
+    );
+}
+
+#[tokio::test]
+async fn cors_is_off_by_default() {
+    let h = h(Config::defaults(), ScriptedLlm::new(), false).await;
+    let r = h
+        .app
+        .clone()
+        .oneshot(
+            Request::builder()
+                .uri("/api/journal")
+                .header("origin", "http://localhost:8080")
+                .body(Body::empty())
+                .unwrap(),
+        )
+        .await
+        .unwrap();
+    assert!(!r.headers().contains_key("access-control-allow-origin"));
+}

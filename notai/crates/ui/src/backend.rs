@@ -126,7 +126,7 @@ fn lock(d: &Arc<Mutex<Demo>>) -> std::sync::MutexGuard<'_, Demo> {
     d.lock().unwrap_or_else(std::sync::PoisonError::into_inner)
 }
 
-const NOT_IN_DEMO: &str =
+pub(crate) const NOT_IN_DEMO: &str =
     "Bu özellik önizlemede yok: uygulamada ya da ?api=… ile sunucuya bağlanarak dene.";
 
 fn enc(s: &str) -> String {
@@ -230,6 +230,12 @@ impl Backend {
         }
     }
 
+    /// Ek yüklenebilir mi? (Önizleme verisi ek saklamaz.)
+    #[must_use]
+    pub const fn supports_attachments(&self) -> bool {
+        !matches!(self, Self::Demo(_))
+    }
+
     /// Bağlantı türünün kısa açıklaması (Ayarlar ekranı için).
     #[must_use]
     pub fn describe(&self) -> String {
@@ -307,13 +313,18 @@ impl Backend {
         title: String,
         due_date: Option<String>,
         topic: Option<String>,
-    ) -> BResult<()> {
+    ) -> BResult<String> {
         let body = json!({ "title": title, "due_date": due_date, "topic_id": topic });
         match self {
-            Self::Tauri => Self::call::<Value>("create_task", json!({ "req": body }))
-                .await
-                .map(|_| ()),
-            Self::Http(h) => h.post::<Value>("/tasks", &body).await.map(|_| ()),
+            // Kabuk kimliği (String), sunucu `Task` (`id` alanı) döndürür.
+            Self::Tauri => Self::call::<String>("create_task", json!({ "req": body })).await,
+            Self::Http(h) => {
+                let v: Value = h.post("/tasks", &body).await?;
+                v["id"]
+                    .as_str()
+                    .map(str::to_owned)
+                    .ok_or_else(|| "sunucu görev kimliği döndürmedi".to_owned())
+            }
             Self::Demo(_) => Err(NOT_IN_DEMO.into()),
         }
     }

@@ -176,6 +176,45 @@ pub fn day_in_week(monday: NaiveDate, today: NaiveDate) -> NaiveDate {
     }
 }
 
+/// Ayın ilk günü.
+#[must_use]
+pub fn month_first(d: NaiveDate) -> NaiveDate {
+    d.with_day(1).unwrap_or(d)
+}
+
+/// `d`'nin ayından `months` ay ileri/geri; ayın ilk günü.
+#[must_use]
+pub fn shift_months(d: NaiveDate, months: i32) -> NaiveDate {
+    let first = month_first(d);
+    let m = chrono::Months::new(months.unsigned_abs());
+    if months >= 0 {
+        first.checked_add_months(m)
+    } else {
+        first.checked_sub_months(m)
+    }
+    .unwrap_or(first)
+}
+
+/// Ay ızgarası: ayın ilk gününün haftasının pazartesisinden başlayan 6 hafta (42 gün;
+/// sunucunun takvim ucu da en fazla 42 gün döndürür).
+#[must_use]
+pub fn month_grid(d: NaiveDate) -> Vec<NaiveDate> {
+    let start = week_monday(month_first(d));
+    (0..42)
+        .filter_map(|i| start.checked_add_days(Days::new(i)))
+        .collect()
+}
+
+/// Ay değişince seçilecek gün: bugün o aydaysa bugün, değilse ayın ilk günü.
+#[must_use]
+pub fn day_in_month(first: NaiveDate, today: NaiveDate) -> NaiveDate {
+    if month_first(today) == month_first(first) {
+        today
+    } else {
+        month_first(first)
+    }
+}
+
 /// Hafta aralığı ("2–8 Kasım", "30 Kasım – 6 Aralık").
 #[must_use]
 pub fn week_range(start: NaiveDate) -> String {
@@ -246,9 +285,10 @@ pub const REPEAT_OPTIONS: [(&str, &str); 6] = [
     ("keep", "Değiştirme"),
 ];
 
-/// "Önce hatırlat" seçenekleri (dakika; 0 = hatırlatma yok).
-pub const REMIND_OPTIONS: [(u32, &str); 7] = [
-    (0, "Yok"),
+/// Hatırlatma seçenekleri (dakika; negatif = yok, 0 = tam zamanında).
+pub const REMIND_OPTIONS: [(i32, &str); 8] = [
+    (-1, "Yok"),
+    (0, "Tam zamanında"),
     (5, "5\u{a0}dk önce"),
     (10, "10\u{a0}dk önce"),
     (15, "15\u{a0}dk önce"),
@@ -290,7 +330,7 @@ pub struct TaskForm {
     /// `REPEAT_OPTIONS` anahtarı.
     pub repeat: String,
     /// `None`: değiştirme.
-    pub remind: Option<u32>,
+    pub remind: Option<i32>,
 }
 
 impl TaskForm {
@@ -354,17 +394,16 @@ pub fn task_ids(v: &TasksView) -> Vec<String> {
         .collect()
 }
 
-/// Yeni oluşturulan görevin kimliği: öncekiler arasında olmayan, başlığı eşleşen görev.
+/// Hatırlatma/Etkinlik formundaki seçim → düzenleme isteğindeki dakika.
+/// Hatırlatma formu her zaman hatırlatır (geçersiz seçim = tam zamanında); Etkinlik'te "Yok"
+/// seçilirse hatırlatma kurulmaz.
 #[must_use]
-pub fn new_task_id(before: &[String], after: &TasksView, title: &str) -> Option<String> {
-    after
-        .overdue
-        .iter()
-        .chain(&after.today)
-        .chain(&after.upcoming)
-        .chain(&after.undated)
-        .find(|t| !before.contains(&t.id) && t.title == title.trim())
-        .map(|t| t.id.clone())
+pub fn timed_remind(always: bool, choice: &str) -> Option<i32> {
+    match choice.parse::<i32>() {
+        Ok(m) if m >= 0 => Some(m),
+        _ if always => Some(0),
+        _ => None,
+    }
 }
 
 /// Tema seçimi (Ayarlar → Görünüm).
@@ -658,6 +697,21 @@ mod tests_v2 {
         assert_eq!(day_in_week(mon, fri), fri);
         assert_eq!(day_in_week(shift_weeks(mon, 1), fri), d(2026, 11, 9));
         assert_eq!(week_range(mon), "2–8\u{a0}Kasım");
+        // Ay görünümü
+        assert_eq!(month_first(fri), d(2026, 11, 1));
+        assert_eq!(shift_months(fri, 1), d(2026, 12, 1));
+        assert_eq!(shift_months(fri, -11), d(2025, 12, 1));
+        assert_eq!(shift_months(d(2027, 1, 31), -1), d(2026, 12, 1));
+        let grid = month_grid(fri);
+        assert_eq!(grid.len(), 42);
+        assert_eq!(
+            grid[0],
+            d(2026, 10, 26),
+            "1 Kasım pazar: ızgara 26 Ekim pazartesi başlar"
+        );
+        assert!(grid.contains(&d(2026, 11, 30)));
+        assert_eq!(day_in_month(d(2026, 11, 1), fri), fri);
+        assert_eq!(day_in_month(d(2026, 12, 1), fri), d(2026, 12, 1));
         assert_eq!(
             week_range(d(2026, 11, 30)),
             "30\u{a0}Kasım\u{a0}– 6\u{a0}Aralık"
@@ -734,15 +788,16 @@ mod tests_v2 {
     }
 
     #[test]
-    fn finds_new_task() {
-        let before = vec!["a".to_owned()];
-        let after = TasksView {
-            upcoming: vec![task("a", "Ara"), task("b", "Ara")],
-            ..TasksView::default()
-        };
-        assert_eq!(task_ids(&after), ["a", "b"]);
-        assert_eq!(new_task_id(&before, &after, " Ara ").as_deref(), Some("b"));
-        assert_eq!(new_task_id(&before, &after, "Yok"), None);
+    fn timed_form_reminder_choice() {
+        assert_eq!(timed_remind(true, "0"), Some(0));
+        assert_eq!(
+            timed_remind(true, "-1"),
+            Some(0),
+            "hatırlatma formu her zaman kurar"
+        );
+        assert_eq!(timed_remind(true, "x"), Some(0));
+        assert_eq!(timed_remind(false, "15"), Some(15));
+        assert_eq!(timed_remind(false, "-1"), None, "etkinlikte Yok");
     }
 
     #[test]

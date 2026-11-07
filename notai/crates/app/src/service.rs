@@ -206,7 +206,8 @@ pub struct NewTaskReq {
     pub topic_id: Option<String>,
 }
 
-pub async fn create_task(store: &Store, req: NewTaskReq, now: DateTime<Utc>) -> CmdResult<()> {
+/// Görev oluşturur; yeni görevin kimliğini döndürür.
+pub async fn create_task(store: &Store, req: NewTaskReq, now: DateTime<Utc>) -> CmdResult<String> {
     let mut n = NewTask::titled(TaskTitle::new(&req.title).map_err(err)?);
     n.topic = req
         .topic_id
@@ -223,7 +224,11 @@ pub async fn create_task(store: &Store, req: NewTaskReq, now: DateTime<Utc>) -> 
         })
         .transpose()?
         .map(notai_core::Due::on);
-    store.create_task(n, now).await.map(|_| ()).map_err(err)
+    store
+        .create_task(n, now)
+        .await
+        .map(|t| t.id.to_string())
+        .map_err(err)
 }
 
 pub async fn edit_task(

@@ -47,11 +47,43 @@ pub fn router(state: AppState) -> Router {
             require_token,
         ));
 
-    Router::new()
+    let cors = cors_layer(&state.cfg.cors_origins);
+    let app = Router::new()
         .route("/health", get(|| async { Json(json!({ "status": "ok" })) }))
         .route("/webhook/whatsapp", post(whatsapp_webhook))
         .nest("/api", api)
-        .with_state(state)
+        .with_state(state);
+    match cors {
+        Some(layer) => app.layer(layer),
+        None => app,
+    }
+}
+
+/// Tarayıcıdan doğrudan bağlanma (`?api=http://sunucu:8787`) için CORS. Yalnız yapılandırılan
+/// kökenler; belirteç yine zorunlu (çerez kullanılmaz, kimlik bilgisi taşınmaz).
+fn cors_layer(origins: &[String]) -> Option<tower_http::cors::CorsLayer> {
+    use axum::http::{HeaderValue, Method, header};
+    use tower_http::cors::{AllowOrigin, CorsLayer};
+    if origins.is_empty() {
+        return None;
+    }
+    let allow = if origins.iter().any(|o| o == "*") {
+        AllowOrigin::any()
+    } else {
+        AllowOrigin::list(
+            origins
+                .iter()
+                .filter_map(|o| HeaderValue::from_str(o).ok())
+                .collect::<Vec<_>>(),
+        )
+    };
+    Some(
+        CorsLayer::new()
+            .allow_origin(allow)
+            .allow_methods([Method::GET, Method::POST])
+            .allow_headers([header::AUTHORIZATION, header::CONTENT_TYPE])
+            .max_age(std::time::Duration::from_secs(600)),
+    )
 }
 
 /// Zamanlama saldırılarına karşı sabit süreli karşılaştırma.

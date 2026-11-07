@@ -377,7 +377,9 @@ pub fn apply_task_edit(task: &mut notai_core::Task, e: &TaskEditRequest) -> Resu
         };
     }
     if let Some(m) = e.remind_before_minutes {
-        task.reminder = (m > 0).then_some(Reminder::Before { minutes: m });
+        task.reminder = u32::try_from(m)
+            .ok()
+            .map(|minutes| Reminder::Before { minutes });
     }
     if let Some(t) = &e.topic_id {
         task.topic = if t.is_empty() {
@@ -429,4 +431,54 @@ pub fn apply_topic_edit(topic: &mut notai_core::Topic, e: &TopicEditRequest) -> 
         topic.pinned = p;
     }
     Ok(())
+}
+
+#[cfg(test)]
+mod tests {
+    #![allow(clippy::unwrap_used)]
+    use super::*;
+
+    fn dated_task() -> notai_core::Task {
+        let mut n = notai_core::task::NewTask::titled(TaskTitle::new("Kombi servisi").unwrap());
+        n.due = Some(Due {
+            date: NaiveDate::from_ymd_opt(2026, 11, 9).unwrap(),
+            time: NaiveTime::from_hms_opt(10, 0, 0),
+        });
+        notai_core::Task::create(n).unwrap()
+    }
+
+    fn remind(m: i32) -> TaskEditRequest {
+        TaskEditRequest {
+            remind_before_minutes: Some(m),
+            ..TaskEditRequest::default()
+        }
+    }
+
+    #[test]
+    fn reminder_on_time_before_and_off() {
+        let mut t = dated_task();
+        apply_task_edit(&mut t, &remind(0)).unwrap();
+        assert_eq!(
+            t.reminder,
+            Some(Reminder::Before { minutes: 0 }),
+            "tam zamanında"
+        );
+        apply_task_edit(&mut t, &remind(15)).unwrap();
+        assert_eq!(t.reminder, Some(Reminder::Before { minutes: 15 }));
+        apply_task_edit(&mut t, &remind(-1)).unwrap();
+        assert_eq!(t.reminder, None, "negatif = kaldır");
+        // Belirtilmezse dokunulmaz.
+        apply_task_edit(&mut t, &remind(30)).unwrap();
+        apply_task_edit(&mut t, &TaskEditRequest::default()).unwrap();
+        assert_eq!(t.reminder, Some(Reminder::Before { minutes: 30 }));
+    }
+
+    #[test]
+    fn on_time_reminder_needs_a_date() {
+        let mut t = notai_core::Task::create(notai_core::task::NewTask::titled(
+            TaskTitle::new("Ara").unwrap(),
+        ))
+        .unwrap();
+        assert!(apply_task_edit(&mut t, &remind(0)).is_err());
+    }
 }

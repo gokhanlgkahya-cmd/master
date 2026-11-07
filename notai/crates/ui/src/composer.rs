@@ -16,7 +16,7 @@ enum Panel {
     Closed,
     Grid,
     Contact,
-    Reminder,
+    Timed(Timed),
     List,
 }
 
@@ -76,7 +76,7 @@ pub fn Composer(
                 run_in(
                     c,
                     b.clone(),
-                    move |b| async move { b.create_task(t, None, topic).await },
+                    move |b| async move { b.create_task(t, None, topic).await.map(|_| ()) },
                     |()| {},
                 );
             } else {
@@ -98,22 +98,40 @@ pub fn Composer(
               mime: String,
               bytes: Vec<u8>,
               value: Option<String>| {
+            panel.set(Panel::Closed);
+            // Önizlemede ek saklanamaz: eksiz, yarım bir kayıt bırakmadan baştan söyle.
+            if !b.supports_attachments() {
+                c.error.set(Some(crate::backend::NOT_IN_DEMO.to_owned()));
+                return;
+            }
             let draft = text.get_untracked();
-            let entry_text = if draft.trim().is_empty() {
-                view::attach_entry_text(kind, &name)
-            } else {
+            let typed = !draft.trim().is_empty();
+            let entry_text = if typed {
                 draft.trim().to_owned()
+            } else {
+                view::attach_entry_text(kind, &name)
             };
             text.set(String::new());
-            panel.set(Panel::Closed);
             let topic = topic.clone();
             run_in(
                 c,
                 b.clone(),
                 move |b| async move {
                     let id = b.capture_id(entry_text, topic).await?;
-                    b.upload_attachment(id, kind, name, mime, bytes, value)
+                    match b
+                        .upload_attachment(id.clone(), kind, name, mime, bytes, value)
                         .await
+                    {
+                        Ok(()) => Ok(()),
+                        Err(e) => {
+                            // Yalnız ek için açılmış kayıt ("Fotoğraf: …") eksiz kalmasın: çöpe
+                            // (geri alınabilir). Kullanıcının yazdığı metin korunur.
+                            if !typed {
+                                let _ = b.entry_action(id, "trash").await;
+                            }
+                            Err(format!("Ek yüklenemedi: {e}"))
+                        }
+                    }
                 },
                 |()| {},
             );
@@ -376,7 +394,8 @@ pub fn Composer(
                                     c.task_draft.set(Some(d));
                                     c.screen.set(Screen::Tasks);
                                 }))}
-                                {tile("bell", "Hatırlatma", Box::new(move || panel.set(Panel::Reminder)))}
+                                {tile("bell", "Hatırlatma", Box::new(move || panel.set(Panel::Timed(Timed::Reminder))))}
+                                {tile("calendar", "Etkinlik", Box::new(move || panel.set(Panel::Timed(Timed::Event))))}
                                 {tile("list", "Liste", Box::new(move || panel.set(Panel::List)))}
                             </div>
                         </div>
@@ -388,7 +407,7 @@ pub fn Composer(
                         attach("contact", name.clone(), "text/plain".to_owned(), Vec::new(), Some(name));
                     }/> }.into_any()
                 }
-                Panel::Reminder => view! { <ReminderForm panel=panel topic=topic.clone() draft=text/> }.into_any(),
+                Panel::Timed(kind) => view! { <TimedForm panel=panel topic=topic.clone() draft=text kind=kind/> }.into_any(),
                 Panel::List => {
                     let (b, topic) = (b.clone(), topic.clone());
                     view! { <ListForm panel=panel draft=text on_done=move |t: String| {
@@ -477,25 +496,67 @@ fn ListForm(
     panel_form("Liste", panel, submit, body, "Kaydet")
 }
 
+/// Saatli iki form: Hatırlatma (varsayılan tam zamanında) ve Etkinlik (takvimde saatli kayıt,
+/// varsayılan 15 dk önce hatırlatır). İkisi de tarih + saatli bir görev oluşturur.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+enum Timed {
+    Reminder,
+    Event,
+}
+
+impl Timed {
+    const fn title(self) -> &'static str {
+        match self {
+            Self::Reminder => "Hatırlatma",
+            Self::Event => "Etkinlik",
+        }
+    }
+    const fn question(self) -> &'static str {
+        match self {
+            Self::Reminder => "Ne hatırlatılsın?",
+            Self::Event => "Etkinlik adı",
+        }
+    }
+    const fn placeholder(self) -> &'static str {
+        match self {
+            Self::Reminder => "Örn. Kombi servisini ara",
+            Self::Event => "Örn. Tedarikçiyle toplantı",
+        }
+    }
+    const fn default_remind(self) -> i32 {
+        match self {
+            Self::Reminder => 0,
+            Self::Event => 15,
+        }
+    }
+    const fn submit(self) -> &'static str {
+        match self {
+            Self::Reminder => "Kur",
+            Self::Event => "Ekle",
+        }
+    }
+}
+
 #[component]
-fn ReminderForm(
+fn TimedForm(
     panel: RwSignal<Panel>,
     topic: Option<String>,
     draft: RwSignal<String>,
+    kind: Timed,
 ) -> impl IntoView {
     let c = ctx();
     let b = backend();
     let title = RwSignal::new(draft.get_untracked().trim().to_owned());
     let date = RwSignal::new(web::today().format("%Y-%m-%d").to_string());
     let time = RwSignal::new(String::from("09:00"));
-    let before = RwSignal::new(String::from("5"));
+    let remind = RwSignal::new(kind.default_remind().to_string());
     let input = NodeRef::<Input>::new();
     web::focus_later(input);
     let submit = move || {
         let t = title.get_untracked().trim().to_owned();
         let (d, tm) = (date.get_untracked(), time.get_untracked());
-        let minutes: u32 = before.get_untracked().parse().unwrap_or(5);
-        if t.is_empty() || d.is_empty() {
+        let minutes = view::timed_remind(kind == Timed::Reminder, &remind.get_untracked());
+        if t.is_empty() || d.is_empty() || tm.is_empty() {
             return;
         }
         draft.set(String::new());
@@ -505,15 +566,10 @@ fn ReminderForm(
             c,
             b.clone(),
             move |b| async move {
-                // Sözleşmedeki `create_task` kimlik döndürmez: önceki ve sonraki listeden bulunur.
-                let ids = view::task_ids(&b.tasks().await?);
-                b.create_task(t.clone(), Some(d), topic).await?;
-                let after = b.tasks().await?;
-                let id = view::new_task_id(&ids, &after, &t)
-                    .ok_or_else(|| "Hatırlatma görevi oluşturuldu ama bulunamadı.".to_owned())?;
+                let id = b.create_task(t, Some(d), topic).await?;
                 let req = TaskEditRequest {
-                    due_time: (!tm.is_empty()).then_some(tm),
-                    remind_before_minutes: Some(minutes.max(1)),
+                    due_time: Some(tm),
+                    remind_before_minutes: minutes,
                     ..TaskEditRequest::default()
                 };
                 b.edit_task(id, req).await
@@ -521,19 +577,20 @@ fn ReminderForm(
             |()| {},
         );
     };
+    // Hatırlatma formunda "Yok" anlamsız: yalnız zamanlı seçenekler.
     let options = view::REMIND_OPTIONS
         .iter()
-        .filter(|(m, _)| *m > 0)
+        .filter(|(m, _)| kind == Timed::Event || *m >= 0)
         .map(|&(m, l)| {
             let v = m.to_string();
             let v2 = v.clone();
-            view! { <option value=v selected=move || before.get() == v2>{l}</option> }
+            view! { <option value=v selected=move || remind.get() == v2>{l}</option> }
         })
         .collect_view();
     let body = view! {
         <label class="formfield">
-            <span class="formfield__label">"Ne hatırlatılsın?"</span>
-            <span class="input"><input type="text" lang="tr" node_ref=input placeholder="Örn. Kombi servisini ara"
+            <span class="formfield__label">{kind.question()}</span>
+            <span class="input"><input type="text" lang="tr" node_ref=input placeholder=kind.placeholder()
                 prop:value=move || title.get() on:input=move |ev| title.set(event_target_value(&ev))/></span>
         </label>
         <div class="fields">
@@ -548,11 +605,11 @@ fn ReminderForm(
                     on:input=move |ev| time.set(event_target_value(&ev))/></span>
             </label>
             <label class="fieldbox fieldbox--wide">
-                <span class="fieldbox__label">"Ne kadar önce"</span>
+                <span class="fieldbox__label">"Hatırlat"</span>
                 <span class="fieldbox__val"><Icon name="bell" size="sm"/>
-                    <select aria-label="Ne kadar önce" on:change=move |ev| before.set(event_target_value(&ev))>{options}</select></span>
+                    <select aria-label="Hatırlat" on:change=move |ev| remind.set(event_target_value(&ev))>{options}</select></span>
             </label>
         </div>
     };
-    panel_form("Hatırlatma", panel, submit, body, "Kur")
+    panel_form(kind.title(), panel, submit, body, kind.submit())
 }

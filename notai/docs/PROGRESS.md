@@ -1,6 +1,6 @@
 # İlerleme ve devir notu (bağlam sıkıştırmasından sonra buradan devam edilir)
 
-> Son güncelleme: 2026-11-07 · Dal: `claude/new-session-cb4ul5` · Proje kökü: `notai/`
+> Son güncelleme: 2026-11-07 (küçük eksikler tamamlandı) · Dal: `claude/new-session-cb4ul5` · Proje kökü: `notai/`
 > Oturum Gökhan'ın `/goal tüm fazları işle` talimatıyla yürüdü. **Gökhan 2026-11-07'de Faz 1–2
 > kararlarını (§4) onayladı.**
 
@@ -28,11 +28,13 @@ core · store (SQLite+sqlx, `.sqlx/` çevrimdışı önbellek, migrations 0001+0
 ## 3. Yapılanlar (test sayıları yaklaşık; hepsi yeşil)
 **v0.1:** yakalama, Ana Günlük/konu akışı (gün ayraçları, en yeni altta), AI çipleri (çip başına kabul/yoksay), işlenmemiş işareti, görevler, sabah planı (≤3), WhatsApp/MacroDroid webhook (yineleme penceresi), senkron (LWW + alan kuralları, aynı adlı konu → " (2)"), çöp/arşiv, Tauri kabuğu, Leptos arayüz.
 
-**v0.2:** hatırlatmalar (gruplar, erteleme 10 dk/1 sa/yarın, bir kez çalma, 24 saat sınırı), sunucuda ntfy bildirimi + kabukta yerel bildirim (tauri-plugin-notification; hatırlatma + 08:00 sabah planı), takvim (hafta), görev ekle/düzenle (tarih/saat/tekrar/önce hatırlat/öncelik/konu), konu ekle/düzenle (sabitle, ad, tür, bitiş), konuya taşı, Ayarlar (tema, ev sunucusu, otonom, seni tanıma, çöp).
+**v0.2:** hatırlatmalar (gruplar, erteleme 10 dk/1 sa/yarın, bir kez çalma, 24 saat sınırı), sunucuda ntfy bildirimi + kabukta yerel bildirim (tauri-plugin-notification; hatırlatma + 09:00 sabah planı), takvim (hafta), görev ekle/düzenle (tarih/saat/tekrar/önce hatırlat/öncelik/konu), konu ekle/düzenle (sabitle, ad, tür, bitiş), konuya taşı, Ayarlar (tema, ev sunucusu, otonom, seni tanıma, çöp).
 
 **v0.3:** sesli yakalama (arayüzde MediaRecorder şeridi → sunucu `/api/voice` → Whisper uyumlu STT → kayıt + ses eki; kabuk sunucuya iletir), ekleme paneli (fotoğraf/kamera/belge/konum/kişi/liste/görev/hatırlatma), ekler depoda (≤10 MB, senkronlu, base64 günlük yükü).
 
 **v0.4:** Ara/Sor (tam metin + embedding karma arama, cevap yalnız verilen notlara dayanır, uydurma kaynak atılır; AI yoksa ilgili kayıtlar), haftalık gözden geçirme (ilerlemeyen projeler ≥7 gün, yaklaşan 7 gün, geciken, geçen hafta biten), otonom mod (eşik ≥0,5, varsayılan 0,9; geri al = etki tersine + "yoksayıldı", senkron kuralıyla tutarlı), öğrenme sinyali (kullanıcının son 12 kararı sınıflandırma istemine örnek; otonom kararlar hariç).
+
+**Küçük eksikler (2026-11-07):** sunucuda isteğe bağlı CORS (`NOTAI_CORS_ORIGINS`; varsayılan kapalı, belirteç yine zorunlu); takvimde Hafta/Ay anahtarı (6 haftalık ay ızgarası, ay ileri/geri, bugüne dön); ekleme panelinde **Etkinlik** (tarih + saatli görev olarak saklanır, takvimde görünür, varsayılan 15 dk önce hatırlatır); "tam zamanında" hatırlatma (`remind_before_minutes`: 0 = tam zamanında, negatif = kaldır; Hatırlatma formunun varsayılanı); `create_task` yeni görevin kimliğini döndürür (kabuk + sunucu); önizlemede (demo) ek denemesi artık kayıt açmadan uyarır, gerçek bağlantıda ek yüklenemezse yalnız ek için açılmış kayıt çöpe gider (yazılmış metin korunur); Manrope uygulamaya gömülü (Google Fonts kaldırıldı, CSP daraltıldı). Tarayıcı testi (gerçek sunucu, ayrı köken, CORS ile): 7/7; otonom karar dış ajan (`notai answer`) ile uygulanıp arayüzden geri alındı: 4/4.
 
 **Doğrulama:** Rust testleri (core ~70, store ~27, ai ~23, server ~19 HTTP, sync 6 senaryo, app 3, ui 14, tokens 4); gerçek ikili duman testi; Linux'ta gerçek Tauri penceresi (Xvfb); arayüz gerçek sunucuya karşı Playwright ile 19/19 adım (`docs/screenshots/ui-v0.4-screens.png`).
 
@@ -47,7 +49,7 @@ core · store (SQLite+sqlx, `.sqlx/` çevrimdışı önbellek, migrations 0001+0
 
 ## 5. Sıradaki adımlar
 1. **Android APK** — Gökhan kendi bilgisayarında derleyecek (karar: 2026-11-07). Adımlar `docs/ANDROID.md`. Derlemede hata çıkarsa çıktısı ile düzeltilecek.
-2. **CORS**: tarayıcıdan sunucuya doğrudan bağlanmak (`?api=http://sunucu:8787`) için sunucuya tower-http CorsLayer gerekebilir (şimdilik trunk proxy ile test edildi).
-3. Küçük eksikler: takvimde Ay görünümü yok; ekleme panelinde "Etkinlik" yok; `create_task` kimlik döndürmüyor (arayüz önce/sonra farkıyla buluyor); "tam zamanında" hatırlatma yok (en az 5 dk önce); demo'da ek yükleme hatası eksiz kayıt bırakır; otonom kararın geri alınması arayüzde gerçek AI ile sınanmadı (sunucu testinde sınandı); Manrope uygulamaya gömülmedi.
+2. ~~CORS~~, ~~ay görünümü~~, ~~Etkinlik~~, ~~create_task kimliği~~, ~~tam zamanında hatırlatma~~, ~~demo ek hatası~~, ~~otonom geri alma arayüz testi~~, ~~Manrope~~ → tamamlandı (yukarıda §3).
+3. Etkinlik ayrı bir tür değil, saatli görevdir (Görevler listesinde de görünür). Ayrı tür (süre, bitiş saati) istenirse ileride.
 4. Açık konu: WhatsApp'tan ne yakalanacağı (kendi sohbetine yazdığı notlar mı, belirli kişilerden gelenler mi) Gökhan'la netleştirilecek.
 5. Bittiğinde: `docs/FEATURE_PLAN.md` §5 durum tablosunu güncelle; kullanıcıya özet.
