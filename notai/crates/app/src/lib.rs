@@ -241,7 +241,7 @@ async fn notify_tick(app: &AppHandle, store: &Store, tz: Tz, user: &str) -> Resu
         .await
         .map_err(|e| e.to_string())?
         .and_then(|s| chrono::NaiveDate::parse_from_str(&s, "%Y-%m-%d").ok());
-    let at = chrono::NaiveTime::from_hms_opt(8, 0, 0).unwrap_or(chrono::NaiveTime::MIN);
+    let at = chrono::NaiveTime::from_hms_opt(9, 0, 0).unwrap_or(chrono::NaiveTime::MIN);
     if notai_core::morning::is_due(now, tz, at, last) {
         let today = now.with_timezone(&tz).date_naive();
         store

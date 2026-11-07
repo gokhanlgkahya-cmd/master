@@ -24,6 +24,7 @@ kayıt en altta, altta sabit yazma çubuğu, kaydın altında AI öneri çipleri
 | `crates/tokens` | `design/tokens.json` → CSS üreticisi. |
 | `crates/ui` | Leptos arayüzü (Rust → WASM). Tasarım dosyalarını derlerken gömer. |
 | `crates/app` | Tauri 2 uygulama kabuğu (Android + Windows/Linux), yerel SQLite. |
+| `crates/cli` | `notai` komut satırı aracı: ajanlar (Hermes / Claude Code) için iş al/cevapla, yakala, gelen kutusu. |
 
 ## Geliştirme
 
@@ -57,9 +58,9 @@ NOTAI_NTFY_URL=http://127.0.0.1:8080/notai \
 | `NOTAI_DATABASE_URL` | `sqlite://notai.db` | Veritabanı dosyası. |
 | `NOTAI_API_TOKEN` | — | Uygulamanın `Authorization: Bearer` belirteci. Boşsa API açık kalır (yalnız güvenli ağda). |
 | `NOTAI_WEBHOOK_SECRET` | — | WhatsApp webhook'u için `X-NotAI-Secret`. Boşsa webhook kapalı. |
-| `NOTAI_AI` | `none` | `none` · `local` (Ollama/Gemma) · `anthropic` (`ANTHROPIC_API_KEY` gerekir). |
+| `NOTAI_AI` | `none` | `none` · `external` (S24'teki Hermes/Claude Code `notai` CLI ile sınıflandırır — `docs/AGENT.md`) · `local` (Ollama/Gemma) · `anthropic` (`ANTHROPIC_API_KEY` gerekir). |
 | `NOTAI_AI_MODEL`, `NOTAI_AI_BASE_URL` | — / `http://127.0.0.1:11434` | Yerel model adı ve adresi; `anthropic` için varsayılan model `claude-opus-5-5`. |
-| `NOTAI_MORNING_AT`, `NOTAI_TZ` | `08:00`, `Europe/Istanbul` | Sabah planı saati ve saat dilimi. |
+| `NOTAI_MORNING_AT`, `NOTAI_TZ` | `09:00`, `Europe/Istanbul` | Sabah planı saati ve saat dilimi. |
 | `NOTAI_NTFY_URL` | — | Sabah planı ve hatırlatmaları telefona bildirim olarak yollamak için ntfy konusu. |
 | `NOTAI_STT_MODEL`, `NOTAI_STT_BASE_URL` | — / `http://127.0.0.1:8000` | Sesli yakalama: Whisper uyumlu ses → yazı servisi (ör. faster-whisper-server). Boşsa sesli yakalama kapalı. |
 | `NOTAI_EMBED_MODEL`, `NOTAI_EMBED_BASE_URL` | — / `http://127.0.0.1:11434` | Ara/Sor anlamsal arama: OpenAI uyumlu embeddings (ör. Ollama `bge-m3`). Boşsa yalnız tam metin arama. |

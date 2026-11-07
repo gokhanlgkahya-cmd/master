@@ -16,6 +16,9 @@ pub enum AiProvider {
     Anthropic { model: Option<String> },
     /// OpenAI-uyumlu yerel uç (Ollama + Gemma).
     Local { base_url: String, model: String },
+    /// Dış ajan: sunucu model çağırmaz; S24'teki Hermes / Claude Code gibi ajanlar işleri
+    /// `notai` CLI ya da `/api/agent/*` ile alıp cevaplar (cevap yine sıkı doğrulanır).
+    External,
 }
 
 #[derive(Debug, Clone)]
@@ -53,7 +56,7 @@ impl Config {
             webhook_secret: None,
             tz: notai_core::DEFAULT_TZ,
             user_name: "Gökhan".into(),
-            morning_at: NaiveTime::from_hms_opt(8, 0, 0).unwrap_or(NaiveTime::MIN),
+            morning_at: NaiveTime::from_hms_opt(9, 0, 0).unwrap_or(NaiveTime::MIN),
             ai: AiProvider::None,
             ntfy_url: None,
             stt: None,
@@ -110,6 +113,7 @@ impl Config {
         });
         cfg.ai = match non_empty("NOTAI_AI").as_deref() {
             None | Some("none") => AiProvider::None,
+            Some("external") => AiProvider::External,
             Some("anthropic") => AiProvider::Anthropic {
                 model: non_empty("NOTAI_AI_MODEL"),
             },
@@ -143,7 +147,7 @@ mod tests {
         assert_eq!(c.bind.to_string(), "127.0.0.1:8787");
         assert_eq!(c.ai, AiProvider::None);
         assert_eq!(c.tz, chrono_tz::Europe::Istanbul);
-        assert_eq!(c.morning_at.format("%H:%M").to_string(), "08:00");
+        assert_eq!(c.morning_at.format("%H:%M").to_string(), "09:00");
     }
 
     #[test]

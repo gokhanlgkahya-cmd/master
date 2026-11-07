@@ -50,16 +50,16 @@ Her dilim: derlenir + `cargo fmt --check` + `cargo clippy --all-targets -- -D wa
 
 ### 3.4 Görevler ve sabah planı
 - Öncelik: Düşük / Normal / Yüksek. Tarih isteğe bağlı; saat isteğe bağlı.
-- Sabah planı (varsayılan 08:00, Europe/Istanbul): geciken görevler → bugünkü görevler → yüksek öncelikli tarihsizler; **en fazla 3 madde** (ferah yoğunluk; design-critic son tur kararı ile eşitlendi). Kalanlar "+N görev daha" bağlantısıyla Görevler sekmesine gider.
+- Sabah planı (varsayılan 09:00 — Gökhan kararı, Europe/Istanbul): geciken görevler → bugünkü görevler → yüksek öncelikli tarihsizler; **en fazla 3 madde** (ferah yoğunluk; design-critic son tur kararı ile eşitlendi). Kalanlar "+N görev daha" bağlantısıyla Görevler sekmesine gider.
 
 ### 3.5 Silme ve veri güvenliği
 - "Sil" = Çöp kutusu (30 gün), "Arşivle" = Arşiv. Kalıcı silme yalnız çöp kutusundan, ayrı onayla.
 - Her yazma transaction içinde; her değişiklik değişiklik günlüğüne yazılır.
 
 ## 4. Gökhan'a açık sorular (sonraki oturumda)
-1. AI sağlayıcısı varsayılanı: Claude API mi, ev sunucusundaki Gemma mı? (Kod ikisini de destekliyor; varsayılan: yerel Gemma, yedek Claude.)
-2. Sabah planı saati 08:00 uygun mu?
-3. WhatsApp yakalaması için MacroDroid akışı mı, n8n üzerinden mi?
+1. ~~AI sağlayıcısı~~ → S24'teki ajanlar (Hermes / Claude Code) dış ajan modu ile (`docs/AGENT.md`); dağıtım kurgusu sonra.
+2. ~~Sabah planı saati~~ → 09:00 (karar verildi).
+3. WhatsApp yakalaması: ne yakalanacağı netleşince (kod hazır, kapalı).
 
 ## 5. Faz durumu
 | Faz | Durum | Not |

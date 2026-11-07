@@ -428,6 +428,31 @@ impl Store {
         row.map(Entry::try_from).transpose()
     }
 
+    /// Sıradaki AI işi, verilen kayıtlar hariç (dış ajana birden çok iş vermek için).
+    pub async fn next_ai_job_excluding(
+        &self,
+        now: DateTime<Utc>,
+        exclude: &[EntryId],
+    ) -> Result<Option<Entry>> {
+        let now_s = ts(now);
+        let ids: Vec<String> = exclude.iter().map(ToString::to_string).collect();
+        let ids_json = serde_json::to_string(&ids)?;
+        let row = sqlx::query_as!(
+            EntryRow,
+            "SELECT id, text, source, captured_at, topic_id, status, trashed_at
+             FROM entries
+             WHERE ai_state = 'pending' AND status != 'trashed'
+               AND (ai_next_at IS NULL OR ai_next_at <= ?1)
+               AND id NOT IN (SELECT value FROM json_each(?2))
+             ORDER BY captured_at LIMIT 1",
+            now_s,
+            ids_json
+        )
+        .fetch_optional(&self.pool)
+        .await?;
+        row.map(Entry::try_from).transpose()
+    }
+
     /// AI'ın doğrulanmış önerilerini kaydeder ve işi bitirir. Öneri yoksa (AI'ın söyleyecek
     /// bir şeyi yoksa) gelen kutusundaki kayıt işlenmiş sayılır.
     pub async fn save_ai_suggestions(

@@ -5,6 +5,7 @@
 
 #![forbid(unsafe_code)]
 
+pub mod agent;
 pub mod config;
 pub mod error;
 pub mod routes;
@@ -29,7 +30,7 @@ pub fn build_llm(
     anthropic_key: Option<String>,
 ) -> Result<Option<Arc<dyn LlmClient>>, notai_ai::AiError> {
     Ok(match provider {
-        AiProvider::None => None,
+        AiProvider::None | AiProvider::External => None,
         AiProvider::Anthropic { model } => {
             let key = anthropic_key.ok_or_else(|| {
                 notai_ai::AiError::Config("ANTHROPIC_API_KEY tanımlı değil".into())

@@ -350,13 +350,13 @@ async fn morning_plan_scheduler_fires_once_and_notifies() {
     )
     .await;
 
-    // 07:00 İstanbul: henüz değil.
+    // 08:00 İstanbul: henüz değil.
     h.clock
-        .set(Utc.with_ymd_and_hms(2026, 11, 6, 4, 0, 0).unwrap());
+        .set(Utc.with_ymd_and_hms(2026, 11, 6, 5, 0, 0).unwrap());
     assert!(!scheduler::tick(&h.state).await.unwrap());
-    // 08:01 İstanbul: gönder, sonra aynı gün tekrar gönderme.
+    // 09:01 İstanbul (varsayılan sabah saati 09:00): gönder, sonra aynı gün tekrar gönderme.
     h.clock
-        .set(Utc.with_ymd_and_hms(2026, 11, 6, 5, 1, 0).unwrap());
+        .set(Utc.with_ymd_and_hms(2026, 11, 6, 6, 1, 0).unwrap());
     assert!(scheduler::tick(&h.state).await.unwrap());
     assert!(!scheduler::tick(&h.state).await.unwrap());
 

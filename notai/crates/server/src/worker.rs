@@ -6,19 +6,12 @@
 
 use std::time::Duration;
 
-use notai_ai::{ClassifyContext, ClassifyExample, ContextTopic, classify};
-use notai_core::profile::for_prompt;
-use notai_core::topic::KindFilter;
+use notai_ai::classify;
 use notai_store::StoreError;
 use tokio::sync::watch;
 
-use crate::routes_v2::autonomy;
 use crate::state::AppState;
 
-/// Bağlama giren son kayıt sayısı.
-const RECENT_CONTEXT: u32 = 10;
-/// İsteme giren geçmiş karar örneği sayısı (öğrenme sinyali).
-const EXAMPLES: u32 = 12;
 /// Bir turda vektörü hesaplanan kayıt sayısı.
 const EMBED_BATCH: u32 = 16;
 
@@ -31,81 +24,13 @@ pub async fn process_one(state: &AppState) -> Result<bool, StoreError> {
     let Some(entry) = state.store.next_ai_job(now).await? else {
         return Ok(false);
     };
-    let tz = state.cfg.tz;
-
-    let topics = state
-        .store
-        .topic_list(KindFilter::All)
-        .await?
-        .into_iter()
-        .map(|a| ContextTopic {
-            id: a.topic.id,
-            name: a.topic.name,
-            kind: a.topic.kind,
-        })
-        .collect();
-    let facts_all = state.store.facts().await?;
-    let facts = for_prompt(&facts_all)
-        .map(|f| f.text.as_str().to_owned())
-        .collect();
-    let recent = state
-        .store
-        .recent_entries(RECENT_CONTEXT + 1)
-        .await?
-        .into_iter()
-        .filter(|e| e.id != entry.id)
-        .take(RECENT_CONTEXT as usize)
-        .map(|e| e.text.as_str().to_owned())
-        .collect();
-    let examples = state
-        .store
-        .decision_examples(EXAMPLES)
-        .await?
-        .into_iter()
-        .map(|x| ClassifyExample {
-            entry_text: x.entry_text,
-            chip: x.kind.chip_text(tz),
-            accepted: x.accepted,
-        })
-        .collect();
-
     let entry_id = entry.id;
-    let ctx = ClassifyContext {
-        entry,
-        topics,
-        facts,
-        recent,
-        tz,
-        user_name: state.cfg.user_name.clone(),
-        examples,
-    };
+    let ctx = crate::agent::build_context(state, entry).await?;
 
     match classify(llm, &ctx).await {
         Ok(validated) => {
-            state
-                .store
-                .save_ai_suggestions(entry_id, &validated.suggestions, state.now())
-                .await?;
-            tracing::info!(entry = %entry_id, count = validated.suggestions.len(), "AI önerileri kaydedildi");
-            let (on, threshold) = autonomy(&state.store).await?;
-            if on {
-                for s in validated
-                    .suggestions
-                    .iter()
-                    .filter(|s| s.confidence.get() >= threshold)
-                {
-                    match state
-                        .store
-                        .decide_with(s.id, true, true, state.now(), tz)
-                        .await
-                    {
-                        Ok(_) => tracing::info!(suggestion = %s.id, "otonom mod öneriyi uyguladı"),
-                        Err(e) => {
-                            tracing::warn!(suggestion = %s.id, error = %e, "otonom uygulama atlandı")
-                        }
-                    }
-                }
-            }
+            let n = crate::agent::save_validated(state, entry_id, &validated).await?;
+            tracing::info!(entry = %entry_id, count = n, "AI önerileri kaydedildi");
         }
         Err(e) => {
             let failed = state

@@ -55,6 +55,7 @@ pub fn api_routes() -> Router<AppState> {
         .route("/trash", get(trash))
         .route("/entries/{id}/purge", post(purge))
         .route("/facts/{id}/{action}", post(fact_action))
+        .merge(crate::agent::routes())
 }
 
 fn bad(msg: impl Into<String>) -> ApiError {
@@ -96,6 +97,7 @@ async fn settings_view(st: &AppState) -> ApiResult<SettingsView> {
             AiProvider::None => "Kapalı",
             AiProvider::Local { .. } => "Yerel model",
             AiProvider::Anthropic { .. } => "Claude API",
+            AiProvider::External => "Dış ajan (Hermes / Claude Code)",
         }
         .to_owned(),
         voice_enabled: st.stt.is_some(),

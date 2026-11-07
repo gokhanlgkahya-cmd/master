@@ -1,8 +1,8 @@
 # İlerleme ve devir notu (bağlam sıkıştırmasından sonra buradan devam edilir)
 
 > Son güncelleme: 2026-11-07 · Dal: `claude/new-session-cb4ul5` · Proje kökü: `notai/`
-> Oturum Gökhan'ın `/goal tüm fazları işle` talimatıyla yürüdü; onay kapılarındaki kararlar
-> aşağıda (Gökhan'ın gözden geçirmesi bekleniyor).
+> Oturum Gökhan'ın `/goal tüm fazları işle` talimatıyla yürüdü. **Gökhan 2026-11-07'de Faz 1–2
+> kararlarını (§4) onayladı.**
 
 ## 1. Faz durumu
 | Faz | Durum | Çıktı |
@@ -36,16 +36,18 @@ core · store (SQLite+sqlx, `.sqlx/` çevrimdışı önbellek, migrations 0001+0
 
 **Doğrulama:** Rust testleri (core ~70, store ~27, ai ~23, server ~19 HTTP, sync 6 senaryo, app 3, ui 14, tokens 4); gerçek ikili duman testi; Linux'ta gerçek Tauri penceresi (Xvfb); arayüz gerçek sunucuya karşı Playwright ile 19/19 adım (`docs/screenshots/ui-v0.4-screens.png`).
 
-## 4. Onay beklemeden verilen kararlar (gözden geçir)
+## 4. Kararlar (Gökhan onayladı, 2026-11-07)
 1. Tasarım: A tabanlı karışım (`design/decision.md`); balon kayıtlar; not detayı bottom sheet.
 2. Sabah planı ≤3 madde. 3. Bir kayıt ≤1 konu. 4. AI kendiliğinden uygulamaz (otonom mod kapalı varsayılan).
 5. Senkron: LWW; kararlı öneri bekliyor'a dönmez; geri alma = yoksayıldı.
-6. Öncelik adları Düşük/Orta/Yüksek. 7. Claude varsayılan modeli `claude-opus-5-5` (yalnız `NOTAI_AI=anthropic`).
+6. Öncelik adları Düşük/Orta/Yüksek. 7. **AI kurgusu (Gökhan):** S24'teki ajanlar (Hermes / Claude Code) `NOTAI_AI=external` + `notai` CLI ile sınıflandırır (`docs/AGENT.md`); dağıtım için AI kurgusu sonra kararlaştırılacak. Diğer yollar (yerel Gemma, Claude API `claude-opus-5-5`) kodda hazır.
+9. **Sabah planı 09:00** (Gökhan).
+10. **WhatsApp yakalama:** Gökhan ne yakalanacağından emin değil; webhook kodda hazır ama kapalı (gizli değer verilmedikçe çalışmaz). Karar ileride.
 8. Takvim ucu tamamlanan görevleri de döndürür (üstü çizili gösterilir).
 
 ## 5. Sıradaki adımlar
 1. **Android APK** — Gökhan kendi bilgisayarında derleyecek (karar: 2026-11-07). Adımlar `docs/ANDROID.md`. Derlemede hata çıkarsa çıktısı ile düzeltilecek.
 2. **CORS**: tarayıcıdan sunucuya doğrudan bağlanmak (`?api=http://sunucu:8787`) için sunucuya tower-http CorsLayer gerekebilir (şimdilik trunk proxy ile test edildi).
 3. Küçük eksikler: takvimde Ay görünümü yok; ekleme panelinde "Etkinlik" yok; `create_task` kimlik döndürmüyor (arayüz önce/sonra farkıyla buluyor); "tam zamanında" hatırlatma yok (en az 5 dk önce); demo'da ek yükleme hatası eksiz kayıt bırakır; otonom kararın geri alınması arayüzde gerçek AI ile sınanmadı (sunucu testinde sınandı); Manrope uygulamaya gömülmedi.
-4. Gökhan'a açık sorular: varsayılan AI (Gemma mı Claude mu), sabah 08:00 uygun mu, WhatsApp için MacroDroid mi n8n mi.
+4. Açık konu: WhatsApp'tan ne yakalanacağı (kendi sohbetine yazdığı notlar mı, belirli kişilerden gelenler mi) Gökhan'la netleştirilecek.
 5. Bittiğinde: `docs/FEATURE_PLAN.md` §5 durum tablosunu güncelle; kullanıcıya özet.
