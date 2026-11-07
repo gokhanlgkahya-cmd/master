@@ -1,7 +1,9 @@
 //! Saf görünüm yardımcıları (DOM'suz; yerel testlerle sınanır).
 
 use chrono::{Datelike, Days, NaiveDate, NaiveTime};
-use notai_api::{EntryView, ReminderGroupView, TaskEditRequest, TaskRowView, TasksView};
+use notai_api::{
+    EntryView, ReminderGroupView, TaskEditRequest, TaskRowView, TasksView, TopicRowView,
+};
 
 const MONTHS: [&str; 12] = [
     "Oca", "Şub", "Mar", "Nis", "May", "Haz", "Tem", "Ağu", "Eyl", "Eki", "Kas", "Ara",
@@ -23,6 +25,16 @@ pub fn topic_icon(icon: Option<&str>, kind: &str) -> String {
         },
         str::to_owned,
     )
+}
+
+/// Konu kimliği → simge adı (ana ekrandaki konu satırıyla aynı kural). Akış başlığında ve
+/// kayıtların üstündeki konu adında aynı simge görünsün diye.
+#[must_use]
+pub fn topic_icons(topics: &[TopicRowView]) -> std::collections::HashMap<String, String> {
+    topics
+        .iter()
+        .map(|t| (t.id.clone(), topic_icon(t.icon.as_deref(), &t.kind)))
+        .collect()
 }
 
 /// Konu satırındaki tür ("Proje · 20 Kas").
@@ -630,6 +642,23 @@ mod tests {
         );
         assert_eq!(topic_icon(None, "resource"), "book");
         assert_eq!(topic_icon(Some("drop"), "area"), "drop");
+        let row = |id: &str, icon: Option<&str>, kind: &str| TopicRowView {
+            id: id.into(),
+            name: id.into(),
+            kind: kind.into(),
+            kind_label: String::new(),
+            due_date: None,
+            icon: icon.map(Into::into),
+            pinned: false,
+            last_label: None,
+            preview: None,
+        };
+        let icons = topic_icons(&[
+            row("k", Some("flask"), "project"),
+            row("o", None, "resource"),
+        ]);
+        assert_eq!(icons["k"], "flask", "akış başlığı ana ekranla aynı simge");
+        assert_eq!(icons["o"], "book");
         assert_eq!(plan_reason_class("overdue"), "plan__sub plan__sub--error");
     }
 
