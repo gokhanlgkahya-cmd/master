@@ -1,0 +1,52 @@
+[package]
+name = "notai-app"
+description = "NotAI uygulama kabuğu: Tauri 2 (Android + Windows/Linux masaüstü), yerel SQLite"
+version.workspace = true
+edition.workspace = true
+rust-version.workspace = true
+publish.workspace = true
+license.workspace = true
+
+[lib]
+name = "notai_app"
+crate-type = ["staticlib", "cdylib", "rlib"]
+
+[[bin]]
+name = "notai-app"
+path = "src/main.rs"
+
+[features]
+# Arayüzü (crates/ui/dist) ikili dosyaya gömer; yayın derlemelerinde `cargo tauri build` bunu açar.
+custom-protocol = ["tauri/custom-protocol"]
+
+[build-dependencies]
+tauri-build = { version = "2.5", features = [] }
+
+[dependencies]
+notai-core.workspace = true
+notai-store.workspace = true
+notai-sync.workspace = true
+notai-api = { workspace = true, features = ["convert"] }
+chrono.workspace = true
+chrono-tz.workspace = true
+serde.workspace = true
+serde_json.workspace = true
+tauri = { version = "2.12", features = [] }
+tokio.workspace = true
+uuid.workspace = true
+
+# Workspace lint'leri + tek fark: Tauri'nin mobil giriş noktası FFI yapıştırıcısı üretir
+# (CLAUDE.md istisnası). Bu yüzden `unsafe_code` burada "forbid" değil "deny"; yalnız mobil
+# giriş noktasında yerel olarak serbest. Masaüstünde lib.rs yine `forbid` eder.
+[lints.rust]
+unsafe_code = "deny"
+unused_must_use = "deny"
+
+[lints.clippy]
+unwrap_used = "deny"
+expect_used = "deny"
+panic = "deny"
+todo = "deny"
+unimplemented = "deny"
+dbg_macro = "deny"
+print_stdout = "warn"

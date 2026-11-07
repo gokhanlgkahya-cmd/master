@@ -1,0 +1,28 @@
+{
+  "$schema": "https://schema.tauri.app/config/2",
+  "productName": "NotAI",
+  "version": "0.1.0",
+  "identifier": "com.gokhan.notai",
+  "build": {
+    "frontendDist": "../ui/dist",
+    "devUrl": "http://localhost:8080",
+    "beforeDevCommand": "cd ../ui && trunk serve",
+    "beforeBuildCommand": "cd ../ui && trunk build --release"
+  },
+  "app": {
+    "withGlobalTauri": true,
+    "windows": [
+      { "title": "NotAI", "width": 420, "height": 900, "minWidth": 360, "minHeight": 600 }
+    ],
+    "security": {
+      "csp": "default-src 'self' ipc: http://ipc.localhost; script-src 'self' 'wasm-unsafe-eval'; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com; img-src 'self' data:"
+    }
+  },
+  "bundle": {
+    "active": true,
+    "targets": ["deb", "appimage", "msi"],
+    "icon": ["icons/icon.png"],
+    "category": "Productivity",
+    "shortDescription": "Düşünmeden yakala, AI düzenlesin."
+  }
+}

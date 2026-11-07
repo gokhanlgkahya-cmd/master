@@ -9,6 +9,7 @@ members = [
     "crates/tokens",
     "crates/api",
     "crates/ui",
+    "crates/app",
 ]
 
 [workspace.package]
@@ -55,3 +56,10 @@ todo = "deny"
 unimplemented = "deny"
 dbg_macro = "deny"
 print_stdout = "warn"
+
+# Disk ve derleme süresi: bağımlılıklarda hata ayıklama bilgisi yok, kendi kodumuzda yalnız satır tabloları.
+[profile.dev]
+debug = "line-tables-only"
+
+[profile.dev.package."*"]
+debug = false
