@@ -261,3 +261,48 @@ async fn large_backlog_syncs_in_batches_and_resumes() {
         450
     );
 }
+
+#[tokio::test]
+async fn answer_on_phone_requeues_entry_on_server() {
+    use notai_core::text::{AnswerText, QuestionText};
+    let w = world().await;
+    let id = capture(&w.phone, "Ayhan'ı ara", t(0), None).await;
+    sync_once(&w.phone, &w.hub).await.unwrap();
+    // Sunucudaki AI bir soru sorar.
+    let job = w.server.next_ai_job(t(1)).await.unwrap().unwrap();
+    assert_eq!(job.id, id);
+    let q = Suggestion::new(
+        id,
+        SuggestionKind::Question {
+            text: QuestionText::new("Hangi Ayhan?").unwrap(),
+            answer: None,
+        },
+        Confidence::new(0.5).unwrap(),
+    );
+    w.server
+        .save_ai_suggestions(id, std::slice::from_ref(&q), t(1))
+        .await
+        .unwrap();
+    assert!(w.server.next_ai_job(t(2)).await.unwrap().is_none());
+
+    // Telefon soruyu alır ve cevaplar; cevap senkronla sunucuya gider.
+    sync_once(&w.phone, &w.hub).await.unwrap();
+    w.phone
+        .answer_question(q.id, AnswerText::new("Ayhan Kimya").unwrap(), t(3))
+        .await
+        .unwrap();
+    sync_once(&w.phone, &w.hub).await.unwrap();
+    let on_server = &w.server.suggestions_for(id).await.unwrap()[0];
+    assert_eq!(
+        on_server.question_and_answer().unwrap().1.unwrap().as_str(),
+        "Ayhan Kimya"
+    );
+    assert_eq!(
+        w.server.next_ai_job(t(4)).await.unwrap().unwrap().id,
+        id,
+        "sunucuda cevapla yeniden sınıflandırma kuyruğu"
+    );
+    // Masaüstü de cevabı görür.
+    sync_once(&w.desktop, &w.hub).await.unwrap();
+    assert!(!w.desktop.suggestions_for(id).await.unwrap()[0].is_pending());
+}

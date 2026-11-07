@@ -314,3 +314,61 @@ pub fn focus_later(el: leptos::prelude::NodeRef<leptos::html::Input>) {
         }
     });
 }
+
+/// Tauri bildirim eklentisinin "actionPerformed" olayını (Android'de bildirime dokunma) dinler.
+/// `@tauri-apps/api`'nin `addPluginListener`'ının yaptığını yapar: bir geri çağrıyı kanal
+/// olarak kaydeder. Tauri dışında ya da olayı desteklemeyen masaüstünde sessizce hiçbir şey
+/// yapmaz (orada uygulama açılışındaki "son bildirim" şeridi kullanılır).
+pub fn on_notification_tap(cb: impl Fn(serde_json::Value) + 'static) {
+    let Some(window) = web_sys::window() else {
+        return;
+    };
+    let Ok(internals) = js_sys::Reflect::get(&window, &JsValue::from_str("__TAURI_INTERNALS__"))
+    else {
+        return;
+    };
+    if internals.is_undefined() {
+        return;
+    }
+    let get_fn = |name: &str| {
+        js_sys::Reflect::get(&internals, &JsValue::from_str(name))
+            .ok()
+            .and_then(|f| f.dyn_into::<js_sys::Function>().ok())
+    };
+    let (Some(transform), Some(invoke)) = (get_fn("transformCallback"), get_fn("invoke")) else {
+        return;
+    };
+    let handler = Closure::<dyn FnMut(JsValue)>::new(move |v: JsValue| {
+        if let Ok(json) = serde_wasm_bindgen::from_value::<serde_json::Value>(v) {
+            cb(json);
+        }
+    });
+    let Ok(id) = transform.call2(&internals, handler.as_ref(), &JsValue::FALSE) else {
+        return;
+    };
+    // Dinleyici uygulama boyunca yaşar.
+    handler.forget();
+    let args = js_sys::Object::new();
+    let _ = js_sys::Reflect::set(
+        &args,
+        &JsValue::from_str("event"),
+        &JsValue::from_str("actionPerformed"),
+    );
+    let channel = format!("__CHANNEL__:{}", id.as_f64().unwrap_or_default());
+    let _ = js_sys::Reflect::set(
+        &args,
+        &JsValue::from_str("handler"),
+        &JsValue::from_str(&channel),
+    );
+    if let Ok(p) = invoke.call2(
+        &internals,
+        &JsValue::from_str("plugin:notification|registerListener"),
+        &args,
+    ) && let Ok(p) = p.dyn_into::<js_sys::Promise>()
+    {
+        // Masaüstünde bu komut yoktur; reddi yut (konsolda yakalanmamış hata olmasın).
+        wasm_bindgen_futures::spawn_local(async move {
+            let _ = JsFuture::from(p).await;
+        });
+    }
+}

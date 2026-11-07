@@ -606,6 +606,47 @@ impl Backend {
         }
     }
 
+    /// AI sorusunu cevaplar (kayıt cevapla yeniden sınıflandırılır).
+    pub async fn answer_question(&self, suggestion: String, text: String) -> BResult<()> {
+        match self {
+            Self::Tauri => {
+                Self::call::<Value>("answer_question", json!({ "id": suggestion, "text": text }))
+                    .await
+                    .map(|_| ())
+            }
+            Self::Http(h) => h
+                .post::<Value>(
+                    &format!("/suggestions/{suggestion}/answer"),
+                    &json!({ "text": text }),
+                )
+                .await
+                .map(|_| ()),
+            Self::Demo(_) => Err(NOT_IN_DEMO.into()),
+        }
+    }
+
+    /// Son bildirim (uygulama açılınca gösterilen şerit). Önizlemede yok.
+    pub async fn notice(&self) -> BResult<Option<notai_api::NoticeView>> {
+        match self {
+            Self::Tauri => Self::call("notice", json!({})).await,
+            Self::Http(h) => h.get("/notice").await,
+            Self::Demo(_) => Ok(None),
+        }
+    }
+
+    pub async fn clear_notice(&self) -> BResult<()> {
+        match self {
+            Self::Tauri => Self::call::<Value>("clear_notice", json!({}))
+                .await
+                .map(|_| ()),
+            Self::Http(h) => h
+                .post::<Value>("/notice/clear", &json!({}))
+                .await
+                .map(|_| ()),
+            Self::Demo(_) => Ok(()),
+        }
+    }
+
     /// Otonom modun uyguladığı öneriyi geri alır.
     pub async fn undo(&self, suggestion: String) -> BResult<()> {
         match self {

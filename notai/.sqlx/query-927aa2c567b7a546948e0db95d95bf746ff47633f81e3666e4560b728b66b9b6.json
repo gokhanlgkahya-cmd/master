@@ -1,0 +1,12 @@
+{
+  "db_name": "SQLite",
+  "query": "UPDATE suggestions SET decision = ?2, decided_at = ?3, payload = ?4 WHERE id = ?1",
+  "describe": {
+    "columns": [],
+    "parameters": {
+      "Right": 4
+    },
+    "nullable": []
+  },
+  "hash": "927aa2c567b7a546948e0db95d95bf746ff47633f81e3666e4560b728b66b9b6"
+}

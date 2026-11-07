@@ -94,6 +94,18 @@ text_type!(
     300
 );
 text_type!(
+    /// AI'ın kullanıcıya sorduğu netleştirme sorusu ("Bu hangi tedarikçi için?").
+    QuestionText,
+    "AI sorusu",
+    200
+);
+text_type!(
+    /// Kullanıcının AI sorusuna verdiği cevap.
+    AnswerText,
+    "cevap",
+    500
+);
+text_type!(
     /// Etiket, kişi adı gibi kısa etiketler.
     Label,
     "etiket",

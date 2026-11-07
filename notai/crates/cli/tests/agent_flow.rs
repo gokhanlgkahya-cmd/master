@@ -67,7 +67,7 @@ async fn agent_takes_jobs_and_answers_through_cli() {
         "istem konu listesini içerir"
     );
     assert!(job["user"].as_str().unwrap().contains("<kayit>"));
-    assert_eq!(job["schema"]["required"].as_array().unwrap().len(), 5);
+    assert_eq!(job["schema"]["required"].as_array().unwrap().len(), 6);
     let entry = job["entry_id"].as_str().unwrap().to_owned();
 
     // Bozuk cevap reddedilir, hiçbir şey yazılmaz.

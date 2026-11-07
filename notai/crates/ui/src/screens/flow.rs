@@ -184,6 +184,58 @@ fn plan_card(p: MorningPlanView) -> impl IntoView {
     }
 }
 
+/// AI'ın sana yazdığı netleştirme sorusu: WhatsApp'taki karşı taraf mesajı gibi solda bir
+/// balon; altında cevap alanı. Cevap verilince kayıt cevapla yeniden sınıflandırılır.
+fn ai_question(s: SuggestionView) -> impl IntoView {
+    let c = ctx();
+    let b = crate::backend();
+    let text = RwSignal::new(String::new());
+    let (id_send, id_skip) = (s.id.clone(), s.id.clone());
+    let pending = s.is_pending();
+    let send = move || {
+        let t = text.get_untracked().trim().to_owned();
+        if t.is_empty() {
+            return;
+        }
+        let id = id_send.clone();
+        crate::run_in(
+            c,
+            b.clone(),
+            move |b| async move { b.answer_question(id, t).await },
+            |()| {},
+        );
+    };
+    let send2 = send.clone();
+    let footer = if pending {
+        view! {
+            <form class="aimsg__reply" on:submit=move |ev| { ev.prevent_default(); send() }>
+                <input class="aimsg__input" type="text" lang="tr" enterkeyhint="send"
+                    aria-label="NotAI'ye cevap" placeholder="Cevabını yaz…"
+                    prop:value=move || text.get() on:input=move |ev| text.set(event_target_value(&ev))/>
+                <button class="iconbtn" type="button" aria-label="Cevabı gönder" on:click=move |_| send2()><Icon name="send" size="sm"/></button>
+            </form>
+            <button class="btn btn--text aimsg__skip" aria-label="Soruyu geç"
+                on:click=move |_| { let id = id_skip.clone(); run(move |b| async move { b.decide(id, false).await }) }>"Geç"</button>
+        }
+        .into_any()
+    } else {
+        match s.answer.clone() {
+            Some(a) => {
+                view! { <p class="aimsg__answer"><span class="aimsg__you">"Sen: "</span>{a}</p> }
+                    .into_any()
+            }
+            None => view! { <p class="aimsg__answer aimsg__answer--skip">"Geçildi"</p> }.into_any(),
+        }
+    };
+    view! {
+        <div class="aimsg" role="group" aria-label="NotAI soruyor">
+            <span class="aimsg__who"><Icon name="spark" size="xs"/>"NotAI"</span>
+            <p class="aimsg__text">{s.chip.clone()}</p>
+            {footer}
+        </div>
+    }
+}
+
 fn chip(s: SuggestionView) -> impl IntoView {
     if !s.is_pending() {
         let accepted = s.decision == "accepted";
@@ -232,7 +284,13 @@ fn entry_row(
     let failed = e
         .ai_failed
         .then(|| view! { <span aria-hidden="true">"·"</span><span>"AI işleyemedi"</span> });
-    let chips = e.suggestions.clone().into_iter().map(chip).collect_view();
+    let (questions, others): (Vec<_>, Vec<_>) = e
+        .suggestions
+        .clone()
+        .into_iter()
+        .partition(|s| s.kind == "question");
+    let chips = others.into_iter().map(chip).collect_view();
+    let questions = questions.into_iter().map(ai_question).collect_view();
     let open = e.clone();
     view! {
         <article class="entry">
@@ -240,6 +298,7 @@ fn entry_row(
             <div class="entry__main">
                 <div class="meta"><time class="tnum">{e.time.clone()}</time>{topic}{failed}</div>
                 <div class="bubble" on:click=move |_| c.selected.set(Some(open.clone()))><p>{e.text.clone()}</p></div>
+                {questions}
                 <div class="chips">{chips}</div>
             </div>
         </article>

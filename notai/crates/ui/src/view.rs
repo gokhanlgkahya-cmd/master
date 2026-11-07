@@ -80,6 +80,36 @@ impl TopicLook {
     }
 }
 
+/// Bildirimin açacağı yer: konusu varsa o konu, yoksa Ana Günlük.
+#[must_use]
+pub fn notice_target(n: &notai_api::NoticeView) -> Option<notai_api::TopicRef> {
+    match (&n.topic_id, &n.topic_name) {
+        (Some(id), Some(name)) => Some(notai_api::TopicRef {
+            id: id.clone(),
+            name: name.clone(),
+        }),
+        _ => None,
+    }
+}
+
+/// Android'de bildirime dokunma olayının içinden (konu kimliği, konu adı).
+#[must_use]
+pub fn tap_target(payload: &serde_json::Value) -> Option<notai_api::TopicRef> {
+    // Eklenti olayı: { actionId, notification: { extra: { topic_id, topic_name, … } } }
+    // (bazı sürümlerde Channel mesajı `{ message: … }` sarmalıdır).
+    let p = payload.get("message").unwrap_or(payload);
+    let extra = p.get("notification")?.get("extra")?;
+    let id = extra.get("topic_id")?.as_str()?;
+    let name = extra
+        .get("topic_name")
+        .and_then(|n| n.as_str())
+        .unwrap_or("Konu");
+    Some(notai_api::TopicRef {
+        id: id.to_owned(),
+        name: name.to_owned(),
+    })
+}
+
 /// Ana ekran hap filtresi.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum HomeFilter {
@@ -803,6 +833,28 @@ mod tests {
         assert!(HomeFilter::All.shows_review() && !HomeFilter::Unprocessed.shows_review());
         assert_eq!(HomeFilter::Areas.kind_param(), "areas");
         assert_eq!(plan_reason_class("overdue"), "plan__sub plan__sub--error");
+    }
+
+    #[test]
+    fn notification_targets() {
+        let n = notai_api::NoticeView {
+            kind: "reminder".into(),
+            title: "Hatırlatma · Ev".into(),
+            body: "Kombi".into(),
+            topic_id: Some("t1".into()),
+            topic_name: Some("Ev".into()),
+            entry_id: None,
+        };
+        assert_eq!(notice_target(&n).unwrap().name, "Ev");
+        let mut journal = n.clone();
+        journal.topic_id = None;
+        assert!(notice_target(&journal).is_none(), "konusuz → Ana Günlük");
+        let tap = serde_json::json!({ "actionId": "tap",
+            "notification": { "id": 1, "extra": { "topic_id": "t1", "topic_name": "Ev" } } });
+        assert_eq!(tap_target(&tap).unwrap().id, "t1");
+        let wrapped = serde_json::json!({ "message": tap, "index": 0 });
+        assert_eq!(tap_target(&wrapped).unwrap().name, "Ev");
+        assert!(tap_target(&serde_json::json!({ "notification": { "extra": {} } })).is_none());
     }
 
     fn looks_row_pending(pending: u64) -> TopicRowView {

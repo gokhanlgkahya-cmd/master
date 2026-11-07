@@ -28,6 +28,9 @@ use sqlx::sqlite::{SqliteConnectOptions, SqliteJournalMode, SqlitePoolOptions};
 use sqlx::{SqliteConnection, SqlitePool};
 
 pub use entries::{Captured, JournalItem, NewEntry, TopicRef};
+pub use suggestions::{MAX_QUESTIONS_PER_ENTRY, NewQuestion, QaContext};
+
+const NOTICE_KEY: &str = "last_notice";
 pub use error::{Result, StoreError};
 pub use extras::{
     AttachmentKind, AttachmentMeta, DecisionExample, MAX_ATTACHMENT_BYTES, NewAttachment,
@@ -104,6 +107,26 @@ impl Store {
         .execute(&self.pool)
         .await?;
         Ok(())
+    }
+
+    /// Son gönderilen bildirimi saklar (uygulama açılınca "son bildirim" şeridi için).
+    pub async fn set_notice(&self, n: &notai_core::notice::Notice) -> Result<()> {
+        self.kv_set(NOTICE_KEY, &serde_json::to_string(n)?).await
+    }
+
+    /// Hâlâ yeni olan son bildirim (yoksa `None`).
+    pub async fn notice(&self, now: DateTime<Utc>) -> Result<Option<notai_core::notice::Notice>> {
+        Ok(self
+            .kv_get(NOTICE_KEY)
+            .await?
+            .filter(|s| !s.is_empty())
+            .and_then(|s| serde_json::from_str::<notai_core::notice::Notice>(&s).ok())
+            .filter(|n| n.is_fresh(now)))
+    }
+
+    /// Son bildirim şeridini kapatır.
+    pub async fn clear_notice(&self) -> Result<()> {
+        self.kv_set(NOTICE_KEY, "").await
     }
 
     /// Bağlantı havuzunu kapatır.

@@ -4,6 +4,8 @@ use std::time::Duration;
 
 use chrono::NaiveDate;
 use notai_core::morning;
+use notai_core::notice::Notice;
+use notai_core::{EntryId, TopicId};
 use notai_store::StoreError;
 use tokio::sync::watch;
 
@@ -23,12 +25,46 @@ pub async fn fire_reminders(state: &AppState) -> Result<usize, StoreError> {
     for (task, at) in &due {
         // Önce işaretle: bildirim başarısız olsa da aynı hatırlatma tekrar tekrar çalmasın.
         state.store.mark_reminder_fired(task.id, *at).await?;
+        let topic = topic_named(state, task.topic).await?;
+        let notice = Notice::reminder(task.title.as_str(), topic, task.entry, now);
+        state.store.set_notice(&notice).await?;
         if let Some(url) = state.cfg.ntfy_url.as_deref() {
-            send(url, "Hatırlatma", task.title.as_str(), "bell").await;
+            send(url, &notice.title, &notice.body, "bell").await;
         }
         tracing::info!(task = %task.id, "hatırlatma bildirildi");
     }
     Ok(due.len())
+}
+
+/// Konu kimliği → (kimlik, ad); konu silinmiş/bulunamıyorsa `None`.
+async fn topic_named(
+    state: &AppState,
+    topic: Option<TopicId>,
+) -> Result<Option<(TopicId, String)>, StoreError> {
+    let Some(id) = topic else {
+        return Ok(None);
+    };
+    match state.store.topic(id).await {
+        Ok(t) => Ok(Some((t.id, t.name.as_str().to_owned()))),
+        Err(StoreError::NotFound { .. }) => Ok(None),
+        Err(e) => Err(e),
+    }
+}
+
+/// AI kullanıcıya soru sordu: bildirim (ntfy) + "son bildirim" şeridi.
+pub async fn notify_question(
+    state: &AppState,
+    entry: EntryId,
+    question: &str,
+) -> Result<(), StoreError> {
+    let topic = state.store.entry(entry).await?.topic();
+    let topic = topic_named(state, topic).await?;
+    let notice = Notice::question(question, topic, entry, state.now());
+    state.store.set_notice(&notice).await?;
+    if let Some(url) = state.cfg.ntfy_url.as_deref() {
+        send(url, &notice.title, &notice.body, "speech_balloon").await;
+    }
+    Ok(())
 }
 
 /// Zamanlayıcının bir turu. Dönüş: sabah planı bu turda üretildi mi?

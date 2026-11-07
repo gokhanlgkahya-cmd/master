@@ -1,0 +1,50 @@
+{
+  "db_name": "SQLite",
+  "query": "SELECT s.id, s.created_at, e.topic_id FROM suggestions s\n                 JOIN entries e ON e.id = s.entry_id\n                WHERE s.kind = 'question' AND s.decision = 'pending' AND s.created_at > ?1\n                  AND e.status != 'trashed'\n                ORDER BY s.created_at",
+  "describe": {
+    "columns": [
+      {
+        "name": "id",
+        "ordinal": 0,
+        "type_info": "Text",
+        "origin": {
+          "Table": {
+            "table": "suggestions",
+            "name": "id"
+          }
+        }
+      },
+      {
+        "name": "created_at",
+        "ordinal": 1,
+        "type_info": "Text",
+        "origin": {
+          "Table": {
+            "table": "suggestions",
+            "name": "created_at"
+          }
+        }
+      },
+      {
+        "name": "topic_id",
+        "ordinal": 2,
+        "type_info": "Text",
+        "origin": {
+          "Table": {
+            "table": "entries",
+            "name": "topic_id"
+          }
+        }
+      }
+    ],
+    "parameters": {
+      "Right": 1
+    },
+    "nullable": [
+      false,
+      false,
+      true
+    ]
+  },
+  "hash": "2224f3cdf181ebe1c58b968e99eec6ea521cf13695cd340c415e8b39853287fb"
+}

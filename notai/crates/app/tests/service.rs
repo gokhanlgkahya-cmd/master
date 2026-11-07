@@ -243,3 +243,78 @@ async fn v2_v4_local_features() {
         "Ev sunucusu ayarlı değil"
     );
 }
+
+#[tokio::test]
+async fn notices_carry_topic_names_and_new_questions() {
+    use notai_core::suggestion::{Confidence, Suggestion, SuggestionKind};
+    use notai_core::text::QuestionText;
+    let tz = chrono_tz::Europe::Istanbul;
+    let now = Utc.with_ymd_and_hms(2026, 11, 6, 6, 12, 0).unwrap();
+    let s = Store::open_in_memory("telefon").await.unwrap();
+    let ev = s
+        .create_topic(
+            NewTopic::new(TopicName::new("Ev").unwrap(), ParaKind::Area),
+            now,
+        )
+        .await
+        .unwrap();
+    let tid = service::create_task(
+        &s,
+        service::NewTaskReq {
+            title: "Kombi servisini ara".into(),
+            due_date: Some("2026-11-06".into()),
+            topic_id: Some(ev.id.to_string()),
+        },
+        now,
+    )
+    .await
+    .unwrap();
+    let edit = notai_api::TaskEditRequest {
+        due_time: Some("10:00".into()),
+        remind_before_minutes: Some(0),
+        ..Default::default()
+    };
+    service::edit_task(&s, &tid, &edit, now).await.unwrap();
+
+    // İlk tur: henüz bir şey yok (eski sorular da bildirilmez).
+    assert!(service::due_notices(&s, now, tz).await.unwrap().is_empty());
+
+    // Senkronla gelmiş gibi yeni bir AI sorusu.
+    let eid = service::capture(
+        &s,
+        CaptureRequest {
+            text: "Ayhan'ı ara".into(),
+            topic_id: None,
+        },
+        now,
+    )
+    .await
+    .unwrap();
+    let q = Suggestion::new(
+        eid.parse().unwrap(),
+        SuggestionKind::Question {
+            text: QuestionText::new("Hangi Ayhan?").unwrap(),
+            answer: None,
+        },
+        Confidence::new(0.5).unwrap(),
+    );
+    let later = now + chrono::Duration::minutes(1);
+    s.save_ai_suggestions(eid.parse().unwrap(), &[q], later)
+        .await
+        .unwrap();
+
+    // 10:00 (07:00 UTC): hatırlatma + soru; ikinci turda tekrar yok.
+    let at = Utc.with_ymd_and_hms(2026, 11, 6, 7, 0, 30).unwrap();
+    let n = service::due_notices(&s, at, tz).await.unwrap();
+    assert_eq!(n.len(), 2);
+    assert_eq!(n[0].title, "Hatırlatma · Ev");
+    assert_eq!(n[0].body, "Kombi servisini ara");
+    assert_eq!(n[0].topic, Some(ev.id));
+    assert_eq!(n[1].title, "NotAI soruyor");
+    assert_eq!(n[1].body, "Hangi Ayhan?");
+    assert!(service::due_notices(&s, at, tz).await.unwrap().is_empty());
+    let last = service::notice(&s, at).await.unwrap().unwrap();
+    assert_eq!(last.kind, "question");
+    service::clear_notice(&s).await.unwrap();
+    assert!(service::notice(&s, at).await.unwrap().is_none());
+}

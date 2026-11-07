@@ -20,6 +20,41 @@ pub fn Home() -> impl IntoView {
         let b = backend();
         async move { b.topics(k).await }
     });
+    let notice = LocalResource::new(move || {
+        let _ = c.version.get();
+        let b = backend();
+        async move { b.notice().await }
+    });
+    let notice_bar = move || {
+        let Some(Ok(Some(n))) = notice.get() else {
+            return None;
+        };
+        let target = view::notice_target(&n);
+        let icon = if n.kind == "question" {
+            "spark"
+        } else {
+            "bell"
+        };
+        Some(view! {
+            <div class="notice" role="status">
+                <button class="notice__open" aria-label=format!("Aç: {}", n.title)
+                    on:click=move |_| {
+                        let target = target.clone();
+                        crate::run_then(move |b| async move { b.clear_notice().await }, move |()| c.screen.set(Screen::Flow(target)));
+                    }>
+                    <Icon name=icon/>
+                    <span class="notice__text">
+                        <span class="notice__title">{n.title.clone()}</span>
+                        <span class="notice__body">{n.body.clone()}</span>
+                    </span>
+                </button>
+                <button class="iconbtn" aria-label="Bildirimi kapat"
+                    on:click=move |_| crate::run(move |b| async move { b.clear_notice().await })>
+                    <Icon name="x" size="sm"/>
+                </button>
+            </div>
+        })
+    };
     let unprocessed = move || match data.get() {
         Some(Ok(v)) => v.unprocessed,
         _ => 0,
@@ -46,6 +81,7 @@ pub fn Home() -> impl IntoView {
                 <button class="iconbtn" aria-label="Ayarlar" on:click=move |_| c.screen.set(Screen::Settings)><Icon name="dots"/></button>
             </div>
         </header>
+        {notice_bar}
         <button class="searchbar" aria-label="Ara" on:click=move |_| c.screen.set(Screen::Search)>
             <Icon name="search"/><span>"Ara ya da notlarına sor"</span>
         </button>

@@ -70,6 +70,7 @@ fn sugg(id: &str, kind: &str, chip: &str, decision: &str) -> SuggestionView {
         chip: chip.into(),
         decision: decision.into(),
         confidence: 0.8,
+        answer: None,
     }
 }
 

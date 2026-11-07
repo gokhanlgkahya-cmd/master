@@ -1,6 +1,6 @@
 {
   "db_name": "SQLite",
-  "query": "SELECT e.text, s.payload, s.decision FROM suggestions s JOIN entries e ON e.id = s.entry_id\n             WHERE s.decision != 'pending' AND s.auto = 0\n             ORDER BY s.decided_at DESC LIMIT ?1",
+  "query": "SELECT e.text, s.payload, s.decision FROM suggestions s JOIN entries e ON e.id = s.entry_id\n             WHERE s.decision != 'pending' AND s.auto = 0 AND s.kind != 'question'\n             ORDER BY s.decided_at DESC LIMIT ?1",
   "describe": {
     "columns": [
       {
@@ -46,5 +46,5 @@
       false
     ]
   },
-  "hash": "2d4bafae828516c85d7ff901d194602676470453f6879e7d63c5ed739fd1e9e5"
+  "hash": "1922ae37cd8f3f0d5f4e8e646c75eedfa138ddbc90a8fa860b2fe3de38605380"
 }

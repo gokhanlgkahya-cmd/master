@@ -172,6 +172,21 @@ async fn voice(
 }
 
 #[tauri::command]
+async fn answer_question(st: State<'_, AppState>, id: String, text: String) -> Result<(), String> {
+    service::answer_question(&st.store, &id, &text, Utc::now()).await
+}
+
+#[tauri::command]
+async fn notice(st: State<'_, AppState>) -> Result<Option<notai_api::NoticeView>, String> {
+    service::notice(&st.store, Utc::now()).await
+}
+
+#[tauri::command]
+async fn clear_notice(st: State<'_, AppState>) -> Result<(), String> {
+    service::clear_notice(&st.store).await
+}
+
+#[tauri::command]
 async fn undo(st: State<'_, AppState>, id: String) -> Result<(), String> {
     service::undo(&st.store, &id, Utc::now()).await
 }
@@ -223,18 +238,21 @@ async fn upload_attachment(
 /// Yerel bildirimler: zamanı gelen hatırlatmalar ve sabah planı (uygulama açıkken / arka planda).
 async fn notify_tick(app: &AppHandle, store: &Store, tz: Tz, user: &str) -> Result<(), String> {
     let now = Utc::now();
-    let tasks = store.reminder_tasks().await.map_err(|e| e.to_string())?;
-    for (task, at) in notai_core::reminders::due_now(&tasks, now, tz) {
-        store
-            .mark_reminder_fired(task.id, at)
-            .await
-            .map_err(|e| e.to_string())?;
-        app.notification()
-            .builder()
-            .title("Hatırlatma")
-            .body(task.title.as_str())
-            .show()
-            .map_err(|e| e.to_string())?;
+    // Hatırlatmalar (başlıkta konu adı) ve yeni AI soruları. Bildirim, dokununca açılacak
+    // konuyu/kaydı taşır (Android'de dokunma arayüze iletilir; uygulama açılışında ayrıca
+    // "son bildirim" şeridi çıkar).
+    for n in service::due_notices(store, now, tz).await? {
+        let mut b = app.notification().builder().title(&n.title).body(&n.body);
+        if let Some(t) = n.topic {
+            b = b.extra("topic_id", t.to_string());
+        }
+        if let Some(name) = &n.topic_name {
+            b = b.extra("topic_name", name);
+        }
+        if let Some(e) = n.entry {
+            b = b.extra("entry_id", e.to_string());
+        }
+        b.auto_cancel().show().map_err(|e| e.to_string())?;
     }
     let last = store
         .kv_get(MORNING_KEY)
@@ -350,6 +368,9 @@ pub fn run() {
             ask,
             voice,
             undo,
+            answer_question,
+            notice,
+            clear_notice,
             trash,
             purge,
             facts,

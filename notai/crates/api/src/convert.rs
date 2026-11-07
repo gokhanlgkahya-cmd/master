@@ -21,6 +21,26 @@ pub fn suggestion(s: &Suggestion, tz: Tz) -> SuggestionView {
         chip: s.kind.chip_text(tz),
         decision: s.decision().name().to_owned(),
         confidence: s.confidence.get(),
+        answer: s
+            .question_and_answer()
+            .and_then(|(_, a)| a.map(|a| a.as_str().to_owned())),
+    }
+}
+
+/// Son bildirim → görünüm.
+#[must_use]
+pub fn notice(n: &notai_core::notice::Notice) -> crate::NoticeView {
+    crate::NoticeView {
+        kind: match n.kind {
+            notai_core::notice::NoticeKind::Reminder => "reminder",
+            notai_core::notice::NoticeKind::Question => "question",
+        }
+        .to_owned(),
+        title: n.title.clone(),
+        body: n.body.clone(),
+        topic_id: n.topic.map(|t| t.to_string()),
+        topic_name: n.topic_name.clone(),
+        entry_id: n.entry.map(|e| e.to_string()),
     }
 }
 

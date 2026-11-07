@@ -90,6 +90,20 @@ impl Due {
     }
 }
 
+/// AI'ın önerdiği tarihli görev için varsayılan hatırlatma (Gökhan, 2026-11-07): saatliyse
+/// 15 dk önce, saatsizse o gün varsayılan saatte (09:00). Çalacağı an geçmişse kurulmaz
+/// (hemen çalan anlamsız bildirim olmasın).
+#[must_use]
+pub fn default_reminder(due: &Due, tz: Tz, now: DateTime<Utc>) -> Option<Reminder> {
+    let reminder = if due.time.is_some() {
+        Reminder::Before { minutes: 15 }
+    } else {
+        Reminder::Before { minutes: 0 }
+    };
+    let fire = reminder.fire_at(Some(due), tz).ok()?;
+    (fire > now).then_some(reminder)
+}
+
 /// Yerel tarih-saati UTC'ye çevirir. Yaz saati geçişindeki "olmayan" saatlerde
 /// bir sonraki geçerli ana kayar; asla panik yapmaz.
 #[must_use]

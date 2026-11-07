@@ -1,0 +1,38 @@
+{
+  "db_name": "SQLite",
+  "query": "SELECT e.text, s.payload FROM suggestions s JOIN entries e ON e.id = s.entry_id\n                WHERE s.kind = 'question' AND s.decision = 'accepted' AND s.entry_id != ?1\n                ORDER BY s.decided_at DESC LIMIT ?2",
+  "describe": {
+    "columns": [
+      {
+        "name": "text",
+        "ordinal": 0,
+        "type_info": "Text",
+        "origin": {
+          "Table": {
+            "table": "entries",
+            "name": "text"
+          }
+        }
+      },
+      {
+        "name": "payload",
+        "ordinal": 1,
+        "type_info": "Text",
+        "origin": {
+          "Table": {
+            "table": "suggestions",
+            "name": "payload"
+          }
+        }
+      }
+    ],
+    "parameters": {
+      "Right": 2
+    },
+    "nullable": [
+      false,
+      false
+    ]
+  },
+  "hash": "24fc3133537893a2042a209b61ec28a9ac4fb2fc9dfec7591cf328d74458194c"
+}

@@ -520,3 +520,99 @@ pub async fn upload_attachment(
         .map(|_| ())
         .map_err(err)
 }
+
+// ---------------- AI sorusu ve bildirimler (2026-11-07) ----------------
+
+/// AI sorusunu cevaplar; kayıt senkronla ev sunucusuna gider ve orada cevapla yeniden
+/// sınıflandırılır.
+pub async fn answer_question(
+    store: &Store,
+    suggestion: &str,
+    text: &str,
+    now: DateTime<Utc>,
+) -> CmdResult<()> {
+    let text = notai_core::text::AnswerText::new(text).map_err(err)?;
+    store
+        .answer_question(id::<SuggestionId>(suggestion)?, text, now)
+        .await
+        .map(|_| ())
+        .map_err(err)
+}
+
+pub async fn notice(store: &Store, now: DateTime<Utc>) -> CmdResult<Option<notai_api::NoticeView>> {
+    store
+        .notice(now)
+        .await
+        .map(|n| n.as_ref().map(convert::notice))
+        .map_err(err)
+}
+
+pub async fn clear_notice(store: &Store) -> CmdResult<()> {
+    store.clear_notice().await.map_err(err)
+}
+
+const QUESTIONS_NOTIFIED_KEY: &str = "questions_notified_until";
+
+async fn topic_named(store: &Store, topic: Option<TopicId>) -> Option<(TopicId, String)> {
+    let id = topic?;
+    store
+        .topic(id)
+        .await
+        .ok()
+        .map(|t| (t.id, t.name.as_str().to_owned()))
+}
+
+/// Bu turda gösterilecek bildirimler: zamanı gelen hatırlatmalar (konu adıyla; her biri bir
+/// kez) ve senkronla gelen yeni AI soruları. Sonuncusu "son bildirim" olarak saklanır.
+pub async fn due_notices(
+    store: &Store,
+    now: DateTime<Utc>,
+    tz: Tz,
+) -> CmdResult<Vec<notai_core::notice::Notice>> {
+    use notai_core::notice::Notice;
+    let mut out = Vec::new();
+    let tasks = store.reminder_tasks().await.map_err(err)?;
+    for (task, at) in notai_core::reminders::due_now(&tasks, now, tz) {
+        store.mark_reminder_fired(task.id, at).await.map_err(err)?;
+        let topic = topic_named(store, task.topic).await;
+        out.push(Notice::reminder(
+            task.title.as_str(),
+            topic,
+            task.entry,
+            now,
+        ));
+    }
+    // İlk açılışta eski soruları bildirme: sınırı şimdiye çek.
+    let since = store
+        .kv_get(QUESTIONS_NOTIFIED_KEY)
+        .await
+        .map_err(err)?
+        .and_then(|s| DateTime::parse_from_rfc3339(&s).ok())
+        .map(|d| d.with_timezone(&Utc));
+    let mut until = since.unwrap_or(now);
+    if let Some(since) = since {
+        for q in store.pending_questions_since(since).await.map_err(err)? {
+            if let Some((text, None)) = q.suggestion.question_and_answer() {
+                let topic = topic_named(store, q.topic).await;
+                out.push(Notice::question(
+                    text.as_str(),
+                    topic,
+                    q.suggestion.entry,
+                    now,
+                ));
+            }
+            until = until.max(q.created_at);
+        }
+    }
+    store
+        .kv_set(
+            QUESTIONS_NOTIFIED_KEY,
+            &until.to_rfc3339_opts(chrono::SecondsFormat::Nanos, true),
+        )
+        .await
+        .map_err(err)?;
+    if let Some(last) = out.last() {
+        store.set_notice(last).await.map_err(err)?;
+    }
+    Ok(out)
+}

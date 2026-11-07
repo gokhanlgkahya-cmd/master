@@ -12,6 +12,7 @@ pub mod ids;
 pub mod journal;
 pub mod look;
 pub mod morning;
+pub mod notice;
 pub mod profile;
 pub mod reminders;
 pub mod suggestion;

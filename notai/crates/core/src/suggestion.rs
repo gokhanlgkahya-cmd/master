@@ -11,7 +11,7 @@ use crate::entry::Entry;
 use crate::error::CoreError;
 use crate::ids::{EntryId, SuggestionId, TopicId};
 use crate::task::{Due, NewTask, Priority, Reminder};
-use crate::text::{Label, TaskTitle, TopicName};
+use crate::text::{AnswerText, Label, QuestionText, TaskTitle, TopicName};
 use crate::topic::ParaKind;
 use crate::tr::{month_short, weekday_name};
 
@@ -84,6 +84,13 @@ pub enum SuggestionKind {
     Person { name: Label },
     /// Belirli bir anda hatırlat.
     Reminder { at: DateTime<Utc> },
+    /// Kayıt net değil: AI kullanıcıya kısa bir soru soruyor. Cevaplanınca kayıt cevapla
+    /// birlikte yeniden sınıflandırılır; soru-cevaplar sonraki sınıflandırmalara örnek olur.
+    Question {
+        text: QuestionText,
+        #[serde(default, skip_serializing_if = "Option::is_none")]
+        answer: Option<AnswerText>,
+    },
 }
 
 impl SuggestionKind {
@@ -96,6 +103,7 @@ impl SuggestionKind {
             Self::Tag { .. } => "tag",
             Self::Person { .. } => "person",
             Self::Reminder { .. } => "reminder",
+            Self::Question { .. } => "question",
         }
     }
 
@@ -122,6 +130,7 @@ impl SuggestionKind {
                     local.format("%H:%M")
                 )
             }
+            Self::Question { text, .. } => text.as_str().to_owned(),
         }
     }
 }
@@ -268,6 +277,12 @@ impl Suggestion {
             });
         }
         let effect = match &self.kind {
+            SuggestionKind::Question { .. } => {
+                return Err(CoreError::InvalidTransition {
+                    from: "question",
+                    to: "accepted",
+                });
+            }
             SuggestionKind::Topic {
                 target: TopicTarget::Existing { id, .. },
             } => Effect::AssignTopic {
@@ -293,7 +308,8 @@ impl Suggestion {
                     due: *due,
                     priority: *priority,
                     recurrence: None,
-                    reminder: None,
+                    // Tarihli görev zamanında hatırlatılsın (Gökhan, 2026-11-07).
+                    reminder: due.and_then(|d| crate::task::default_reminder(&d, tz, now)),
                 },
             },
             SuggestionKind::Tag { name } => Effect::AddTag {
@@ -339,6 +355,34 @@ impl Suggestion {
         }
     }
 
+    /// AI sorusunu cevaplar: cevap kaydedilir, öneri "kabul edildi" sayılır (etkisi yoktur;
+    /// depo kaydı cevapla birlikte yeniden AI kuyruğuna koyar).
+    pub fn answer(&mut self, text: AnswerText, now: DateTime<Utc>) -> Result<(), CoreError> {
+        if !self.is_pending() {
+            return Err(CoreError::AlreadyDecided);
+        }
+        match &mut self.kind {
+            SuggestionKind::Question { answer, .. } => {
+                *answer = Some(text);
+                self.decision = Decision::Accepted { at: now };
+                Ok(())
+            }
+            other => Err(CoreError::InvalidTransition {
+                from: other.name(),
+                to: "answered",
+            }),
+        }
+    }
+
+    /// Cevaplanmış soru ise (soru, cevap).
+    #[must_use]
+    pub fn question_and_answer(&self) -> Option<(&QuestionText, Option<&AnswerText>)> {
+        match &self.kind {
+            SuggestionKind::Question { text, answer } => Some((text, answer.as_ref())),
+            _ => None,
+        }
+    }
+
     /// Öneriyi yoksayar (yalnız bu öneri; toplu ret yoktur).
     pub fn dismiss(&mut self, now: DateTime<Utc>) -> Result<(), CoreError> {
         if !self.is_pending() {
@@ -380,6 +424,86 @@ mod tests {
 
     fn conf() -> Confidence {
         Confidence::new(0.9).unwrap()
+    }
+
+    #[test]
+    fn question_is_answered_not_accepted() {
+        let e = entry();
+        let mut q = Suggestion::new(
+            e.id,
+            SuggestionKind::Question {
+                text: QuestionText::new("Hangi tedarikçi için?").unwrap(),
+                answer: None,
+            },
+            conf(),
+        );
+        assert_eq!(q.kind.chip_text(TZ), "Hangi tedarikçi için?");
+        assert!(
+            q.accept(&e, now(), TZ).is_err(),
+            "soru kabul edilemez, cevaplanır"
+        );
+        assert!(q.is_pending());
+        q.answer(AnswerText::new("Ayhan Kimya").unwrap(), now())
+            .unwrap();
+        assert!(!q.is_pending());
+        let (text, answer) = q.question_and_answer().unwrap();
+        assert_eq!(
+            (text.as_str(), answer.map(AnswerText::as_str)),
+            ("Hangi tedarikçi için?", Some("Ayhan Kimya"))
+        );
+        assert_eq!(
+            q.answer(AnswerText::new("x").unwrap(), now()).unwrap_err(),
+            CoreError::AlreadyDecided
+        );
+        // JSON: cevapsız soru eski biçimle uyumlu; cevaplı soru cevabı taşır.
+        let json = serde_json::to_string(&q.kind).unwrap();
+        assert!(json.contains("\"answer\":\"Ayhan Kimya\""));
+        let mut tag = Suggestion::new(
+            e.id,
+            SuggestionKind::Tag {
+                name: Label::new("x").unwrap(),
+            },
+            conf(),
+        );
+        assert!(tag.answer(AnswerText::new("y").unwrap(), now()).is_err());
+    }
+
+    #[test]
+    fn accepted_dated_task_gets_default_reminder() {
+        let e = entry();
+        let task = |due: Option<Due>| {
+            let mut s = Suggestion::new(
+                e.id,
+                SuggestionKind::Task {
+                    title: TaskTitle::new("Kostik tedarikçisini ara").unwrap(),
+                    due,
+                    priority: Priority::Normal,
+                },
+                conf(),
+            );
+            match s.accept(&e, now(), TZ).unwrap() {
+                Effect::CreateTask { task } => task.reminder,
+                other => panic!("{other:?}"),
+            }
+        };
+        let thu = NaiveDate::from_ymd_opt(2026, 11, 12).unwrap();
+        assert_eq!(
+            task(Some(Due::at(
+                thu,
+                NaiveTime::from_hms_opt(14, 0, 0).unwrap()
+            ))),
+            Some(Reminder::Before { minutes: 15 }),
+            "saatli: 15 dk önce"
+        );
+        assert_eq!(
+            task(Some(Due::on(thu))),
+            Some(Reminder::Before { minutes: 0 }),
+            "saatsiz: o gün varsayılan saatte (09:00)"
+        );
+        assert_eq!(task(None), None, "tarihsiz: hatırlatma yok");
+        // Bugüne saatsiz ve 09:00 geçmişse: hemen çalan anlamsız hatırlatma kurulmaz.
+        let today = NaiveDate::from_ymd_opt(2026, 11, 6).unwrap();
+        assert_eq!(task(Some(Due::on(today))), None);
     }
 
     #[test]

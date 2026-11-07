@@ -16,13 +16,16 @@ pub mod convert;
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 pub struct SuggestionView {
     pub id: String,
-    /// topic | task | tag | person | reminder
+    /// topic | task | tag | person | reminder | question
     pub kind: String,
     /// Çip metni ("Görev · Perşembe 12 Kas", "→ GemOlive").
     pub chip: String,
     /// pending | accepted | dismissed
     pub decision: String,
     pub confidence: f64,
+    /// AI sorusuna verilen cevap (yalnız `question`).
+    #[serde(default)]
+    pub answer: Option<String>,
 }
 
 impl SuggestionView {
@@ -312,6 +315,24 @@ pub struct MoveRequest {
     pub topic_id: Option<String>,
 }
 
+/// Son bildirim ("son bildirim" şeridi; dokununca konusu açılır).
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+pub struct NoticeView {
+    /// reminder | question
+    pub kind: String,
+    pub title: String,
+    pub body: String,
+    pub topic_id: Option<String>,
+    pub topic_name: Option<String>,
+    pub entry_id: Option<String>,
+}
+
+/// AI sorusuna cevap.
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+pub struct AnswerRequest {
+    pub text: String,
+}
+
 /// Konu menüsündeki "Simgeyi değiştir" seçenekleri: (simge, Türkçe ad). Otomatik seçimin
 /// kullandığı simgelerle aynı küme (`notai_core::look::auto_icons`; testle eşitlenir) + türlerin
 /// varsayılanları.
@@ -362,6 +383,7 @@ mod tests {
             chip: "#sabun".into(),
             decision: "pending".into(),
             confidence: 0.8,
+            answer: None,
         };
         assert!(s.is_pending());
     }

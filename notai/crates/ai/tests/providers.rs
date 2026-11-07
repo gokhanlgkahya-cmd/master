@@ -34,6 +34,8 @@ fn ctx() -> ClassifyContext {
         tz: chrono_tz::Europe::Istanbul,
         user_name: "Gökhan".into(),
         examples: vec![],
+        qa: vec![],
+        can_ask: true,
     }
 }
 

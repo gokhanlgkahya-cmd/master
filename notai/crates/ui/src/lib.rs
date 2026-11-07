@@ -145,6 +145,14 @@ pub fn App() -> impl IntoView {
     provide_context(Backend::detect());
     web::apply_theme(web::load_theme());
     let c = ctx();
+    if matches!(backend(), Backend::Tauri) {
+        // Android: bildirime dokununca ilgili konu açılır (uygulama açıkken / arka plandayken).
+        web::on_notification_tap(move |payload| {
+            if let Some(t) = view::tap_target(&payload) {
+                c.screen.set(Screen::Flow(Some(t)));
+            }
+        });
+    }
     // Ekran değişince eski hata mesajı ve açık sayfalar kapanır.
     Effect::new(move |_| {
         let _ = c.screen.get();

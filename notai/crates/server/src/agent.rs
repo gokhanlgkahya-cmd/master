@@ -7,7 +7,7 @@ use axum::extract::{Path, Query, State};
 use axum::routing::{get, post};
 use axum::{Json, Router};
 use notai_ai::{
-    ClassifyContext, ClassifyExample, ContextTopic, Validated, build_request, validate,
+    ClassifyContext, ClassifyExample, ClassifyQa, ContextTopic, Validated, build_request, validate,
 };
 use notai_core::profile::for_prompt;
 use notai_core::topic::KindFilter;
@@ -24,6 +24,8 @@ use crate::state::AppState;
 const RECENT_CONTEXT: u32 = 10;
 /// İsteme giren geçmiş karar örneği sayısı (öğrenme sinyali).
 const EXAMPLES: u32 = 12;
+/// İsteme giren başka kayıtlardaki soru-cevap sayısı (öğrenme sinyali).
+const QA_EXAMPLES: u32 = 10;
 
 /// Bir kayıt için sınıflandırma bağlamı (konular, onaylı bilgiler, son kayıtlar, örnekler).
 pub async fn build_context(state: &AppState, entry: Entry) -> Result<ClassifyContext, StoreError> {
@@ -63,6 +65,17 @@ pub async fn build_context(state: &AppState, entry: Entry) -> Result<ClassifyCon
             accepted: x.accepted,
         })
         .collect();
+    let qa_ctx = state.store.qa_context(entry.id, QA_EXAMPLES).await?;
+    let qa = qa_ctx
+        .items
+        .into_iter()
+        .map(|(entry_text, question, answer, this_entry)| ClassifyQa {
+            entry_text,
+            question,
+            answer,
+            this_entry,
+        })
+        .collect();
     Ok(ClassifyContext {
         entry,
         topics,
@@ -71,6 +84,8 @@ pub async fn build_context(state: &AppState, entry: Entry) -> Result<ClassifyCon
         tz,
         user_name: state.cfg.user_name.clone(),
         examples,
+        qa,
+        can_ask: qa_ctx.can_ask,
     })
 }
 
@@ -89,7 +104,7 @@ pub async fn save_validated(
         for s in v
             .suggestions
             .iter()
-            .filter(|s| s.confidence.get() >= threshold)
+            .filter(|s| s.confidence.get() >= threshold && s.question_and_answer().is_none())
         {
             match state
                 .store
@@ -99,6 +114,11 @@ pub async fn save_validated(
                 Ok(_) => tracing::info!(suggestion = %s.id, "otonom mod öneriyi uyguladı"),
                 Err(e) => tracing::warn!(suggestion = %s.id, error = %e, "otonom uygulama atlandı"),
             }
+        }
+    }
+    for s in &v.suggestions {
+        if let Some((q, None)) = s.question_and_answer() {
+            crate::scheduler::notify_question(state, entry, q.as_str()).await?;
         }
     }
     Ok(v.suggestions.len())

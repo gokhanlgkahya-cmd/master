@@ -51,6 +51,9 @@ pub fn api_routes() -> Router<AppState> {
         )
         .route("/attachments/{id}", get(download_attachment))
         .route("/suggestions/{id}/undo", post(undo))
+        .route("/suggestions/{id}/answer", post(answer_question))
+        .route("/notice", get(get_notice))
+        .route("/notice/clear", post(clear_notice))
         .route("/settings", get(get_settings).post(set_settings))
         .route("/trash", get(trash))
         .route("/entries/{id}/purge", post(purge))
@@ -139,6 +142,35 @@ async fn undo(State(st): State<AppState>, Path(sid): Path<String>) -> ApiResult<
             .undo_decision(id::<SuggestionId>(&sid)?, st.now())
             .await?,
     ))
+}
+
+/// AI sorusunu cevaplar; kayıt cevapla yeniden sınıflandırılmak üzere kuyruğa girer.
+async fn answer_question(
+    State(st): State<AppState>,
+    Path(sid): Path<String>,
+    Json(b): Json<notai_api::AnswerRequest>,
+) -> ApiResult<Json<Entry>> {
+    let text = notai_core::text::AnswerText::new(&b.text)?;
+    Ok(Json(
+        st.store
+            .answer_question(id::<SuggestionId>(&sid)?, text, st.now())
+            .await?,
+    ))
+}
+
+async fn get_notice(State(st): State<AppState>) -> ApiResult<Json<Option<notai_api::NoticeView>>> {
+    Ok(Json(
+        st.store
+            .notice(st.now())
+            .await?
+            .as_ref()
+            .map(notai_api::convert::notice),
+    ))
+}
+
+async fn clear_notice(State(st): State<AppState>) -> ApiResult<Json<Value>> {
+    st.store.clear_notice().await?;
+    Ok(Json(json!({ "ok": true })))
 }
 
 // ---------- Hatırlatmalar ----------

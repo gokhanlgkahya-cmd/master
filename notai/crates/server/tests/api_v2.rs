@@ -580,3 +580,136 @@ async fn cors_is_off_by_default() {
         .unwrap();
     assert!(!r.headers().contains_key("access-control-allow-origin"));
 }
+
+#[tokio::test]
+async fn ai_asks_user_answers_and_entry_is_reclassified_with_notifications() {
+    let ntfy = MockServer::start().await;
+    Mock::given(method("POST"))
+        .and(query_param("title", "NotAI soruyor"))
+        .respond_with(ResponseTemplate::new(200))
+        .expect(1)
+        .mount(&ntfy)
+        .await;
+    Mock::given(method("POST"))
+        .and(query_param("title", "Hatırlatma · Kostik tedarik"))
+        .respond_with(ResponseTemplate::new(200))
+        .expect(1)
+        .mount(&ntfy)
+        .await;
+    let mut cfg = Config::defaults();
+    cfg.ai = notai_server::AiProvider::External;
+    cfg.ntfy_url = Some(ntfy.uri());
+    let h = h(cfg, ScriptedLlm::new(), false).await;
+    let (_, topic) = h
+        .post(
+            "/api/topics",
+            json!({ "name": "Kostik tedarik", "kind": "project" }),
+        )
+        .await;
+    let tid = topic["id"].as_str().unwrap().to_owned();
+    let (_, e) = h
+        .post("/api/entries", json!({ "text": "Ayhan'ı ara" }))
+        .await;
+    let eid = e["id"].as_str().unwrap().to_owned();
+
+    // 1) Ajan emin değil: soru sorar.
+    let (_, jobs) = h.get("/api/agent/jobs").await;
+    assert_eq!(jobs[0]["entry_id"], eid.as_str());
+    let (s, _) = h
+        .post(
+            &format!("/api/agent/jobs/{eid}/answer"),
+            json!({ "topic": null, "tasks": [], "tags": [], "people": [], "reminder": null,
+                    "question": "Hangi Ayhan? Ayhan Kimya mı?" }),
+        )
+        .await;
+    assert_eq!(s, StatusCode::OK);
+    let (_, j) = h.get("/api/journal").await;
+    let sugg = &j["groups"][0]["items"][0]["suggestions"][0];
+    assert_eq!(sugg["kind"], "question");
+    assert_eq!(sugg["chip"], "Hangi Ayhan? Ayhan Kimya mı?");
+    let qid = sugg["id"].as_str().unwrap().to_owned();
+    let (_, n) = h.get("/api/notice").await;
+    assert_eq!(n["kind"], "question");
+    assert_eq!(n["entry_id"], eid.as_str());
+    let (_, jobs) = h.get("/api/agent/jobs").await;
+    assert!(
+        jobs.as_array().unwrap().is_empty(),
+        "cevap beklenirken iş yok"
+    );
+
+    // Soru "kabul" edilemez; boş cevap reddedilir.
+    let (s, _) = h
+        .post(&format!("/api/suggestions/{qid}/accept"), json!({}))
+        .await;
+    assert!(s.is_client_error());
+    let (s, _) = h
+        .post(
+            &format!("/api/suggestions/{qid}/answer"),
+            json!({ "text": "  " }),
+        )
+        .await;
+    assert_eq!(s, StatusCode::UNPROCESSABLE_ENTITY);
+
+    // 2) Kullanıcı cevaplar → kayıt cevapla yeniden ajana gider.
+    let (s, _) = h
+        .post(
+            &format!("/api/suggestions/{qid}/answer"),
+            json!({ "text": "Evet Ayhan Kimya, kostik için perşembe" }),
+        )
+        .await;
+    assert_eq!(s, StatusCode::OK);
+    let (_, jobs) = h.get("/api/agent/jobs").await;
+    let user = jobs[0]["user"].as_str().unwrap();
+    assert!(user.contains("<cevap>Evet Ayhan Kimya, kostik için perşembe</cevap>"));
+    assert!(
+        !jobs[0]["system"]
+            .as_str()
+            .unwrap()
+            .contains("yeni soru sorma")
+    );
+
+    // 3) Artık net: konu + saatli görev (varsayılan 15 dk önce hatırlatma).
+    let (s, _) = h
+        .post(
+            &format!("/api/agent/jobs/{eid}/answer"),
+            json!({ "topic": { "existing_id": tid, "new_name": null, "new_kind": null, "confidence": 0.9 },
+                    "tasks": [{ "title": "Ayhan Kimya'yı ara", "due_date": "2026-11-12", "due_time": "10:00",
+                                "priority": "normal", "confidence": 0.85 }],
+                    "tags": [], "people": [], "reminder": null, "question": null }),
+        )
+        .await;
+    assert_eq!(s, StatusCode::OK);
+    let (_, j) = h.get("/api/journal").await;
+    let items = j["groups"][0]["items"][0]["suggestions"]
+        .as_array()
+        .unwrap()
+        .clone();
+    assert_eq!(items.len(), 3);
+    assert_eq!(items[0]["answer"], "Evet Ayhan Kimya, kostik için perşembe");
+    for s in &items[1..] {
+        let id = s["id"].as_str().unwrap();
+        let (st, _) = h
+            .post(&format!("/api/suggestions/{id}/accept"), json!({}))
+            .await;
+        assert_eq!(st, StatusCode::OK);
+    }
+    let (_, r) = h.get("/api/reminders").await;
+    let item = &r["groups"][0]["items"][0];
+    assert_eq!(item["title"], "Ayhan Kimya'yı ara");
+    assert_eq!(
+        item["when"], "Per 12 Kas 09:45",
+        "AI görevine varsayılan hatırlatma: 15 dk önce"
+    );
+
+    // 4) Hatırlatma çalınca bildirim başlığında konu adı; son bildirim o konuyu açar.
+    h.clock
+        .set(Utc.with_ymd_and_hms(2026, 11, 12, 6, 46, 0).unwrap());
+    assert_eq!(scheduler::fire_reminders(&h.state).await.unwrap(), 1);
+    let (_, n) = h.get("/api/notice").await;
+    assert_eq!(n["title"], "Hatırlatma · Kostik tedarik");
+    assert_eq!(n["topic_id"], tid.as_str());
+    let (s, _) = h.post("/api/notice/clear", json!({})).await;
+    assert_eq!(s, StatusCode::OK);
+    let (_, n) = h.get("/api/notice").await;
+    assert!(n.is_null());
+}

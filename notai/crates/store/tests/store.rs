@@ -719,3 +719,88 @@ async fn topic_list_counts_entries_waiting_for_a_decision() {
         .unwrap();
     assert_eq!(pending(&s.topic_list(KindFilter::All).await.unwrap()), 0);
 }
+
+#[tokio::test]
+async fn answering_ai_question_requeues_entry_and_feeds_context() {
+    use notai_core::text::{AnswerText, QuestionText};
+    let s = store().await;
+    let id = capture(&s, "Ayhan'ı ara", at(6, 8, 0)).await;
+    assert_eq!(s.next_ai_job(at(6, 8, 0)).await.unwrap().unwrap().id, id);
+    let q = Suggestion::new(
+        id,
+        SuggestionKind::Question {
+            text: QuestionText::new("Hangi Ayhan, Ayhan Kimya mı?").unwrap(),
+            answer: None,
+        },
+        conf(0.5),
+    );
+    s.save_ai_suggestions(id, std::slice::from_ref(&q), at(6, 8, 1))
+        .await
+        .unwrap();
+    assert!(
+        s.next_ai_job(at(6, 8, 2)).await.unwrap().is_none(),
+        "işlendi"
+    );
+    let ctx = s.qa_context(id, 10).await.unwrap();
+    assert!(!ctx.can_ask, "bekleyen soru varken yeni soru yok");
+    assert_eq!(
+        s.pending_questions_since(at(6, 8, 0)).await.unwrap().len(),
+        1
+    );
+
+    // Soru kabul edilemez, cevaplanır.
+    assert!(
+        s.decide(q.id, true, at(6, 8, 3), chrono_tz::Europe::Istanbul)
+            .await
+            .is_err()
+    );
+    s.answer_question(
+        q.id,
+        AnswerText::new("Evet, kostik için").unwrap(),
+        at(6, 8, 4),
+    )
+    .await
+    .unwrap();
+    let saved = &s.suggestions_for(id).await.unwrap()[0];
+    assert_eq!(
+        saved.question_and_answer().unwrap().1.unwrap().as_str(),
+        "Evet, kostik için"
+    );
+    assert_eq!(
+        s.next_ai_job(at(6, 8, 5)).await.unwrap().unwrap().id,
+        id,
+        "cevapla yeniden AI kuyruğunda"
+    );
+    let ctx = s.qa_context(id, 10).await.unwrap();
+    assert_eq!(ctx.items.len(), 1);
+    assert!(ctx.items[0].3, "bu kaydın cevabı");
+    assert!(ctx.can_ask, "bir soru daha sorulabilir (sınır 2)");
+    assert!(
+        s.pending_questions_since(at(6, 8, 0))
+            .await
+            .unwrap()
+            .is_empty()
+    );
+
+    // Başka bir kayıt için bu cevap öğrenme örneğidir.
+    let other = capture(&s, "Selin'e numune", at(6, 9, 0)).await;
+    let ctx = s.qa_context(other, 10).await.unwrap();
+    assert_eq!(ctx.items.len(), 1);
+    assert!(!ctx.items[0].3);
+}
+
+#[tokio::test]
+async fn last_notice_is_kept_until_cleared_or_stale() {
+    use notai_core::notice::Notice;
+    let s = store().await;
+    assert!(s.notice(at(6, 8, 0)).await.unwrap().is_none());
+    let n = Notice::reminder("Kombi servisini ara", None, None, at(6, 8, 0));
+    s.set_notice(&n).await.unwrap();
+    assert_eq!(s.notice(at(6, 8, 30)).await.unwrap(), Some(n.clone()));
+    assert!(
+        s.notice(at(6, 11, 0)).await.unwrap().is_none(),
+        "2 saatten eski"
+    );
+    s.clear_notice().await.unwrap();
+    assert!(s.notice(at(6, 8, 30)).await.unwrap().is_none());
+}

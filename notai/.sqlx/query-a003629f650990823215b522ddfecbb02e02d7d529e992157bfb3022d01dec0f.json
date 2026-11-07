@@ -1,0 +1,38 @@
+{
+  "db_name": "SQLite",
+  "query": "SELECT s.payload, s.decision FROM suggestions s\n                WHERE s.entry_id = ?1 AND s.kind = 'question'\n                ORDER BY s.created_at",
+  "describe": {
+    "columns": [
+      {
+        "name": "payload",
+        "ordinal": 0,
+        "type_info": "Text",
+        "origin": {
+          "Table": {
+            "table": "suggestions",
+            "name": "payload"
+          }
+        }
+      },
+      {
+        "name": "decision",
+        "ordinal": 1,
+        "type_info": "Text",
+        "origin": {
+          "Table": {
+            "table": "suggestions",
+            "name": "decision"
+          }
+        }
+      }
+    ],
+    "parameters": {
+      "Right": 1
+    },
+    "nullable": [
+      false,
+      false
+    ]
+  },
+  "hash": "a003629f650990823215b522ddfecbb02e02d7d529e992157bfb3022d01dec0f"
+}

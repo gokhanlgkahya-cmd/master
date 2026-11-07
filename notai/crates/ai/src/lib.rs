@@ -18,7 +18,7 @@ mod openai_compat;
 
 pub use anthropic::{AnthropicClient, AnthropicConfig};
 pub use classify::{
-    ClassifyContext, ClassifyExample, ContextTopic, Validated, build_request, classify,
+    ClassifyContext, ClassifyExample, ClassifyQa, ContextTopic, Validated, build_request, classify,
     output_schema, validate,
 };
 pub use client::{JsonRequest, LlmClient, LlmFuture, ScriptedLlm, SecretKey};

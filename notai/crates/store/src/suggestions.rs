@@ -116,11 +116,14 @@ pub(crate) async fn write_decision_raw(conn: &mut SqliteConnection, s: &Suggesti
     let id = s.id.to_string();
     let decision = s.decision().name();
     let decided_at = s.decision().decided_at().map(ts);
+    // İçerik de yazılır: AI sorusunun cevabı öneri içeriğindedir.
+    let payload = serde_json::to_string(&s.kind)?;
     sqlx::query!(
-        "UPDATE suggestions SET decision = ?2, decided_at = ?3 WHERE id = ?1",
+        "UPDATE suggestions SET decision = ?2, decided_at = ?3, payload = ?4 WHERE id = ?1",
         id,
         decision,
-        decided_at
+        decided_at,
+        payload
     )
     .execute(&mut *conn)
     .await?;
@@ -169,7 +172,150 @@ async fn add_label(
     log_change(conn, origin, "label", &label_id, Some(&payload), now).await
 }
 
+/// Kaydı yeniden AI kuyruğuna koyar (ör. AI sorusu cevaplandı; cevapla yeniden sınıflandırılsın).
+pub(crate) async fn requeue_ai(conn: &mut SqliteConnection, entry: EntryId) -> Result<()> {
+    let id = entry.to_string();
+    sqlx::query!(
+        "UPDATE entries SET ai_state = 'pending', ai_attempts = 0, ai_next_at = NULL, ai_error = NULL
+         WHERE id = ?1 AND status != 'trashed'",
+        id
+    )
+    .execute(&mut *conn)
+    .await?;
+    Ok(())
+}
+
+/// Bir kayıt için en fazla bu kadar soru sorulur (sonsuz soru döngüsü olmasın).
+pub const MAX_QUESTIONS_PER_ENTRY: usize = 2;
+
+/// Sınıflandırma istemi için soru-cevap bağlamı.
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct QaContext {
+    /// (kayıt metni, soru, cevap, bu kayda mı ait)
+    pub items: Vec<(String, String, String, bool)>,
+    /// Bu kayıt için yeni soru sorulabilir mi?
+    pub can_ask: bool,
+}
+
+/// Bildirilecek yeni AI sorusu.
+#[derive(Debug, Clone, PartialEq)]
+pub struct NewQuestion {
+    pub suggestion: Suggestion,
+    pub topic: Option<notai_core::TopicId>,
+    pub created_at: DateTime<Utc>,
+}
+
 impl Store {
+    /// AI sorusunu cevaplar: cevap öneriye yazılır (senkronlanır) ve kayıt cevapla birlikte
+    /// yeniden AI kuyruğuna girer.
+    pub async fn answer_question(
+        &self,
+        id: SuggestionId,
+        answer: notai_core::text::AnswerText,
+        now: DateTime<Utc>,
+    ) -> Result<Entry> {
+        let mut tx = self.pool.begin().await?;
+        let mut suggestion = load_suggestion(&mut tx, id).await?;
+        let entry = load_entry(&mut tx, suggestion.entry).await?;
+        suggestion.answer(answer, now)?;
+        write_decision(&mut tx, &self.origin, &suggestion, now).await?;
+        requeue_ai(&mut tx, entry.id).await?;
+        tx.commit().await?;
+        Ok(entry)
+    }
+
+    /// Sınıflandırma için soru-cevap bağlamı: bu kaydın cevaplanmış soruları + son
+    /// `others` başka cevap (öğrenme). Bekleyen soru varsa ya da sınıra ulaşıldıysa yeni soru yok.
+    pub async fn qa_context(&self, entry: EntryId, others: u32) -> Result<QaContext> {
+        let entry_s = entry.to_string();
+        let mine = sqlx::query!(
+            r#"SELECT s.payload, s.decision FROM suggestions s
+                WHERE s.entry_id = ?1 AND s.kind = 'question'
+                ORDER BY s.created_at"#,
+            entry_s
+        )
+        .fetch_all(&self.pool)
+        .await?;
+        let entry_text = load_entry(&mut *self.pool.acquire().await?, entry)
+            .await?
+            .text
+            .as_str()
+            .to_owned();
+        let mut items = Vec::new();
+        let mut pending = false;
+        for r in &mine {
+            let kind: notai_core::SuggestionKind = crate::codec::from_json("soru", &r.payload)?;
+            if let notai_core::SuggestionKind::Question { text, answer } = kind {
+                match answer {
+                    Some(a) => items.push((
+                        entry_text.clone(),
+                        text.as_str().to_owned(),
+                        a.as_str().to_owned(),
+                        true,
+                    )),
+                    None if r.decision == "pending" => pending = true,
+                    None => {}
+                }
+            }
+        }
+        let can_ask = !pending && mine.len() < MAX_QUESTIONS_PER_ENTRY;
+        let rows = sqlx::query!(
+            r#"SELECT e.text, s.payload FROM suggestions s JOIN entries e ON e.id = s.entry_id
+                WHERE s.kind = 'question' AND s.decision = 'accepted' AND s.entry_id != ?1
+                ORDER BY s.decided_at DESC LIMIT ?2"#,
+            entry_s,
+            others
+        )
+        .fetch_all(&self.pool)
+        .await?;
+        for r in rows {
+            let kind: notai_core::SuggestionKind = crate::codec::from_json("soru", &r.payload)?;
+            if let notai_core::SuggestionKind::Question {
+                text,
+                answer: Some(a),
+            } = kind
+            {
+                items.push((
+                    r.text,
+                    text.as_str().to_owned(),
+                    a.as_str().to_owned(),
+                    false,
+                ));
+            }
+        }
+        Ok(QaContext { items, can_ask })
+    }
+
+    /// `after`'dan sonra oluşan, hâlâ bekleyen AI soruları (bildirim için; eskiden yeniye).
+    pub async fn pending_questions_since(&self, after: DateTime<Utc>) -> Result<Vec<NewQuestion>> {
+        let after_s = ts(after);
+        let rows = sqlx::query!(
+            r#"SELECT s.id, s.created_at, e.topic_id FROM suggestions s
+                 JOIN entries e ON e.id = s.entry_id
+                WHERE s.kind = 'question' AND s.decision = 'pending' AND s.created_at > ?1
+                  AND e.status != 'trashed'
+                ORDER BY s.created_at"#,
+            after_s
+        )
+        .fetch_all(&self.pool)
+        .await?;
+        let mut out = Vec::new();
+        let mut conn = self.pool.acquire().await?;
+        for r in rows {
+            let id: SuggestionId = crate::codec::parse_id("soru", &r.id)?;
+            out.push(NewQuestion {
+                suggestion: load_suggestion(&mut conn, id).await?,
+                topic: r
+                    .topic_id
+                    .as_deref()
+                    .map(|t| crate::codec::parse_id("konu", t))
+                    .transpose()?,
+                created_at: crate::codec::parse_ts("soru", &r.created_at)?,
+            });
+        }
+        Ok(out)
+    }
+
     /// Bir kaydın önerileri (oluşturulma sırasıyla).
     pub async fn suggestions_for(&self, entry: EntryId) -> Result<Vec<Suggestion>> {
         let mut conn = self.pool.acquire().await?;

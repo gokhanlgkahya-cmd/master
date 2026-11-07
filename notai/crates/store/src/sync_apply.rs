@@ -367,6 +367,11 @@ impl Store {
                         &remote,
                     ) {
                         crate::suggestions::write_decision_raw(&mut tx, &s).await?;
+                        // Başka cihazda cevaplanan AI sorusu: AI çalıştıran yerde (sunucu) kayıt
+                        // cevapla yeniden sınıflandırılsın.
+                        if queue_ai && matches!(s.question_and_answer(), Some((_, Some(_)))) {
+                            crate::suggestions::requeue_ai(&mut tx, s.entry).await?;
+                        }
                         true
                     } else {
                         false

@@ -387,7 +387,7 @@ impl Store {
         let limit = i64::from(limit.clamp(1, 50));
         let rows = sqlx::query!(
             "SELECT e.text, s.payload, s.decision FROM suggestions s JOIN entries e ON e.id = s.entry_id
-             WHERE s.decision != 'pending' AND s.auto = 0
+             WHERE s.decision != 'pending' AND s.auto = 0 AND s.kind != 'question'
              ORDER BY s.decided_at DESC LIMIT ?1",
             limit
         )
