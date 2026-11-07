@@ -1,0 +1,25 @@
+[package]
+name = "notai-ai"
+description = "NotAI AI hattı: sağlayıcıdan bağımsız LLM istemcisi, istemler, katı şema doğrulama"
+version.workspace = true
+edition.workspace = true
+rust-version.workspace = true
+publish.workspace = true
+license.workspace = true
+
+[dependencies]
+notai-core.workspace = true
+chrono.workspace = true
+chrono-tz.workspace = true
+reqwest.workspace = true
+serde.workspace = true
+serde_json.workspace = true
+thiserror.workspace = true
+tracing.workspace = true
+
+[dev-dependencies]
+tokio.workspace = true
+wiremock.workspace = true
+
+[lints]
+workspace = true
