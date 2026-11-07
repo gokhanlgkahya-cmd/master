@@ -20,7 +20,10 @@ use serde_json::{Value, json};
 
 use crate::error::{ApiError, ApiResult};
 use crate::state::AppState;
-use crate::views::{JournalView, MorningPlanView, SuggestionView, TaskRowView, TopicRowView};
+use notai_api::{
+    JournalView, MorningPlanView, SuggestionView, TaskRowView, TasksView, TopicRowView, TopicsView,
+    convert,
+};
 
 pub fn router(state: AppState) -> Router {
     let api = Router::new()
@@ -117,7 +120,7 @@ async fn get_entry(State(st): State<AppState>, Path(id): Path<String>) -> ApiRes
         .suggestions_for(id)
         .await?
         .iter()
-        .map(|s| SuggestionView::new(s, st.cfg.tz))
+        .map(|s| convert::suggestion(s, st.cfg.tz))
         .collect();
     Ok(Json(json!({ "entry": entry, "suggestions": suggestions })))
 }
@@ -180,7 +183,7 @@ async fn journal(
     let limit = q.limit.unwrap_or(50).clamp(1, 200);
     let items = st.store.journal(filter, q.before, limit).await?;
     let unprocessed = st.store.unprocessed_count().await?;
-    Ok(Json(JournalView::new(
+    Ok(Json(convert::journal(
         items,
         limit,
         unprocessed,
@@ -199,17 +202,20 @@ struct TopicsQuery {
 async fn topics(
     State(st): State<AppState>,
     Query(q): Query<TopicsQuery>,
-) -> ApiResult<Json<Value>> {
+) -> ApiResult<Json<TopicsView>> {
     let now = st.now();
     let rows: Vec<TopicRowView> = st
         .store
         .topic_list(q.kind.unwrap_or_default())
         .await?
         .into_iter()
-        .map(|a| TopicRowView::new(a, now, st.cfg.tz))
+        .map(|a| convert::topic_row(a, now, st.cfg.tz))
         .collect();
     let unprocessed = st.store.unprocessed_count().await?;
-    Ok(Json(json!({ "topics": rows, "unprocessed": unprocessed })))
+    Ok(Json(TopicsView {
+        topics: rows,
+        unprocessed,
+    }))
 }
 
 #[derive(Debug, Deserialize)]
@@ -241,20 +247,17 @@ async fn create_topic(
 async fn decide(
     State(st): State<AppState>,
     Path((id, decision)): Path<(String, String)>,
-) -> ApiResult<Json<Value>> {
+) -> ApiResult<Json<notai_api::DecisionView>> {
     let id: SuggestionId = parse_id(&id)?;
     let accept = match decision.as_str() {
         "accept" => true,
         "dismiss" => false,
         other => return Err(bad(format!("accept | dismiss beklenirdi: {other}"))),
     };
-    let out = st.store.decide(id, accept, st.now(), st.cfg.tz).await?;
-    Ok(Json(json!({
-        "suggestion": SuggestionView::new(&out.suggestion, st.cfg.tz),
-        "entry": out.entry,
-        "created_task": out.created_task,
-        "created_topic": out.created_topic,
-    })))
+    let now = st.now();
+    let out = st.store.decide(id, accept, now, st.cfg.tz).await?;
+    let today = now.with_timezone(&st.cfg.tz).date_naive();
+    Ok(Json(convert::decision(&out, today, st.cfg.tz)))
 }
 
 // ---------- Görevler ----------
@@ -264,35 +267,36 @@ struct TasksQuery {
     view: Option<TaskView>,
 }
 
-async fn tasks(State(st): State<AppState>, Query(q): Query<TasksQuery>) -> ApiResult<Json<Value>> {
+async fn tasks(
+    State(st): State<AppState>,
+    Query(q): Query<TasksQuery>,
+) -> ApiResult<Json<TasksView>> {
     let today = st.now().with_timezone(&st.cfg.tz).date_naive();
-    let views = match q.view {
-        Some(v) => vec![v],
-        None => vec![
-            TaskView::Overdue,
-            TaskView::Today,
-            TaskView::Upcoming,
-            TaskView::Undated,
-        ],
-    };
-    let mut out = serde_json::Map::new();
-    for v in views {
+    let mut out = TasksView::default();
+    for v in [
+        TaskView::Overdue,
+        TaskView::Today,
+        TaskView::Upcoming,
+        TaskView::Undated,
+    ] {
+        if q.view.is_some_and(|only| only != v) {
+            continue;
+        }
         let rows: Vec<TaskRowView> = st
             .store
             .tasks(v, today)
             .await?
-            .into_iter()
-            .map(|t| TaskRowView::new(t, today))
+            .iter()
+            .map(|t| convert::task_row(t, today))
             .collect();
-        let key = match v {
-            TaskView::Overdue => "overdue",
-            TaskView::Today => "today",
-            TaskView::Upcoming => "upcoming",
-            TaskView::Undated => "undated",
-        };
-        out.insert(key.to_owned(), json!(rows));
+        match v {
+            TaskView::Overdue => out.overdue = rows,
+            TaskView::Today => out.today = rows,
+            TaskView::Upcoming => out.upcoming = rows,
+            TaskView::Undated => out.undated = rows,
+        }
     }
-    Ok(Json(Value::Object(out)))
+    Ok(Json(out))
 }
 
 #[derive(Debug, Deserialize)]
@@ -345,7 +349,7 @@ async fn task_action(
 async fn morning_plan(State(st): State<AppState>) -> ApiResult<Json<MorningPlanView>> {
     let today = st.now().with_timezone(&st.cfg.tz).date_naive();
     let plan = st.store.morning_plan(today).await?;
-    Ok(Json(MorningPlanView::new(plan, &st.cfg.user_name)))
+    Ok(Json(convert::morning_plan(plan, &st.cfg.user_name)))
 }
 
 // ---------- Arama ve profil ----------

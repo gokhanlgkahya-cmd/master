@@ -16,6 +16,7 @@ notai-core.workspace = true
 notai-store.workspace = true
 notai-ai.workspace = true
 notai-sync.workspace = true
+notai-api = { workspace = true, features = ["convert"] }
 axum.workspace = true
 chrono.workspace = true
 chrono-tz.workspace = true

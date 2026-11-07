@@ -8,7 +8,8 @@ use notai_store::StoreError;
 use tokio::sync::watch;
 
 use crate::state::AppState;
-use crate::views::MorningPlanView;
+use notai_api::MorningPlanView;
+use notai_api::convert;
 
 const LAST_SENT_KEY: &str = "morning_plan_last_sent";
 /// Son üretilen plan (uygulama açılış kartında da gösterilir).
@@ -29,7 +30,7 @@ pub async fn tick(state: &AppState) -> Result<bool, StoreError> {
     }
     let today = now.with_timezone(&state.cfg.tz).date_naive();
     let plan = state.store.morning_plan(today).await?;
-    let view = MorningPlanView::new(plan, &state.cfg.user_name);
+    let view = convert::morning_plan(plan, &state.cfg.user_name);
     state
         .store
         .kv_set(LATEST_PLAN_KEY, &serde_json::to_string(&view)?)
@@ -48,11 +49,11 @@ pub async fn tick(state: &AppState) -> Result<bool, StoreError> {
 /// ntfy'ye bildirim gönderir (ev sunucusundan telefona). Hata yalnız günlüğe yazılır.
 async fn notify(url: &str, view: &MorningPlanView) {
     let mut body = String::new();
-    for (item, reason) in view.plan.items.iter().zip(&view.reasons) {
-        body.push_str(&format!("• {} — {reason}\n", item.title));
+    for item in &view.items {
+        body.push_str(&format!("• {} — {}\n", item.title, item.reason));
     }
-    if view.plan.more > 0 {
-        body.push_str(&format!("+{} görev daha", view.plan.more));
+    if view.more > 0 {
+        body.push_str(&format!("+{} görev daha", view.more));
     }
     let client = reqwest::Client::new();
     let res = client

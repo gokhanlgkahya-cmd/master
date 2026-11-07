@@ -1194,6 +1194,18 @@ dependencies = [
 ]
 
 [[package]]
+name = "notai-api"
+version = "0.1.0"
+dependencies = [
+ "chrono",
+ "chrono-tz",
+ "notai-core",
+ "notai-store",
+ "serde",
+ "serde_json",
+]
+
+[[package]]
 name = "notai-core"
 version = "0.1.0"
 dependencies = [
@@ -1214,6 +1226,7 @@ dependencies = [
  "chrono-tz",
  "http-body-util",
  "notai-ai",
+ "notai-api",
  "notai-core",
  "notai-store",
  "notai-sync",

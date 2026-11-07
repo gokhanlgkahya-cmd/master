@@ -1,0 +1,25 @@
+[package]
+name = "notai-api"
+description = "NotAI API sözleşmesi: sunucu, Tauri kabuğu ve arayüzün paylaştığı JSON tipleri"
+version.workspace = true
+edition.workspace = true
+rust-version.workspace = true
+publish.workspace = true
+license.workspace = true
+
+[features]
+# Alan/depo tiplerinden görünüm üretimi (sunucu ve Tauri kabuğu için; WASM arayüzü kullanmaz).
+convert = ["dep:notai-core", "dep:notai-store", "dep:chrono-tz"]
+
+[dependencies]
+chrono = { version = "0.4.45", default-features = false, features = ["serde", "std"] }
+serde.workspace = true
+notai-core = { workspace = true, optional = true }
+notai-store = { workspace = true, optional = true }
+chrono-tz = { workspace = true, optional = true }
+
+[dev-dependencies]
+serde_json.workspace = true
+
+[lints]
+workspace = true

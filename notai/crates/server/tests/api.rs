@@ -176,7 +176,7 @@ async fn capture_classify_accept_flow() {
         .post(&format!("/api/suggestions/{}/dismiss", ids[0]), json!({}))
         .await;
     assert_eq!(s, StatusCode::OK);
-    assert_eq!(out["entry"]["status"]["state"], "processed");
+    assert_eq!(out["entry_status"], "processed");
     // İkinci karar çakışmadır.
     let (s, _) = h
         .post(&format!("/api/suggestions/{}/accept", ids[0]), json!({}))
@@ -360,7 +360,7 @@ async fn morning_plan_scheduler_fires_once_and_notifies() {
 
     let (_, plan) = h.get("/api/morning-plan").await;
     assert_eq!(plan["headline"], "Günaydın Gökhan. Bugün 1 iş öne çıkıyor");
-    assert_eq!(plan["reasons"][0], "bugün");
+    assert_eq!(plan["items"][0]["reason"], "bugün");
     let latest = h
         .state
         .store

@@ -7,6 +7,7 @@ members = [
     "crates/server",
     "crates/sync",
     "crates/tokens",
+    "crates/api",
 ]
 
 [workspace.package]
@@ -23,6 +24,7 @@ notai-store = { path = "crates/store" }
 notai-ai = { path = "crates/ai" }
 notai-sync = { path = "crates/sync" }
 notai-tokens = { path = "crates/tokens" }
+notai-api = { path = "crates/api" }
 
 chrono = { version = "0.4.45", default-features = false, features = ["std", "clock", "serde"] }
 chrono-tz = { version = "0.10.4", features = ["serde"] }
