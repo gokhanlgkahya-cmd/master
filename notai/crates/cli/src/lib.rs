@@ -22,6 +22,9 @@ Ajan (sınıflandırma) komutları:
   answer <kayıt-id> [dosya]  Cevap JSON'unu gönderir (dosya yoksa ya da '-' ise stdin'den).
                              Sunucu cevabı şemaya göre doğrular; uymayan öneriler atılır.
   fail <kayıt-id> <neden>    İşi yapamadığını bildirir (kayıt 'AI işleyemedi' olur).
+  statements                 Kurallarla okunamayan banka ekstreleri (metin + şema, JSON).
+  statement-answer <id> [dosya]
+                             Ekstredeki hareketleri (şemaya uygun JSON) gönderir.
 
 Günlük komutlar:
   capture <metin…>           Ana Günlük'e kayıt yakalar.
@@ -44,6 +47,8 @@ pub enum Cmd {
     Tasks,
     Plan,
     Ask { question: String },
+    Statements,
+    StatementAnswer { id: String, file: Option<String> },
 }
 
 /// Argümanları (program adı hariç) ayrıştırır.
@@ -70,6 +75,11 @@ pub fn parse(args: &[String]) -> Result<Cmd, String> {
         }
         Some("answer") => Ok(Cmd::Answer {
             entry: need(args.get(1).cloned().unwrap_or_default(), "kayıt kimliği")?,
+            file: args.get(2).filter(|f| *f != "-").cloned(),
+        }),
+        Some("statements") => Ok(Cmd::Statements),
+        Some("statement-answer") => Ok(Cmd::StatementAnswer {
+            id: need(args.get(1).cloned().unwrap_or_default(), "ekstre kimliği")?,
             file: args.get(2).filter(|f| *f != "-").cloned(),
         }),
         Some("fail") => Ok(Cmd::Fail {
@@ -157,6 +167,24 @@ pub async fn run(
         Cmd::Jobs { limit } => {
             let v: Value = c.get(&format!("/agent/jobs?limit={limit}")).await?;
             Ok(pretty(&v))
+        }
+        Cmd::Statements => {
+            let v: Value = c.get("/agent/statements").await?;
+            serde_json::to_string_pretty(&v).map_err(|e| e.to_string())
+        }
+        Cmd::StatementAnswer { id, file } => {
+            let raw = match file {
+                Some(f) => {
+                    std::fs::read_to_string(&f).map_err(|e| format!("{f} okunamadı: {e}"))?
+                }
+                None => stdin()?,
+            };
+            let body: Value =
+                serde_json::from_str(&raw).map_err(|e| format!("cevap geçerli JSON değil: {e}"))?;
+            let v: Value = c
+                .post(&format!("/agent/statements/{id}/answer"), &body)
+                .await?;
+            Ok(v["message"].as_str().unwrap_or("içe aktarıldı").to_owned())
         }
         Cmd::Answer { entry, file } => {
             let raw = match file {
@@ -276,6 +304,14 @@ mod tests {
             parse(&a("answer abc -")).unwrap(),
             Cmd::Answer {
                 entry: "abc".into(),
+                file: None
+            }
+        );
+        assert_eq!(parse(&a("statements")).unwrap(), Cmd::Statements);
+        assert_eq!(
+            parse(&a("statement-answer s1 -")).unwrap(),
+            Cmd::StatementAnswer {
+                id: "s1".into(),
                 file: None
             }
         );

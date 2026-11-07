@@ -60,6 +60,7 @@ pub fn api_routes() -> Router<AppState> {
         .route("/entries/{id}/purge", post(purge))
         .route("/facts/{id}/{action}", post(fact_action))
         .merge(crate::agent::routes())
+        .merge(crate::finance::routes())
 }
 
 fn bad(msg: impl Into<String>) -> ApiError {

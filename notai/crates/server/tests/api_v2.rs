@@ -789,3 +789,179 @@ async fn obsidian_vault_is_written_and_kept_in_sync_without_touching_user_notes(
     assert_eq!(b["written"], 0, "içerik aynıysa dosya yeniden yazılmaz");
     let _ = std::fs::remove_dir_all(&dir);
 }
+
+#[tokio::test]
+async fn bank_statement_pdf_import_report_and_dedup() {
+    let h = h(Config::defaults(), ScriptedLlm::new(), false).await;
+    let pdf = std::fs::read(concat!(
+        env!("CARGO_MANIFEST_DIR"),
+        "/tests/fixtures/ornek-ekstre.pdf"
+    ))
+    .unwrap();
+
+    // Kayıttan gelen elle harcama (AI çipi kabul): Ayhan Kimya ödemesi, iş.
+    let (_, e) = h
+        .post(
+            "/api/entries",
+            json!({ "text": "Ayhan Kimya'ya 1.850 ₺ ödendi" }),
+        )
+        .await;
+    let eid = e["id"].as_str().unwrap().to_owned();
+    let ctx_entry = h.state.store.entry(eid.parse().unwrap()).await.unwrap();
+    let s = notai_core::Suggestion::new(
+        ctx_entry.id,
+        notai_core::SuggestionKind::Expense {
+            amount: notai_core::finance::Money(-185_000),
+            category: "tedarik".into(),
+            scope: notai_core::finance::Scope::Is,
+            date: chrono::NaiveDate::from_ymd_opt(2026, 10, 3).unwrap(),
+        },
+        notai_core::Confidence::new(0.9).unwrap(),
+    );
+    h.state
+        .store
+        .save_ai_suggestions(ctx_entry.id, std::slice::from_ref(&s), t0())
+        .await
+        .unwrap();
+    let (st, _) = h
+        .post(&format!("/api/suggestions/{}/accept", s.id), json!({}))
+        .await;
+    assert_eq!(st, StatusCode::OK);
+
+    // PDF ekstre: yerel olarak okunur, 10 hareket; Ayhan Kimya ödemesi elle girişle eşleşir.
+    let (st, b, _) = h
+        .raw(
+            "POST",
+            "/api/finance/statements?account=****1234&name=ekim.pdf",
+            "application/pdf",
+            pdf.clone(),
+        )
+        .await;
+    assert_eq!(st, StatusCode::CREATED);
+    let r: Value = serde_json::from_slice(&b).unwrap();
+    assert_eq!(
+        (
+            r["parsed"].as_u64(),
+            r["imported"].as_u64(),
+            r["matched"].as_u64()
+        ),
+        (Some(10), Some(10), Some(1))
+    );
+
+    // Aynı PDF ikinci kez: hiçbiri eklenmez.
+    let (_, b, _) = h
+        .raw(
+            "POST",
+            "/api/finance/statements?account=****1234&name=ekim.pdf",
+            "application/pdf",
+            pdf,
+        )
+        .await;
+    let r: Value = serde_json::from_slice(&b).unwrap();
+    assert_eq!(
+        (r["imported"].as_u64(), r["skipped"].as_u64()),
+        (Some(0), Some(10))
+    );
+    assert!(
+        r["message"]
+            .as_str()
+            .unwrap()
+            .contains("mükerrer eklenmedi")
+    );
+
+    // Aylık rapor: gider bir kez sayılır, iş ayrı, öneriler var.
+    let (_, f) = h.get("/api/finance?month=2026-10").await;
+    assert_eq!(f["title"], "Ekim 2026");
+    assert_eq!(f["income"], "85.000,00\u{a0}₺");
+    let expense_kurus =
+        124_560 + 185_000 + 210_000 + 132_045 + 22_999 + 64_000 + 98_030 + 115_000 + 340_000;
+    assert_eq!(
+        f["expense"],
+        notai_core::finance::Money(expense_kurus).format_abs()
+    );
+    assert_eq!(f["scopes"][0]["label"], "İş");
+    assert_eq!(
+        f["transactions"].as_array().unwrap().len(),
+        11,
+        "10 ekstre + 1 elle (eşleşmiş)"
+    );
+    assert!(
+        f["transactions"]
+            .as_array()
+            .unwrap()
+            .iter()
+            .any(|t| t["matched"] == true)
+    );
+    assert!(
+        f["insights"]
+            .as_array()
+            .unwrap()
+            .iter()
+            .any(|i| i.as_str().unwrap().contains("biriktirdin"))
+    );
+
+    // Düzeltme + öğrenme.
+    let trendyol = f["transactions"]
+        .as_array()
+        .unwrap()
+        .iter()
+        .find(|t| t["description"].as_str().unwrap().contains("TRENDYOL"))
+        .unwrap()["id"]
+        .as_str()
+        .unwrap()
+        .to_owned();
+    let (st, _) = h
+        .post(
+            &format!("/api/finance/transactions/{trendyol}/classify"),
+            json!({ "category": "tedarik", "scope": "is" }),
+        )
+        .await;
+    assert_eq!(st, StatusCode::OK);
+    let (st, _) = h
+        .post(
+            &format!("/api/finance/transactions/{trendyol}/classify"),
+            json!({ "category": "uydurma", "scope": "is" }),
+        )
+        .await;
+    assert_eq!(st, StatusCode::BAD_REQUEST);
+
+    // Tanınmayan biçim → ajan işi → ajan cevabı doğrulanıp içe aktarılır.
+    let (_, b, _) = h
+        .raw(
+            "POST",
+            "/api/finance/statements?name=garip.txt",
+            "text/plain",
+            b"tarih yok tutar yok".to_vec(),
+        )
+        .await;
+    let r: Value = serde_json::from_slice(&b).unwrap();
+    assert_eq!(r["pending"], true);
+    let (_, jobs) = h.get("/api/agent/statements").await;
+    let sid = jobs[0]["id"].as_str().unwrap().to_owned();
+    assert!(
+        jobs[0]["schema"]["required"]
+            .as_array()
+            .unwrap()
+            .iter()
+            .any(|x| x == "lines")
+    );
+    let (st, r) = h
+        .post(
+            &format!("/api/agent/statements/{sid}/answer"),
+            json!({ "lines": [
+                { "date": "2026-10-28", "description": "A101", "amount": "-50,00" },
+                { "date": "bozuk", "description": "X", "amount": "-1" }
+            ] }),
+        )
+        .await;
+    assert_eq!(st, StatusCode::OK);
+    assert_eq!(r["imported"], 1);
+    assert!(
+        r["message"]
+            .as_str()
+            .unwrap()
+            .contains("1 satır doğrulanamadı")
+    );
+    let (_, jobs) = h.get("/api/agent/statements").await;
+    assert!(jobs.as_array().unwrap().is_empty());
+}

@@ -39,6 +39,8 @@ pub enum Screen {
     Search,
     /// Haftalık gözden geçirme.
     Review,
+    /// Harcamalar (aylık rapor, ekstre, hareketler).
+    Finance,
     Settings,
 }
 
@@ -175,6 +177,7 @@ pub fn App() -> impl IntoView {
                 Screen::Reminders => view! { <screens::reminders::Reminders/> }.into_any(),
                 Screen::Search => view! { <screens::search::Search/> }.into_any(),
                 Screen::Review => view! { <screens::review::Review/> }.into_any(),
+                Screen::Finance => view! { <screens::finance::Finance/> }.into_any(),
                 Screen::Settings => view! { <screens::settings::Settings/> }.into_any(),
             }}
             <sheets::EntrySheet/>

@@ -1,0 +1,62 @@
+{
+  "db_name": "SQLite",
+  "query": "SELECT id, account, file_name, text FROM statements WHERE state = 'pending' ORDER BY created_at",
+  "describe": {
+    "columns": [
+      {
+        "name": "id",
+        "ordinal": 0,
+        "type_info": "Text",
+        "origin": {
+          "Table": {
+            "table": "statements",
+            "name": "id"
+          }
+        }
+      },
+      {
+        "name": "account",
+        "ordinal": 1,
+        "type_info": "Text",
+        "origin": {
+          "Table": {
+            "table": "statements",
+            "name": "account"
+          }
+        }
+      },
+      {
+        "name": "file_name",
+        "ordinal": 2,
+        "type_info": "Text",
+        "origin": {
+          "Table": {
+            "table": "statements",
+            "name": "file_name"
+          }
+        }
+      },
+      {
+        "name": "text",
+        "ordinal": 3,
+        "type_info": "Text",
+        "origin": {
+          "Table": {
+            "table": "statements",
+            "name": "text"
+          }
+        }
+      }
+    ],
+    "parameters": {
+      "Right": 0
+    },
+    "nullable": [
+      false,
+      false,
+      false,
+      false
+    ]
+  },
+  "hash": "80a45d83f9c596cc480537c957f431f9ee9cdff3f7a5d90a6dc2dfc4f949d966"
+}

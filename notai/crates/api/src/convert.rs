@@ -474,6 +474,117 @@ pub fn apply_topic_edit(topic: &mut notai_core::Topic, e: &TopicEditRequest) -> 
     Ok(())
 }
 
+// ---------- Harcamalar ----------
+
+/// Aylık harcama görünümü.
+#[must_use]
+pub fn finance_view(
+    all: &[notai_core::finance::Transaction],
+    year: i32,
+    month: u32,
+    pending_statements: u32,
+) -> crate::FinanceView {
+    use notai_core::finance::{CATEGORIES, Money, category_label, month_report};
+    let moves: Vec<_> = all
+        .iter()
+        .map(notai_core::finance::Transaction::movement)
+        .collect();
+    let r = month_report(&moves, year, month);
+    let total = r.expense.0.max(1);
+    let share = |key: String, label: String, amount: Money| crate::ShareView {
+        key,
+        label,
+        amount: amount.format_abs(),
+        pct: amount.0 * 100 / total,
+    };
+    let net = Money(r.income.0 - r.expense.0);
+    let mut txs: Vec<&notai_core::finance::Transaction> = all
+        .iter()
+        .filter(|t| {
+            chrono::Datelike::year(&t.date) == year && chrono::Datelike::month(&t.date) == month
+        })
+        .collect();
+    txs.sort_by(|a, b| b.date.cmp(&a.date).then(a.description.cmp(&b.description)));
+    crate::FinanceView {
+        month: format!("{year}-{month:02}"),
+        title: format!("{} {year}", notai_core::tr::month_name(month)),
+        income: r.income.format_abs(),
+        expense: r.expense.format_abs(),
+        net: net.format_signed(),
+        net_negative: net.0 < 0,
+        savings_pct: (r.income.0 > 0).then(|| net.0 * 100 / r.income.0),
+        scopes: r
+            .by_scope
+            .iter()
+            .map(|(s, m)| share(s.name().to_owned(), s.label().to_owned(), *m))
+            .collect(),
+        categories: r
+            .by_category
+            .iter()
+            .map(|(k, m)| share(k.clone(), category_label(k).to_owned(), *m))
+            .collect(),
+        recurring: r
+            .recurring
+            .iter()
+            .map(|(d, m)| share(d.clone(), d.clone(), *m))
+            .collect(),
+        insights: r.insights,
+        transactions: txs
+            .into_iter()
+            .map(|t| crate::TransactionView {
+                id: t.id.to_string(),
+                date: t.date,
+                date_label: format!(
+                    "{} {}",
+                    chrono::Datelike::day(&t.date),
+                    notai_core::tr::month_short(chrono::Datelike::month(&t.date))
+                ),
+                description: t.description.clone(),
+                amount: t.amount.format_signed(),
+                expense: t.amount.0 < 0,
+                category: t.category.clone(),
+                category_label: category_label(&t.category).to_owned(),
+                scope: t.scope.name().to_owned(),
+                scope_label: t.scope.label().to_owned(),
+                source: t.source.name().to_owned(),
+                matched: t.matched_to.is_some(),
+            })
+            .collect(),
+        pending_statements,
+        category_options: CATEGORIES
+            .iter()
+            .map(|(k, l)| ((*k).to_owned(), (*l).to_owned()))
+            .collect(),
+    }
+}
+
+/// Ekstre yükleme sonucunun Türkçe özeti.
+#[must_use]
+pub fn import_view(r: &notai_store::ImportReport) -> crate::ImportView {
+    let pending = r.parsed == 0;
+    let message = if pending {
+        "Ekstre biçimi tanınmadı; AI'a (ajana) okutulmak üzere bekliyor.".to_owned()
+    } else {
+        let mut m = format!("{} hareket eklendi", r.imported);
+        if r.skipped > 0 {
+            m.push_str(&format!(", {} zaten vardı (mükerrer eklenmedi)", r.skipped));
+        }
+        if r.matched > 0 {
+            m.push_str(&format!(", {} elle girilen ödemeyle eşleşti", r.matched));
+        }
+        m.push('.');
+        m
+    };
+    crate::ImportView {
+        parsed: r.parsed,
+        imported: r.imported,
+        skipped: r.skipped,
+        matched: r.matched,
+        pending,
+        message,
+    }
+}
+
 #[cfg(test)]
 mod tests {
     #![allow(clippy::unwrap_used)]

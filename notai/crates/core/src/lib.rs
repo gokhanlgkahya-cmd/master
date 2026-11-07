@@ -8,6 +8,7 @@
 pub mod agenda;
 pub mod entry;
 pub mod error;
+pub mod finance;
 pub mod ids;
 pub mod journal;
 pub mod look;
@@ -25,7 +26,7 @@ pub mod vault;
 
 pub use entry::{Entry, EntryStatus, Source};
 pub use error::CoreError;
-pub use ids::{EntryId, ProfileFactId, SuggestionId, TaskId, TopicId};
+pub use ids::{EntryId, ProfileFactId, SuggestionId, TaskId, TopicId, TransactionId};
 pub use suggestion::{Confidence, Decision, Effect, Suggestion, SuggestionKind, TopicTarget};
 pub use task::{Due, NewTask, Priority, Recurrence, Reminder, Task, TaskState};
 pub use text::{EntryText, FactText, Label, TaskTitle, TopicName};

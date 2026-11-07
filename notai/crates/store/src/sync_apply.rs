@@ -97,6 +97,14 @@ async fn exists(conn: &mut SqliteConnection, entity: &str, id: &str) -> Result<b
             .fetch_one(&mut *conn)
             .await?
         }
+        "transaction" => {
+            sqlx::query_scalar!(
+                r#"SELECT COUNT(*) AS "n!: i64" FROM transactions WHERE id = ?1"#,
+                id
+            )
+            .fetch_one(&mut *conn)
+            .await?
+        }
         _ => 0,
     };
     Ok(n > 0)
@@ -427,6 +435,32 @@ impl Store {
                         .await?;
                 }
                 wins && present
+            }
+            ("transaction", Some(p)) => {
+                let t: notai_core::finance::Transaction = from_json("senkron hareketi", p)?;
+                if !present || wins {
+                    crate::finance::upsert_transaction_raw(&mut tx, &t, c.at).await?;
+                    true
+                } else {
+                    false
+                }
+            }
+            ("transaction", None) => {
+                if wins {
+                    sqlx::query!("DELETE FROM transactions WHERE id = ?1", id)
+                        .execute(&mut *tx)
+                        .await?;
+                }
+                wins && present
+            }
+            ("merchant_rule", Some(p)) => {
+                let r: notai_core::finance::MerchantRule = from_json("senkron satıcı kuralı", p)?;
+                if wins || local.is_none() {
+                    crate::finance::upsert_rule_raw(&mut tx, &r, c.at).await?;
+                    true
+                } else {
+                    false
+                }
             }
             ("attachment", Some(p)) => {
                 let a: crate::extras::AttachmentPayload = from_json("senkron eki", p)?;

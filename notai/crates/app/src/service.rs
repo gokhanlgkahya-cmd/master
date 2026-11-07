@@ -618,3 +618,87 @@ pub async fn due_notices(
     }
     Ok(out)
 }
+
+// ---------------- Harcamalar (2026-11-07) ----------------
+
+fn month_range(y: i32, m: u32) -> CmdResult<(NaiveDate, NaiveDate)> {
+    let first = NaiveDate::from_ymd_opt(y, m, 1).ok_or("geçersiz ay")?;
+    let from = first
+        .checked_sub_months(chrono::Months::new(1))
+        .ok_or("geçersiz ay")?;
+    let to = first
+        .checked_add_months(chrono::Months::new(1))
+        .and_then(|d| d.pred_opt())
+        .ok_or("geçersiz ay")?;
+    Ok((from, to))
+}
+
+/// Aylık harcama görünümü ("2026-10"; yoksa bu ay).
+pub async fn finance(
+    store: &Store,
+    month: Option<&str>,
+    now: DateTime<Utc>,
+    tz: Tz,
+) -> CmdResult<notai_api::FinanceView> {
+    use chrono::Datelike;
+    let today = now.with_timezone(&tz).date_naive();
+    let (y, m) = match month {
+        Some(s) => s
+            .split_once('-')
+            .and_then(|(y, m)| Some((y.parse().ok()?, m.parse().ok()?)))
+            .filter(|(_, m): &(i32, u32)| (1..=12).contains(m))
+            .ok_or_else(|| format!("geçersiz ay: {s}"))?,
+        None => (today.year(), today.month()),
+    };
+    let (from, to) = month_range(y, m)?;
+    let txs = store.transactions_between(from, to).await.map_err(err)?;
+    let pending =
+        u32::try_from(store.pending_statements().await.map_err(err)?.len()).unwrap_or(u32::MAX);
+    Ok(convert::finance_view(&txs, y, m, pending))
+}
+
+/// Ekstre yükler (PDF ya da metin); PDF bu cihazda okunur, hiçbir yere gönderilmez.
+pub async fn import_statement(
+    store: &Store,
+    data: &[u8],
+    name: &str,
+    account: Option<&str>,
+    now: DateTime<Utc>,
+) -> CmdResult<notai_api::ImportView> {
+    if data.is_empty() {
+        return Err("ekstre dosyası boş".into());
+    }
+    let text = if data.starts_with(b"%PDF") {
+        notai_store::pdf_text(data).map_err(err)?
+    } else {
+        String::from_utf8(data.to_vec()).map_err(|_| "ekstre metni UTF-8 değil".to_owned())?
+    };
+    let account = account.filter(|a| !a.trim().is_empty()).unwrap_or(name);
+    let (_, report) = store
+        .import_statement(account, name, &text, now)
+        .await
+        .map_err(err)?;
+    Ok(convert::import_view(&report))
+}
+
+/// Hareketin kategori/kapsamını düzeltir (satıcı kuralı öğrenilir).
+pub async fn classify_transaction(
+    store: &Store,
+    id: &str,
+    category: &str,
+    scope: &str,
+    now: DateTime<Utc>,
+) -> CmdResult<()> {
+    if !notai_core::finance::CATEGORIES
+        .iter()
+        .any(|(k, _)| *k == category)
+    {
+        return Err(format!("bilinmeyen kategori: {category}"));
+    }
+    let scope = notai_core::finance::Scope::parse(scope).map_err(err)?;
+    store
+        .classify_transaction(id, category, scope, now)
+        .await
+        .map(|_| ())
+        .map_err(err)
+}

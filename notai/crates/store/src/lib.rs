@@ -13,6 +13,7 @@ mod entries;
 mod error;
 mod extras;
 mod facts;
+mod finance;
 mod suggestions;
 mod sync_apply;
 mod tasks;
@@ -36,6 +37,7 @@ pub use extras::{
     AttachmentKind, AttachmentMeta, DecisionExample, ExportSnapshot, MAX_ATTACHMENT_BYTES,
     NewAttachment,
 };
+pub use finance::{ImportReport, PendingStatement, pdf_text};
 pub use suggestions::DecisionOutcome;
 pub use sync_apply::Applied;
 pub use tasks::TaskView;

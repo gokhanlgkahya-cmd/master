@@ -8,6 +8,7 @@
 pub mod agent;
 pub mod config;
 pub mod error;
+pub mod finance;
 pub mod routes;
 pub mod routes_v2;
 pub mod scheduler;

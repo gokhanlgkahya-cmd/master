@@ -177,6 +177,34 @@ async fn voice(
 }
 
 #[tauri::command]
+async fn finance(
+    st: State<'_, AppState>,
+    month: Option<String>,
+) -> Result<notai_api::FinanceView, String> {
+    service::finance(&st.store, month.as_deref(), Utc::now(), st.tz).await
+}
+
+#[tauri::command]
+async fn import_statement(
+    st: State<'_, AppState>,
+    data: Vec<u8>,
+    name: String,
+    account: Option<String>,
+) -> Result<notai_api::ImportView, String> {
+    service::import_statement(&st.store, &data, &name, account.as_deref(), Utc::now()).await
+}
+
+#[tauri::command]
+async fn classify_transaction(
+    st: State<'_, AppState>,
+    id: String,
+    category: String,
+    scope: String,
+) -> Result<(), String> {
+    service::classify_transaction(&st.store, &id, &category, &scope, Utc::now()).await
+}
+
+#[tauri::command]
 async fn answer_question(st: State<'_, AppState>, id: String, text: String) -> Result<(), String> {
     service::answer_question(&st.store, &id, &text, Utc::now()).await
 }
@@ -374,6 +402,9 @@ pub fn run() {
             voice,
             undo,
             answer_question,
+            finance,
+            import_statement,
+            classify_transaction,
             notice,
             clear_notice,
             trash,

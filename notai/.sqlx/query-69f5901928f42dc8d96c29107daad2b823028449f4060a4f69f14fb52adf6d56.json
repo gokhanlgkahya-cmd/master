@@ -1,0 +1,12 @@
+{
+  "db_name": "SQLite",
+  "query": "INSERT INTO merchant_rules (merchant, category, scope, updated_at) VALUES (?1, ?2, ?3, ?4)\n         ON CONFLICT (merchant) DO UPDATE SET category = excluded.category, scope = excluded.scope,\n             updated_at = excluded.updated_at",
+  "describe": {
+    "columns": [],
+    "parameters": {
+      "Right": 4
+    },
+    "nullable": []
+  },
+  "hash": "69f5901928f42dc8d96c29107daad2b823028449f4060a4f69f14fb52adf6d56"
+}

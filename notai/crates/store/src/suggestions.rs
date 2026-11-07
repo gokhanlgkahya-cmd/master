@@ -23,6 +23,9 @@ struct Undo {
     prev_status: String,
     created_task: Option<String>,
     label: Option<(String, String)>,
+    /// Kabulde oluşan hesap hareketi (geri almada silinir).
+    #[serde(default)]
+    created_transaction: Option<String>,
 }
 
 /// Kararın sonucu: güncel öneri ve kayıt, varsa oluşturulan görev/konu.
@@ -353,6 +356,7 @@ impl Store {
             prev_status: entry.status().name().to_owned(),
             created_task: None,
             label: None,
+            created_transaction: None,
         };
 
         if accept {
@@ -392,6 +396,10 @@ impl Store {
                 Effect::AddPerson { entry: e, name } => {
                     add_label(&mut tx, &self.origin, e, "person", &name, now).await?;
                     undo.label = Some(("person".into(), name.as_str().to_owned()));
+                }
+                Effect::AddTransaction { tx: t } => {
+                    crate::finance::save_transaction(&mut tx, &self.origin, &t, now).await?;
+                    undo.created_transaction = Some(t.id.to_string());
                 }
             }
         } else {
@@ -465,6 +473,12 @@ impl Store {
         if let Some(task_id) = undo.created_task.as_deref() {
             let task_id: notai_core::TaskId = crate::codec::parse_id("geri alma", task_id)?;
             crate::tasks::cancel_in_tx(&mut tx, &self.origin, task_id, now).await?;
+        }
+        if let Some(t) = undo.created_transaction.as_deref() {
+            sqlx::query!("DELETE FROM transactions WHERE id = ?1", t)
+                .execute(&mut *tx)
+                .await?;
+            log_change(&mut tx, &self.origin, "transaction", t, None, now).await?;
         }
         if let Some((kind, name)) = &undo.label {
             let entry_s = entry.id.to_string();

@@ -1,0 +1,12 @@
+{
+  "db_name": "SQLite",
+  "query": "INSERT INTO transactions (id, date, amount, description, category, scope, source, account,\n                                   topic_id, entry_id, dedupe_key, matched_to, created_at, updated_at)\n         VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7, ?8, ?9, ?10, ?11, ?12, ?13, ?13)\n         ON CONFLICT (id) DO UPDATE SET date = excluded.date, amount = excluded.amount,\n             description = excluded.description, category = excluded.category, scope = excluded.scope,\n             account = excluded.account, topic_id = excluded.topic_id, entry_id = excluded.entry_id,\n             matched_to = excluded.matched_to, updated_at = excluded.updated_at",
+  "describe": {
+    "columns": [],
+    "parameters": {
+      "Right": 13
+    },
+    "nullable": []
+  },
+  "hash": "16f27478b8269cd7d3575b34bc7db1ea502c80d3cfd1fcc12a2c0c2a56e554ef"
+}

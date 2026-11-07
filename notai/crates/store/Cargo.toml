@@ -8,6 +8,7 @@ publish.workspace = true
 license.workspace = true
 
 [dependencies]
+pdf-extract.workspace = true
 notai-core.workspace = true
 chrono.workspace = true
 chrono-tz.workspace = true

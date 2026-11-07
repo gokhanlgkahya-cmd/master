@@ -145,6 +145,20 @@ fn home_list(v: TopicsView, filter: HomeFilter) -> impl IntoView {
             </button>
         }
     });
+    let finance = filter.shows_review().then(|| {
+        view! {
+            <button class="chat" on:click=move |_| c.screen.set(Screen::Finance)>
+                <Avatar look=TopicLook::plain("wallet")/>
+                <span class="chat__body">
+                    <span class="chat__top"><span class="chat__name">"Harcamalar"</span></span>
+                    <span class="chat__bottom">
+                        <span class="chat__preview">"Aylık rapor, ekstre, iş / ev / kişisel"</span>
+                        {pin_icon()}
+                    </span>
+                </span>
+            </button>
+        }
+    });
     let topics: Vec<_> = v.topics.into_iter().filter(|t| filter.keeps(t)).collect();
     let empty = (topics.is_empty() && journal.is_none()).then(|| {
         let text = match filter {
@@ -155,7 +169,7 @@ fn home_list(v: TopicsView, filter: HomeFilter) -> impl IntoView {
         view! { <p class="setnote">{text}</p> }
     });
     let rows = topics.into_iter().map(topic_chat).collect_view();
-    view! { {journal}{review}{rows}{empty} }
+    view! { {journal}{review}{finance}{rows}{empty} }
 }
 
 /// Konu satırı (WhatsApp sohbet satırı gibi). Dokununca konu açılır: alt konusu varsa alt konu

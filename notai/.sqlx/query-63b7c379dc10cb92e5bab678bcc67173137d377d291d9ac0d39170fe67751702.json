@@ -1,0 +1,158 @@
+{
+  "db_name": "SQLite",
+  "query": "SELECT id, date, amount, description, category, scope, source, account, topic_id,\n                        entry_id, dedupe_key, matched_to\n                 FROM transactions\n                 WHERE source = 'manual' AND matched_to IS NULL AND amount = ?1\n                   AND date >= ?2 AND date <= ?3\n                 ORDER BY date LIMIT 1",
+  "describe": {
+    "columns": [
+      {
+        "name": "id",
+        "ordinal": 0,
+        "type_info": "Text",
+        "origin": {
+          "Table": {
+            "table": "transactions",
+            "name": "id"
+          }
+        }
+      },
+      {
+        "name": "date",
+        "ordinal": 1,
+        "type_info": "Text",
+        "origin": {
+          "Table": {
+            "table": "transactions",
+            "name": "date"
+          }
+        }
+      },
+      {
+        "name": "amount",
+        "ordinal": 2,
+        "type_info": "Integer",
+        "origin": {
+          "Table": {
+            "table": "transactions",
+            "name": "amount"
+          }
+        }
+      },
+      {
+        "name": "description",
+        "ordinal": 3,
+        "type_info": "Text",
+        "origin": {
+          "Table": {
+            "table": "transactions",
+            "name": "description"
+          }
+        }
+      },
+      {
+        "name": "category",
+        "ordinal": 4,
+        "type_info": "Text",
+        "origin": {
+          "Table": {
+            "table": "transactions",
+            "name": "category"
+          }
+        }
+      },
+      {
+        "name": "scope",
+        "ordinal": 5,
+        "type_info": "Text",
+        "origin": {
+          "Table": {
+            "table": "transactions",
+            "name": "scope"
+          }
+        }
+      },
+      {
+        "name": "source",
+        "ordinal": 6,
+        "type_info": "Text",
+        "origin": {
+          "Table": {
+            "table": "transactions",
+            "name": "source"
+          }
+        }
+      },
+      {
+        "name": "account",
+        "ordinal": 7,
+        "type_info": "Text",
+        "origin": {
+          "Table": {
+            "table": "transactions",
+            "name": "account"
+          }
+        }
+      },
+      {
+        "name": "topic_id",
+        "ordinal": 8,
+        "type_info": "Text",
+        "origin": {
+          "Table": {
+            "table": "transactions",
+            "name": "topic_id"
+          }
+        }
+      },
+      {
+        "name": "entry_id",
+        "ordinal": 9,
+        "type_info": "Text",
+        "origin": {
+          "Table": {
+            "table": "transactions",
+            "name": "entry_id"
+          }
+        }
+      },
+      {
+        "name": "dedupe_key",
+        "ordinal": 10,
+        "type_info": "Text",
+        "origin": {
+          "Table": {
+            "table": "transactions",
+            "name": "dedupe_key"
+          }
+        }
+      },
+      {
+        "name": "matched_to",
+        "ordinal": 11,
+        "type_info": "Text",
+        "origin": {
+          "Table": {
+            "table": "transactions",
+            "name": "matched_to"
+          }
+        }
+      }
+    ],
+    "parameters": {
+      "Right": 3
+    },
+    "nullable": [
+      false,
+      false,
+      false,
+      false,
+      false,
+      false,
+      false,
+      true,
+      true,
+      true,
+      true,
+      true
+    ]
+  },
+  "hash": "63b7c379dc10cb92e5bab678bcc67173137d377d291d9ac0d39170fe67751702"
+}

@@ -953,3 +953,38 @@ input:focus-visible + .checkbox__box, input:focus-visible + .toggle__track, .che
   font-size: var(--font-size-xs); line-height: var(--font-line-height-xs); color: var(--color-meta);
   font-variant-numeric: var(--font-feature-tabular);
 }
+
+/* Harcamalar (Gökhan, 2026-11-07). Para tutarları tabular rakamla; gider nötr, gelir başarı rengi
+   (anlam taşır, ≥4,5:1); grafik yerine sade çubuk. */
+.fin-actions { display: flex; gap: var(--space-2); padding: var(--space-3) var(--space-4) 0; }
+.fin-actions .btn { display: inline-flex; align-items: center; gap: var(--space-2); }
+.fin-msg { margin: var(--space-2) var(--space-4) 0; }
+.fin-tiles { display: grid; grid-template-columns: repeat(3, 1fr); gap: var(--space-2); padding: var(--space-3) var(--space-4) 0; }
+.fin-tile {
+  display: flex; flex-direction: column; gap: var(--space-1); min-width: 0;
+  padding: var(--space-3); border-radius: var(--radius-md);
+  background: var(--color-surface); border: var(--border-width-hairline) solid var(--color-border);
+}
+.fin-tile__label { font-size: var(--font-size-xs); line-height: var(--font-line-height-xs); color: var(--color-meta); }
+.fin-tile__val { font-size: var(--font-size-sm); line-height: var(--font-line-height-sm); font-weight: var(--font-weight-semibold); font-variant-numeric: var(--font-feature-tabular); overflow-wrap: anywhere; }
+.fin-tile__val--neg { color: var(--color-error); }
+.fin-tile__sub { font-size: var(--font-size-xs); line-height: var(--font-line-height-xs); color: var(--color-meta); }
+.fin-insights { list-style: none; margin: var(--space-3) var(--space-4) 0; padding: var(--space-2) var(--space-3); display: flex; flex-direction: column; gap: var(--space-2); }
+.fin-insight { display: flex; gap: var(--space-2); align-items: flex-start; font-size: var(--font-size-sm); line-height: var(--font-line-height-sm); }
+.fin-insight .ic { flex: none; margin-top: var(--space-1); color: var(--color-meta); }
+.fin-list, .fin-txs { list-style: none; margin: 0 var(--space-4); padding: 0; }
+.fin-row { display: flex; align-items: center; gap: var(--space-3); padding: var(--space-2) var(--space-3); font-size: var(--font-size-sm); line-height: var(--font-line-height-sm); }
+.fin-row + .fin-row, .fin-tx + .fin-tx { border-top: var(--border-width-hairline) solid var(--color-border); }
+.fin-row__label { flex: 0 0 38%; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.fin-row__amt { margin-left: auto; font-variant-numeric: var(--font-feature-tabular); }
+.fin-bar { flex: 1; height: var(--space-2); border-radius: var(--radius-full); background: var(--color-tile-bg); overflow: hidden; }
+.fin-bar i { display: block; height: 100%; background: var(--color-accent); border-radius: var(--radius-full); }
+.fin-tx { display: flex; align-items: flex-start; gap: var(--space-3); padding: var(--space-2) var(--space-3); }
+.fin-tx--matched .fin-tx__desc, .fin-tx--matched .fin-tx__amt { color: var(--color-meta); text-decoration: line-through; }
+.fin-tx__date { flex: none; width: var(--space-12); font-size: var(--font-size-xs); line-height: var(--font-line-height-sm); color: var(--color-meta); }
+.fin-tx__body { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: var(--space-1); }
+.fin-tx__desc { font-size: var(--font-size-sm); line-height: var(--font-line-height-sm); overflow-wrap: anywhere; }
+.fin-tx__meta { display: flex; flex-wrap: wrap; align-items: center; gap: var(--space-1) var(--space-2); font-size: var(--font-size-xs); line-height: var(--font-line-height-xs); color: var(--color-meta); }
+.fin-tx__meta select { font: inherit; color: var(--color-text); background: var(--color-tile-bg); border: 0; border-radius: var(--radius-full); padding: 0 var(--space-2); min-height: var(--size-chip); }
+.fin-tx__amt { flex: none; font-size: var(--font-size-sm); line-height: var(--font-line-height-sm); font-weight: var(--font-weight-semibold); font-variant-numeric: var(--font-feature-tabular); }
+.fin-tx__amt--in { color: var(--color-success); }

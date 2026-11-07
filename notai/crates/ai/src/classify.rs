@@ -114,6 +114,21 @@ struct RawOutput {
     /// Kayıt net değilse kullanıcıya tek kısa soru (eski ajanlar göndermeyebilir).
     #[serde(default)]
     question: Option<String>,
+    /// Kayıttaki para hareketi (eski ajanlar göndermeyebilir).
+    #[serde(default)]
+    expense: Option<RawExpense>,
+}
+
+#[derive(Debug, Deserialize)]
+#[serde(deny_unknown_fields)]
+struct RawExpense {
+    /// TL, pozitif.
+    amount: f64,
+    direction: String,
+    category: String,
+    scope: String,
+    date: Option<String>,
+    confidence: f64,
 }
 
 #[derive(Debug, Deserialize)]
@@ -188,7 +203,7 @@ pub fn output_schema() -> Value {
     json!({
         "type": "object",
         "additionalProperties": false,
-        "required": ["topic", "tasks", "tags", "people", "reminder", "question"],
+        "required": ["topic", "tasks", "tags", "people", "reminder", "question", "expense"],
         "properties": {
             "topic": nullable(json!({
                 "type": "object",
@@ -228,6 +243,19 @@ pub fn output_schema() -> Value {
                     "confidence": confidence
                 }
             })),
+            "expense": nullable(json!({
+                "type": "object",
+                "additionalProperties": false,
+                "required": ["amount", "direction", "category", "scope", "date", "confidence"],
+                "properties": {
+                    "amount": { "type": "number", "description": "TL, pozitif (ör. 1850.00)" },
+                    "direction": { "type": "string", "enum": ["gider", "gelir"] },
+                    "category": { "type": "string", "enum": notai_core::finance::CATEGORIES.iter().map(|(k, _)| *k).collect::<Vec<_>>() },
+                    "scope": { "type": "string", "enum": ["is", "ev", "kisisel"] },
+                    "date": nullable(json!({ "type": "string", "format": "date" })),
+                    "confidence": confidence
+                }
+            })),
             "question": nullable(json!({
                 "type": "string",
                 "description": "Kayıt belirsizse kullanıcıya tek kısa Türkçe soru (en fazla 200 karakter); değilse null"
@@ -254,6 +282,10 @@ Saat söylenmediyse due_time null. Kullanıcı sonradan düzeltirse (\"yok, asl�
 - Etiket: en fazla 5, kısa, küçük harf, # işaretsiz.
 - Kişi: kayıtta adı geçen kişi ya da firma (en fazla 3).
 - Hatırlatma: yalnız kullanıcı açıkça hatırlatılmak istiyorsa.
+- Harcama/gelir: kayıtta ödenen, harcanan ya da alınan para varsa (\"Ayhan'a 1.850 ₺ ödendi\", \
+\"markete 640 verdim\") `expense` doldur: tutar TL (pozitif), yön gider/gelir, kategori, kapsam \
+(is: işle ilgili — konu bir iş dalındaysa ya da tedarikçi/müşteri ödemesiyse; ev: ev giderleri, faturalar; \
+kisisel: diğerleri), tarih (söylenmediyse null = kaydın günü). Para geçmiyorsa null.
 - Soru: kayıt net değilse (hangi konu/proje, ne zaman, kim, ne yapılacağı belirsiz ve bu, önerini \
 değiştirecekse) `question` alanında kullanıcıya TEK, kısa, samimi bir Türkçe soru sor; ör. \
 \"Bu hangi tedarikçi için, Ayhan Kimya mı?\". Emin olduğun şeyi sorma; gereksiz soru sorma. Soru sorsan \
@@ -619,6 +651,15 @@ pub fn validate(raw_json: &str, ctx: &ClassifyContext) -> Result<Validated, AiEr
         suggestions.push(Suggestion::new(entry_id, kind, c));
     }
 
+    if let Some(x) = raw.expense
+        && let Some(c) = confidence(x.confidence, "harcama", &mut dropped)
+    {
+        match expense_suggestion(&x, capture_date) {
+            Ok(kind) => suggestions.push(Suggestion::new(entry_id, kind, c)),
+            Err(why) => dropped.push(format!("harcama: {why}")),
+        }
+    }
+
     if let Some(q) = raw.question.filter(|q| !q.trim().is_empty()) {
         if !ctx.can_ask {
             dropped.push("soru: bu kayıt için şimdi soru sorulamaz".into());
@@ -637,6 +678,42 @@ pub fn validate(raw_json: &str, ctx: &ClassifyContext) -> Result<Validated, AiEr
     Ok(Validated {
         suggestions,
         dropped,
+    })
+}
+
+fn expense_suggestion(x: &RawExpense, capture_date: NaiveDate) -> Result<SuggestionKind, String> {
+    use notai_core::finance::{CATEGORIES, Money, Scope};
+    if !x.amount.is_finite() || x.amount <= 0.0 || x.amount > 100_000_000.0 {
+        return Err(format!("tutar geçersiz ({})", x.amount));
+    }
+    // Kuruşa yuvarla (kayan nokta yalnız giriş biçimi; saklanan tamsayı).
+    #[allow(clippy::cast_possible_truncation)]
+    let kurus = (x.amount * 100.0).round() as i64;
+    let amount = match x.direction.as_str() {
+        "gider" => Money(-kurus),
+        "gelir" => Money(kurus),
+        other => return Err(format!("yön bilinmiyor ({other})")),
+    };
+    let category = if CATEGORIES.iter().any(|(k, _)| *k == x.category) {
+        x.category.clone()
+    } else {
+        "diger".to_owned()
+    };
+    let scope = Scope::parse(&x.scope).map_err(|e| e.to_string())?;
+    let date = match x.date.as_deref() {
+        None => capture_date,
+        Some(d) => {
+            NaiveDate::parse_from_str(d, "%Y-%m-%d").map_err(|_| format!("tarih bozuk ({d})"))?
+        }
+    };
+    if (date - capture_date).num_days().abs() > 366 {
+        return Err("tarih kayıttan bir yıldan uzak".into());
+    }
+    Ok(SuggestionKind::Expense {
+        amount,
+        category,
+        scope,
+        date,
     })
 }
 
@@ -701,6 +778,52 @@ mod tests {
             qa: vec![],
             can_ask: true,
         }
+    }
+
+    #[test]
+    fn expense_is_validated_into_money() {
+        let c = ctx("Ayhan'a 1.850 ₺ ödendi");
+        let raw = |amount: Value, dir: &str, cat: &str, scope: &str| {
+            json!({ "topic": null, "tasks": [], "tags": [], "people": [], "reminder": null, "question": null,
+                    "expense": { "amount": amount, "direction": dir, "category": cat, "scope": scope,
+                                 "date": null, "confidence": 0.9 } })
+            .to_string()
+        };
+        let v = validate(&raw(json!(1850.0), "gider", "tedarik", "is"), &c).unwrap();
+        match &v.suggestions[0].kind {
+            SuggestionKind::Expense {
+                amount,
+                category,
+                scope,
+                date,
+            } => {
+                assert_eq!(amount.0, -185_000);
+                assert_eq!(category, "tedarik");
+                assert_eq!(*scope, notai_core::finance::Scope::Is);
+                assert_eq!(*date, NaiveDate::from_ymd_opt(2026, 11, 6).unwrap());
+            }
+            other => panic!("{other:?}"),
+        }
+        assert_eq!(
+            v.suggestions[0].kind.chip_text(TZ),
+            "Harcama · 1.850,00\u{a0}₺ · İş"
+        );
+        let v = validate(&raw(json!(229.99), "gider", "uydurma", "kisisel"), &c).unwrap();
+        assert!(
+            matches!(&v.suggestions[0].kind, SuggestionKind::Expense { category, .. } if category == "diger")
+        );
+        assert!(
+            validate(&raw(json!(-5), "gider", "market", "ev"), &c)
+                .unwrap()
+                .suggestions
+                .is_empty()
+        );
+        assert!(
+            validate(&raw(json!(10), "yan", "market", "ev"), &c)
+                .unwrap()
+                .suggestions
+                .is_empty()
+        );
     }
 
     #[test]

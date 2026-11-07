@@ -78,6 +78,10 @@ id_type!(
     /// Kullanıcıyı tanıma katmanındaki bir bilginin kimliği.
     ProfileFactId
 );
+id_type!(
+    /// Bir hesap hareketinin (harcama/gelir) kimliği.
+    TransactionId
+);
 
 #[cfg(test)]
 mod tests {

@@ -613,6 +613,70 @@ impl Backend {
         }
     }
 
+    /// Aylık harcama görünümü ("2026-10"; yoksa bu ay).
+    pub async fn finance(&self, month: Option<String>) -> BResult<notai_api::FinanceView> {
+        match self {
+            Self::Tauri => Self::call("finance", json!({ "month": month })).await,
+            Self::Http(h) => match month {
+                Some(m) => h.get(&format!("/finance?month={m}")).await,
+                None => h.get("/finance").await,
+            },
+            Self::Demo(_) => Err(NOT_IN_DEMO.into()),
+        }
+    }
+
+    /// Banka ekstresi yükler (PDF ya da metin). Ayrıştırma yereldir (bu cihaz / ev sunucusu).
+    pub async fn import_statement(
+        &self,
+        bytes: Vec<u8>,
+        name: String,
+        mime: String,
+    ) -> BResult<notai_api::ImportView> {
+        match self {
+            Self::Tauri => {
+                Self::call(
+                    "import_statement",
+                    json!({ "data": bytes, "name": name, "account": Value::Null }),
+                )
+                .await
+            }
+            Self::Http(h) => {
+                h.post_bytes(
+                    &format!("/finance/statements?name={}", enc(&name)),
+                    &mime,
+                    &bytes,
+                )
+                .await
+            }
+            Self::Demo(_) => Err(NOT_IN_DEMO.into()),
+        }
+    }
+
+    /// Hareketin kategori/kapsamını düzeltir; aynı satıcı için öğrenilir.
+    pub async fn classify_transaction(
+        &self,
+        id: String,
+        category: String,
+        scope: String,
+    ) -> BResult<()> {
+        match self {
+            Self::Tauri => Self::call::<Value>(
+                "classify_transaction",
+                json!({ "id": id, "category": category, "scope": scope }),
+            )
+            .await
+            .map(|_| ()),
+            Self::Http(h) => h
+                .post::<Value>(
+                    &format!("/finance/transactions/{id}/classify"),
+                    &json!({ "category": category, "scope": scope }),
+                )
+                .await
+                .map(|_| ()),
+            Self::Demo(_) => Err(NOT_IN_DEMO.into()),
+        }
+    }
+
     /// AI sorusunu cevaplar (kayıt cevapla yeniden sınıflandırılır).
     pub async fn answer_question(&self, suggestion: String, text: String) -> BResult<()> {
         match self {

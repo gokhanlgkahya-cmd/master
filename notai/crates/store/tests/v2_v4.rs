@@ -313,3 +313,93 @@ async fn trash_list_and_purge_only_trashed() {
     let last: ChangeRecord = s.changes_since(0, 100).await.unwrap().pop().unwrap();
     assert_eq!((last.entity.as_str(), last.payload), ("entry", None));
 }
+
+#[tokio::test]
+async fn statement_import_is_deduplicated_matched_and_learns() {
+    use notai_core::finance::{Money, Scope, Transaction, TxSource, month_report};
+    let s = notai_store::Store::open_in_memory("sunucu").await.unwrap();
+    let now = chrono::Utc::now();
+    let d = |m: u32, day: u32| chrono::NaiveDate::from_ymd_opt(2026, m, day).unwrap();
+    // Elle girilmiş ödeme (kayıttan): "Ayhan'a 1.850 ödendi" — iş.
+    let manual = Transaction {
+        id: notai_core::TransactionId::new(),
+        date: d(10, 2),
+        amount: Money(-185_000),
+        description: "Ayhan Kimya'ya ödeme".into(),
+        category: "tedarik".into(),
+        scope: Scope::Is,
+        source: TxSource::Manual,
+        account: None,
+        topic: None,
+        entry: None,
+        dedupe_key: None,
+        matched_to: None,
+    };
+    s.add_transaction(&manual, now).await.unwrap();
+    let text = "01.10.2026 MİGROS ŞİŞLİ -1.245,60\n03.10.2026 AYHAN KİMYA SAN. TİC. LTD -1.850,00\n\
+                05.10.2026 MAAŞ ÖDEMESİ +85.000,00\n12.10.2026 NETFLIX.COM -229,99\n15.10.2026 TRENDYOL -640,00";
+    let (_, r1) = s
+        .import_statement("****1234", "ekim.pdf", text, now)
+        .await
+        .unwrap();
+    assert_eq!(
+        (r1.parsed, r1.imported, r1.skipped, r1.matched),
+        (5, 5, 0, 1)
+    );
+    let (_, r2) = s
+        .import_statement("****1234", "ekim-yine.pdf", text, now)
+        .await
+        .unwrap();
+    assert_eq!(
+        (r2.imported, r2.skipped),
+        (0, 5),
+        "aynı ekstre ikinci kez: mükerrer yok"
+    );
+
+    let all = s.transactions_between(d(10, 1), d(10, 31)).await.unwrap();
+    assert_eq!(all.len(), 6);
+    let mv: Vec<_> = all.iter().map(Transaction::movement).collect();
+    let rep = month_report(&mv, 2026, 10);
+    assert_eq!(
+        rep.expense,
+        Money(124_560 + 185_000 + 22_999 + 64_000),
+        "elle giriş bir kez sayılır"
+    );
+    assert_eq!(rep.by_scope[0], (Scope::Is, Money(185_000)));
+
+    // Öğrenme: Trendyol'u iş/tedarik yap → sonraki ekstrelerde de öyle.
+    let trendyol = all
+        .iter()
+        .find(|t| t.description.contains("TRENDYOL"))
+        .unwrap();
+    s.classify_transaction(&trendyol.id.to_string(), "tedarik", Scope::Is, now)
+        .await
+        .unwrap();
+    let (_, _) = s
+        .import_statement(
+            "****1234",
+            "kasim.pdf",
+            "03.11.2026 TRENDYOL ÖDEME -99,00",
+            now,
+        )
+        .await
+        .unwrap();
+    let nov = s.transactions_between(d(11, 1), d(11, 30)).await.unwrap();
+    assert_eq!(
+        (nov[0].category.as_str(), nov[0].scope),
+        ("tedarik", Scope::Is)
+    );
+
+    // Tanınmayan biçim: AI/ajan işi olarak bekler.
+    let (sid, r) = s
+        .import_statement("****1234", "garip.pdf", "bambaşka bir düzen 1.000", now)
+        .await
+        .unwrap();
+    assert_eq!(r.parsed, 0);
+    let pend = s.pending_statements().await.unwrap();
+    assert_eq!(pend.len(), 1);
+    let lines = notai_core::finance::parse_statement("20.11.2026 A101 -50,00");
+    let r = s.answer_statement(&sid, &lines, now).await.unwrap();
+    assert_eq!(r.imported, 1);
+    assert!(s.pending_statements().await.unwrap().is_empty());
+}

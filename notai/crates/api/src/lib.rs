@@ -339,6 +339,80 @@ pub struct NoticeView {
     pub entry_id: Option<String>,
 }
 
+/// Harcamalar ekranı (bir ay).
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize, Default)]
+pub struct FinanceView {
+    /// "2026-10"
+    pub month: String,
+    /// "Ekim 2026"
+    pub title: String,
+    pub income: String,
+    pub expense: String,
+    pub net: String,
+    pub net_negative: bool,
+    /// Gelirin yüzde kaçı birikti (gelir yoksa yok).
+    pub savings_pct: Option<i64>,
+    pub scopes: Vec<ShareView>,
+    pub categories: Vec<ShareView>,
+    pub recurring: Vec<ShareView>,
+    pub insights: Vec<String>,
+    pub transactions: Vec<TransactionView>,
+    /// AI/ajan bekleyen (kurallarla okunamayan) ekstre sayısı.
+    pub pending_statements: u32,
+    /// Seçilebilir kategoriler (anahtar, ad).
+    pub category_options: Vec<(String, String)>,
+}
+
+/// Rapor satırı (kapsam/kategori/düzenli ödeme).
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+pub struct ShareView {
+    pub key: String,
+    pub label: String,
+    pub amount: String,
+    /// Toplam gidere oranı (%).
+    pub pct: i64,
+}
+
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+pub struct TransactionView {
+    pub id: String,
+    pub date: NaiveDate,
+    /// "3 Eki"
+    pub date_label: String,
+    pub description: String,
+    /// "−1.850,00 ₺"
+    pub amount: String,
+    pub expense: bool,
+    pub category: String,
+    pub category_label: String,
+    /// is | ev | kisisel
+    pub scope: String,
+    pub scope_label: String,
+    /// manual | statement
+    pub source: String,
+    /// Elle giriş ekstredeki karşılığıyla eşleşti (raporda sayılmıyor).
+    pub matched: bool,
+}
+
+/// Ekstre yükleme sonucu.
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+pub struct ImportView {
+    pub parsed: u32,
+    pub imported: u32,
+    pub skipped: u32,
+    pub matched: u32,
+    /// Kurallarla okunamadı: AI/ajan işi olarak bekliyor.
+    pub pending: bool,
+    pub message: String,
+}
+
+/// Hareketin kategori/kapsam düzeltmesi.
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+pub struct ClassifyRequest {
+    pub category: String,
+    pub scope: String,
+}
+
 /// AI sorusuna cevap.
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 pub struct AnswerRequest {

@@ -1,0 +1,12 @@
+{
+  "db_name": "SQLite",
+  "query": "UPDATE statements SET imported = imported + ?2, skipped = skipped + ?3, matched = matched + ?4\n             WHERE id = ?1",
+  "describe": {
+    "columns": [],
+    "parameters": {
+      "Right": 4
+    },
+    "nullable": []
+  },
+  "hash": "7e0f83c3d4b520ab8a8853152652b24edd190b28fe92fb2ecb9da54874da9022"
+}

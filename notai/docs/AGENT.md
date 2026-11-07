@@ -67,6 +67,19 @@ NotAI gelen kutusunu sınıflandır.
 Hermes için de aynı adımlar geçerlidir (komut satırı aracı aynıdır). Ajanı periyodik çalıştırmak
 için Termux'ta `termux-job-scheduler` ya da n8n'de bir zamanlanmış akış kullanılabilir.
 
+## Banka ekstreleri (kurallarla okunamayanlar)
+Ekstre PDF'leri önce ev sunucusunda/uygulamada **yerel** kurallarla okunur (banka verisi hiçbir
+AI'a gitmez). Biçim tanınmazsa ekstre ajan işi olarak bekler:
+
+| Komut | Ne yapar |
+|---|---|
+| `notai statements` | Bekleyen ekstreler: metin + talimat + şema (JSON) |
+| `notai statement-answer <id> [dosya\|-]` | Hareketleri gönderir: `{"lines":[{"date":"2026-10-03","description":"AYHAN KİMYA","amount":"-1850.00"}]}` |
+
+Sunucu satırları doğrular (tarih, tutar), mükerrerleri atlar, elle girilmiş ödemelerle eşleştirir.
+Banka verisini hangi AI'ın işleyeceğine Gökhan henüz karar vermedi: Claude Code kullanılırsa
+ekstre metni Anthropic'e gider; yalnız yerel model istenirse Hermes'i yerel Gemma ile çalıştır.
+
 ## Obsidian kasası (okuma)
 Sunucu `NOTAI_VAULT_DIR` ile başlatılırsa tüm veri Markdown olarak `NotAI/` klasöründe durur ve
 her değişiklikte güncellenir. Ajanlar (Claude Code, Hermes) analiz için bu dosyaları doğrudan

@@ -1,0 +1,50 @@
+{
+  "db_name": "SQLite",
+  "query": "SELECT merchant, category, scope FROM merchant_rules",
+  "describe": {
+    "columns": [
+      {
+        "name": "merchant",
+        "ordinal": 0,
+        "type_info": "Text",
+        "origin": {
+          "Table": {
+            "table": "merchant_rules",
+            "name": "merchant"
+          }
+        }
+      },
+      {
+        "name": "category",
+        "ordinal": 1,
+        "type_info": "Text",
+        "origin": {
+          "Table": {
+            "table": "merchant_rules",
+            "name": "category"
+          }
+        }
+      },
+      {
+        "name": "scope",
+        "ordinal": 2,
+        "type_info": "Text",
+        "origin": {
+          "Table": {
+            "table": "merchant_rules",
+            "name": "scope"
+          }
+        }
+      }
+    ],
+    "parameters": {
+      "Right": 0
+    },
+    "nullable": [
+      false,
+      false,
+      false
+    ]
+  },
+  "hash": "49b84605ced37e18ca6fdd669b67f44fa4117983ec2277db07435633d0d9f4cf"
+}

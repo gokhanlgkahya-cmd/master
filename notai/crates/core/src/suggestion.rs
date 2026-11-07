@@ -93,6 +93,15 @@ pub enum SuggestionKind {
     Person { name: Label },
     /// Belirli bir anda hatırlat.
     Reminder { at: DateTime<Utc> },
+    /// Kayıtta para hareketi var ("Ayhan'a 1.850 ₺ ödendi"): kabul edilince hesap hareketi
+    /// olur (elle giriş; ekstrede karşılığı gelince eşleştirilir, raporda bir kez sayılır).
+    Expense {
+        /// Kuruş; eksi = gider, artı = gelir.
+        amount: crate::finance::Money,
+        category: String,
+        scope: crate::finance::Scope,
+        date: NaiveDate,
+    },
     /// Kayıt net değil: AI kullanıcıya kısa bir soru soruyor. Cevaplanınca kayıt cevapla
     /// birlikte yeniden sınıflandırılır; soru-cevaplar sonraki sınıflandırmalara örnek olur.
     Question {
@@ -112,6 +121,7 @@ impl SuggestionKind {
             Self::Tag { .. } => "tag",
             Self::Person { .. } => "person",
             Self::Reminder { .. } => "reminder",
+            Self::Expense { .. } => "expense",
             Self::Question { .. } => "question",
         }
     }
@@ -139,6 +149,12 @@ impl SuggestionKind {
                     local.format("%H:%M")
                 )
             }
+            Self::Expense { amount, scope, .. } => format!(
+                "{} · {} · {}",
+                if amount.0 < 0 { "Harcama" } else { "Gelir" },
+                amount.format_abs(),
+                scope.label()
+            ),
             Self::Question { text, .. } => text.as_str().to_owned(),
         }
     }
@@ -228,6 +244,9 @@ pub enum Effect {
     AddPerson {
         entry: EntryId,
         name: Label,
+    },
+    AddTransaction {
+        tx: crate::finance::Transaction,
     },
 }
 
@@ -330,6 +349,27 @@ impl Suggestion {
             SuggestionKind::Person { name } => Effect::AddPerson {
                 entry: entry.id,
                 name: name.clone(),
+            },
+            SuggestionKind::Expense {
+                amount,
+                category,
+                scope,
+                date,
+            } => Effect::AddTransaction {
+                tx: crate::finance::Transaction {
+                    id: crate::TransactionId::new(),
+                    date: *date,
+                    amount: *amount,
+                    description: entry.text.preview(120),
+                    category: category.clone(),
+                    scope: *scope,
+                    source: crate::finance::TxSource::Manual,
+                    account: None,
+                    topic: entry.topic(),
+                    entry: Some(entry.id),
+                    dedupe_key: None,
+                    matched_to: None,
+                },
             },
             SuggestionKind::Reminder { at } => {
                 let local = at.with_timezone(&tz);

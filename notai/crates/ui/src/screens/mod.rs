@@ -1,6 +1,7 @@
 //! Ekranlar (her biri tek ana eylemli; tasarım: design/screens/*.html).
 
 pub mod calendar;
+pub mod finance;
 pub mod flow;
 pub mod home;
 pub mod hub;
