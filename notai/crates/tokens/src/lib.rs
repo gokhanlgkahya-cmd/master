@@ -302,15 +302,18 @@ fn fmt(tok: &Token, value: &Value) -> Result<String, TokenError> {
 
 fn css_name(path: &[String]) -> (Option<&'static str>, String) {
     let join = |segs: &[String]| segs.iter().map(|s| kebab(s)).collect::<Vec<_>>().join("-");
-    if path.len() > 3 && path[0] == "color" && path[1] == "theme" {
-        if let Some(mode) = MODES.iter().find(|m| **m == path[2]) {
-            return (Some(mode), format!("--color-{}", join(&path[3..])));
-        }
+    if path.len() > 3
+        && path[0] == "color"
+        && path[1] == "theme"
+        && let Some(mode) = MODES.iter().find(|m| **m == path[2])
+    {
+        return (Some(mode), format!("--color-{}", join(&path[3..])));
     }
-    if path.len() > 2 && path[0] == "shadow" {
-        if let Some(mode) = MODES.iter().find(|m| **m == path[1]) {
-            return (Some(mode), format!("--shadow-{}", join(&path[2..])));
-        }
+    if path.len() > 2
+        && path[0] == "shadow"
+        && let Some(mode) = MODES.iter().find(|m| **m == path[1])
+    {
+        return (Some(mode), format!("--shadow-{}", join(&path[2..])));
     }
     (None, format!("--{}", join(path)))
 }
