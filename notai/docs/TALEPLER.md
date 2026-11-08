@@ -508,3 +508,22 @@ Aynı kod hem uygulamada hem sunucuda çalışır. Başkasına gönderilen sür�
   - paylaş uzantısı ve widget (Xcode).
 - **Arka plan:** iOS'ta arka plan çalışması çok kısıtlı; ajan ve zamanlanmış işler sunucuda olur. Termux yok, bu yüzden T-16 zorunlu.
 - **Kural eki:** `CLAUDE.md` dil kuralına "iOS/Swift yapıştırıcı kodu" istisnası eklenir.
+
+## T-18 · Güvenlik eksikleri (2026-11-08 değerlendirmesi; ayrıntı `docs/kod-haritasi/`)
+**Var:**
+- Rust, `unsafe` yasak, `unwrap`/`panic` yasak.
+- Belirteç + sabit süreli karşılaştırma; varsayılan yalnız yerel adres; CORS kapalı.
+- İçerik güvenlik politikası (CSP) + Tauri izin listesi.
+- AI çıktısı şemayla doğrulanır; öneri, onay, geri al.
+- İşlem içinde yazma + çöp kutusu.
+- WhatsApp ucu kaldırıldı.
+
+**Eksik (öncelik sırasıyla):**
+1. şifreli günlük yedek,
+2. uygulama kilidi (parmak izi/PIN),
+3. kendi ntfy sunucun,
+4. bağımlılık açığı taraması (`cargo-deny`/`cargo-audit`) → `check.sh`,
+5. gizlilik etiketleri + AI yönlendirme kuralı,
+6. veritabanı şifreleme (SQLCipher), belirteç değiştirme, deneme sınırı. Dağıtım öncesi şart.
+
+Sunucunun kendi HTTPS'i yok; yalnız Tailscale arkasında çalışmalı.

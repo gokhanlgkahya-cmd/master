@@ -1,0 +1,189 @@
+<title>NotAI Kod Haritası</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;600;700;800&family=JetBrains+Mono:wght@500&display=swap">
+<style>
+/* Düzen: üstte mimari harita (hangi parça hangi dilde), ortada iki çubuk grafik (satır sayıları), altta güvenlik katmanları tablosu. NotAI belirteçleri. */
+:root {
+  --bg: #FAF8F5; --surface: #FFFFFF; --sunken: #F3F0EB; --fg: #26231F; --muted: #6F675A; --line: #E7E2DA;
+  --bar: #23845B; --ink: #26231F;
+  --ok: #1F7A45; --part: #9A5B13; --no: #A33A2B;
+  --rust: #F4E4D8; --kt: #E6E1F5; --sql: #DDEBF6; --css: #F6E3EC;
+  --font: "Manrope", system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+  --mono: "JetBrains Mono", ui-monospace, Menlo, monospace;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --bg: #171512; --surface: #26231F; --sunken: #3A3530; --fg: #F3F0EB; --muted: #B3AA9C; --line: #3A3530;
+    --bar: #5CCB97; --ink: #F3F0EB; --ok: #8FD1A6; --part: #E7B46F; --no: #F09A8B;
+    --rust: #4A3528; --kt: #3A3450; --sql: #29384A; --css: #4A2E3B; color-scheme: dark;
+  }
+}
+:root[data-theme="dark"] {
+  --bg: #171512; --surface: #26231F; --sunken: #3A3530; --fg: #F3F0EB; --muted: #B3AA9C; --line: #3A3530;
+  --bar: #5CCB97; --ink: #F3F0EB; --ok: #8FD1A6; --part: #E7B46F; --no: #F09A8B;
+  --rust: #4A3528; --kt: #3A3450; --sql: #29384A; --css: #4A2E3B; color-scheme: dark;
+}
+* { box-sizing: border-box; }
+body { margin: 0; background: var(--bg); color: var(--fg); font-family: var(--font); font-size: 16px; line-height: 1.55; }
+.wrap { max-width: 1000px; margin: 0 auto; padding-left: max(16px, env(safe-area-inset-left, 0px)); padding-right: max(16px, env(safe-area-inset-right, 0px)); padding-block: 40px 64px; }
+.brand { font-weight: 800; font-size: 14px; letter-spacing: .07em; text-transform: uppercase; color: var(--muted); }
+h1 { margin: 6px 0 10px; font-size: clamp(28px, 4.6vw, 40px); line-height: 1.12; font-weight: 800; letter-spacing: -.02em; text-wrap: balance; }
+.lede { margin: 0; max-width: 66ch; color: var(--muted); font-size: 17px; }
+h2 { margin: 48px 0 6px; font-size: 23px; font-weight: 800; text-wrap: balance; }
+.sub { margin: 0 0 18px; color: var(--muted); max-width: 68ch; }
+.big { display: flex; flex-wrap: wrap; gap: 12px; margin-top: 22px; }
+.big div { background: var(--surface); border: 1px solid var(--line); border-radius: 14px; padding: 12px 16px; display: grid; gap: 2px; min-width: 0; }
+.big b { font-size: 26px; font-weight: 800; font-variant-numeric: tabular-nums; }
+.big span { color: var(--muted); font-size: 13px; }
+
+/* Mimari harita */
+.map { display: grid; grid-template-columns: minmax(0, 1fr) 70px minmax(0, 1fr); gap: 12px; align-items: stretch; }
+.side { background: var(--surface); border: 1px solid var(--line); border-radius: 16px; padding: 14px; display: grid; gap: 8px; align-content: start; min-width: 0; }
+.side h3 { margin: 0 0 4px; font-size: 16px; }
+.side h3 small { display: block; font-weight: 500; color: var(--muted); font-size: 12.5px; }
+.blk { border-radius: 10px; padding: 8px 10px; display: flex; justify-content: space-between; gap: 10px; align-items: baseline; font-size: 14px; }
+.blk em { font-style: normal; font-family: var(--mono); font-size: 12px; white-space: nowrap; }
+.rust { background: var(--rust); } .kt { background: var(--kt); } .sql { background: var(--sql); } .css { background: var(--css); }
+.link { display: grid; place-items: center; text-align: center; font-size: 12px; color: var(--muted); }
+.link span { writing-mode: vertical-rl; transform: rotate(180deg); letter-spacing: .04em; }
+.keys { display: flex; flex-wrap: wrap; gap: 8px 16px; margin-top: 12px; font-size: 13px; color: var(--muted); }
+.keys i { display: inline-block; width: 12px; height: 12px; border-radius: 3px; margin-right: 6px; vertical-align: -1px; }
+@media (max-width: 640px) { .map { grid-template-columns: 1fr; } .link span { writing-mode: horizontal-tb; transform: none; } }
+
+/* Çubuk grafikler */
+.charts { display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 18px; }
+figure.chart { margin: 0; background: var(--surface); border: 1px solid var(--line); border-radius: 16px; padding: 16px; display: grid; gap: 10px; min-width: 0; }
+figure.chart figcaption { font-weight: 700; }
+figure.chart figcaption span { display: block; font-weight: 500; color: var(--muted); font-size: 13px; }
+.bars { display: grid; gap: 7px; }
+.b { display: grid; grid-template-columns: 112px minmax(0, 1fr) 64px; gap: 10px; align-items: center; font-size: 13.5px; }
+.b .l { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.b .t { height: 14px; background: var(--sunken); border-radius: 0 4px 4px 0; position: relative; }
+.b .t i { position: absolute; inset: 0 auto 0 0; background: var(--bar); border-radius: 0 4px 4px 0; min-width: 2px; }
+.b .v { text-align: right; font-variant-numeric: tabular-nums; color: var(--fg); }
+.b:hover .t i { filter: brightness(1.12); }
+.note { font-size: 13px; color: var(--muted); }
+
+/* Güvenlik */
+.tablewrap { overflow-x: auto; }
+table.sec { border-collapse: collapse; width: 100%; min-width: 640px; background: var(--surface); border: 1px solid var(--line); }
+table.sec th, table.sec td { text-align: left; vertical-align: top; padding: 11px 12px; border-bottom: 1px solid var(--line); font-size: 14.5px; }
+table.sec th { background: var(--sunken); font-size: 13px; }
+.st { display: inline-flex; align-items: center; gap: 5px; font-weight: 700; font-size: 12.5px; white-space: nowrap; }
+.st.ok { color: var(--ok); } .st.part { color: var(--part); } .st.no { color: var(--no); }
+ol.todo { margin: 0; padding-left: 22px; display: grid; gap: 6px; max-width: 72ch; }
+footer { margin-top: 44px; padding-top: 18px; border-top: 1px solid var(--line); color: var(--muted); font-size: 13.5px; }
+</style>
+
+<div class="wrap">
+  <span class="brand">NotAI</span>
+  <h1>Hangi parça hangi dilde, nasıl korunuyor?</h1>
+  <p class="lede">Telefonda ve sunucuda çalışan kodun %93,7'si Rust. Geri kalanı görünüm (CSS), Android'e özel ince bir katman (Kotlin) ve veritabanı kalıpları (SQL). Sayılar 8 Kasım 2026'daki depodan satır sayımıdır.</p>
+  <div class="big">
+    <div><b>36.552</b><span>satır uygulama kodu</span></div>
+    <div><b>%93,7</b><span>Rust</span></div>
+    <div><b>226</b><span>otomatik test</span></div>
+    <div><b>11</b><span>Rust parçası (crate)</span></div>
+  </div>
+
+  <h2>Mimari harita</h2>
+  <p class="sub">Telefon ve ev sunucusu aynı Rust çekirdeğini paylaşır; senkron dakikada bir değişiklikleri karşılıklı taşır.</p>
+  <div class="map">
+    <div class="side">
+      <h3>Telefon / bilgisayar <small>NotAI uygulaması (Tauri 2)</small></h3>
+      <div class="blk rust"><span>Arayüz: ekranlar, yazma çubuğu</span><em>Rust → WASM</em></div>
+      <div class="blk css"><span>Görünüm: renk, boşluk, tema</span><em>CSS</em></div>
+      <div class="blk rust"><span>Uygulama kabuğu, bildirim, senkron</span><em>Rust</em></div>
+      <div class="blk rust"><span>Çekirdek kurallar: tarih, para, hareket, rapor</span><em>Rust</em></div>
+      <div class="blk sql"><span>Yerel veritabanı (SQLite)</span><em>Rust + SQL</em></div>
+      <div class="blk kt"><span>Android konuşma tanıma + izinler</span><em>Kotlin</em></div>
+    </div>
+    <div class="link"><span>senkron · Tailscale</span></div>
+    <div class="side">
+      <h3>S24 ev sunucusu <small>notai-server (axum)</small></h3>
+      <div class="blk rust"><span>API uçları, belirteç kontrolü</span><em>Rust</em></div>
+      <div class="blk rust"><span>AI işçisi, ses işçisi, zamanlayıcı</span><em>Rust</em></div>
+      <div class="blk rust"><span>Aynı çekirdek kurallar</span><em>Rust</em></div>
+      <div class="blk sql"><span>Sunucu veritabanı (SQLite)</span><em>Rust + SQL</em></div>
+      <div class="blk rust"><span>notai komut satırı (ajan buradan çalışır)</span><em>Rust</em></div>
+      <div class="blk"><span>Dışarıdakiler: Gemma, Whisper, ntfy, Hermes / Claude Code</span><em>bizim kodumuz değil</em></div>
+    </div>
+  </div>
+  <div class="keys"><span><i class="rust"></i>Rust</span><span><i class="css"></i>CSS</span><span><i class="sql"></i>SQL</span><span><i class="kt"></i>Kotlin</span></div>
+
+  <h2>Satır sayıları</h2>
+  <p class="sub">Soldaki grafik uygulamada çalışan kod, sağdaki Rust'ın parçalara dağılımı. Altta yardımcı dosyalar (uygulamaya girmez).</p>
+  <div class="charts">
+    <figure class="chart">
+      <figcaption>Uygulamada çalışan kod, dile göre<span>satır</span></figcaption>
+      <div class="bars" role="table" aria-label="Dile göre satır sayısı">
+        <div class="b" role="row" title="Rust: 34.247 satır (%93,7)"><span class="l" role="cell">Rust</span><span class="t"><i style="width:100%"></i></span><span class="v" role="cell">34.247</span></div>
+        <div class="b" role="row" title="CSS: 1.579 satır (%4,3)"><span class="l" role="cell">CSS</span><span class="t"><i style="width:4.6%"></i></span><span class="v" role="cell">1.579</span></div>
+        <div class="b" role="row" title="Kotlin: 378 satır (%1,0)"><span class="l" role="cell">Kotlin</span><span class="t"><i style="width:1.1%"></i></span><span class="v" role="cell">378</span></div>
+        <div class="b" role="row" title="SQL: 348 satır (%1,0)"><span class="l" role="cell">SQL</span><span class="t"><i style="width:1%"></i></span><span class="v" role="cell">348</span></div>
+      </div>
+      <p class="note">JavaScript/TypeScript ile iş mantığı yok (proje kuralı).</p>
+    </figure>
+    <figure class="chart">
+      <figcaption>Rust kodu, parçaya göre<span>satır</span></figcaption>
+      <div class="bars" role="table" aria-label="Rust parçalarına göre satır sayısı">
+        <div class="b" role="row" title="core: tarih, para, hareket, rapor kuralları"><span class="l">Çekirdek</span><span class="t"><i style="width:100%"></i></span><span class="v">7.899</span></div>
+        <div class="b" role="row" title="ui: Leptos ekranları"><span class="l">Arayüz</span><span class="t"><i style="width:92.6%"></i></span><span class="v">7.316</span></div>
+        <div class="b" role="row" title="store: veritabanı, senkron uygulama"><span class="l">Depo</span><span class="t"><i style="width:84.8%"></i></span><span class="v">6.696</span></div>
+        <div class="b" role="row" title="server: API, işçiler, zamanlayıcı"><span class="l">Sunucu</span><span class="t"><i style="width:59.7%"></i></span><span class="v">4.717</span></div>
+        <div class="b" role="row" title="ai: sınıflandırma, Whisper, embedding"><span class="l">AI</span><span class="t"><i style="width:29.5%"></i></span><span class="v">2.328</span></div>
+        <div class="b" role="row" title="app: Tauri kabuğu"><span class="l">Kabuk</span><span class="t"><i style="width:24.5%"></i></span><span class="v">1.933</span></div>
+        <div class="b" role="row" title="api: ortak veri tipleri"><span class="l">API tipleri</span><span class="t"><i style="width:20.5%"></i></span><span class="v">1.620</span></div>
+        <div class="b" role="row" title="sync: senkron istemcisi"><span class="l">Senkron</span><span class="t"><i style="width:7.4%"></i></span><span class="v">582</span></div>
+        <div class="b" role="row" title="cli: notai komut satırı"><span class="l">Komut satırı</span><span class="t"><i style="width:7.1%"></i></span><span class="v">563</span></div>
+        <div class="b" role="row" title="tokens: tasarım belirteçleri üretici"><span class="l">Belirteçler</span><span class="t"><i style="width:6.9%"></i></span><span class="v">544</span></div>
+        <div class="b" role="row" title="speech: Android eklentisinin Rust kabuğu (Kotlin ayrı)"><span class="l">Konuşma</span><span class="t"><i style="width:0.6%"></i></span><span class="v">49</span></div>
+      </div>
+    </figure>
+    <figure class="chart">
+      <figcaption>Yardımcı dosyalar (uygulamaya girmez)<span>satır</span></figcaption>
+      <div class="bars" role="table" aria-label="Yardımcı dosyalar">
+        <div class="b" role="row" title="Belgeler: DEVAM, TALEPLER, PROGRESS…"><span class="l">Belgeler (MD)</span><span class="t"><i style="width:100%"></i></span><span class="v">3.610</span></div>
+        <div class="b" role="row" title="Faz 1 tasarım prototipleri"><span class="l">Tasarım (HTML)</span><span class="t"><i style="width:73.9%"></i></span><span class="v">2.668</span></div>
+        <div class="b" role="row" title="Tasarım belirteçleri kaynağı"><span class="l">Belirteç (JSON)</span><span class="t"><i style="width:46.4%"></i></span><span class="v">1.675</span></div>
+        <div class="b" role="row" title="Tarayıcı deneme betikleri (Playwright)"><span class="l">Testler (JS)</span><span class="t"><i style="width:20.2%"></i></span><span class="v">731</span></div>
+        <div class="b" role="row" title="Derleme ve deneme betikleri"><span class="l">Betik (Shell)</span><span class="t"><i style="width:4.2%"></i></span><span class="v">153</span></div>
+        <div class="b" role="row" title="Sahte Whisper sunucusu (test)"><span class="l">Python</span><span class="t"><i style="width:0.6%"></i></span><span class="v">8</span></div>
+      </div>
+    </figure>
+  </div>
+
+  <h2>Güvenlik: neler var, neler eksik?</h2>
+  <p class="sub">Kişisel kullanım (kendi telefonun + Tailscale arkasındaki S24) için bugünkü koruma makul. Başkasına dağıtım ya da ticari kullanım için eksikler kapanmalı.</p>
+  <div class="tablewrap">
+    <table class="sec">
+      <tr><th>Katman</th><th>Durum</th><th>Bugün ne yapıyor</th><th>Eksik / öneri</th></tr>
+      <tr><td>Kodun kendisi</td><td><span class="st ok">✓ Var</span></td><td>Rust; güvensiz kod (<code>unsafe</code>) yasak; çökme çağrıları (<code>unwrap</code>, <code>panic</code>) yasak; her değişiklikte lint + 226 test</td><td>Bağımlılık açığı taraması yok → <code>cargo-deny</code> / <code>cargo-audit</code> kontrol betiğine eklenmeli</td></tr>
+      <tr><td>Sunucuya erişim</td><td><span class="st ok">✓ Var</span></td><td>Belirteç zorunlu, zamanlamaya dayalı tahmine karşı sabit süreli karşılaştırma; varsayılan yalnız yerel adres; tarayıcı erişimi (CORS) kapalı</td><td>Tek ortak anahtar, değiştirme yok; deneme sayısı sınırı yok</td></tr>
+      <tr><td>Ağ şifrelemesi</td><td><span class="st part">◐ Kısmi</span></td><td>Tailscale ile şifreli özel ağ öneriliyor</td><td>Sunucunun kendi HTTPS'i yok; Tailscale dışında açılmamalı</td></tr>
+      <tr><td>Uygulama içi</td><td><span class="st ok">✓ Var</span></td><td>İçerik güvenlik politikası (dış betik yok); Tauri izin listesi (yalnız çekirdek, bildirim, konuşma); ses dosyası yolu doğrulanıyor; ek boyutu ≤ 10 MB, tür listesi</td><td>—</td></tr>
+      <tr><td>AI çıktıları</td><td><span class="st ok">✓ Var</span></td><td>Şemayla doğrulanır; öneri → onay → geri al; otonom mod eşikli ve kapalı başlar</td><td>MCP ile ajana açılırken araçlar yetkiye göre ayrılmalı (T-11)</td></tr>
+      <tr><td>Veri kaybı</td><td><span class="st ok">✓ Var</span></td><td>Her yazma işlem içinde; silme önce çöpe (30 gün); değişiklik günlüğü iz tutar</td><td>—</td></tr>
+      <tr><td>Yedek</td><td><span class="st no">✕ Yok</span></td><td>S24 veritabanının yedeği yok</td><td>Günlük, şifreli yedek (PC'ye / Syncthing)</td></tr>
+      <tr><td>Uygulama kilidi</td><td><span class="st no">✕ Yok</span></td><td>Telefonun kendi kilidine güveniliyor</td><td>Parmak izi / PIN ile açılış (özellikle para ve seans verisi için)</td></tr>
+      <tr><td>Veritabanı şifreleme</td><td><span class="st no">✕ Yok</span></td><td>Android cihaz şifrelemesine güveniliyor</td><td>Şifreli SQLite (SQLCipher); S24'te de</td></tr>
+      <tr><td>Dışarı giden veri</td><td><span class="st part">◐ Kısmi</span></td><td>Ekstre yerelde okunur; veri telefon + S24'te</td><td>Claude Code / bulut model kullanılırsa metin dışarı gider → gizlilik etiketleri ve AI yönlendirme kuralı (N-6)</td></tr>
+      <tr><td>Bildirim kanalı</td><td><span class="st part">◐ Kısmi</span></td><td>ntfy ile anlık bildirim</td><td>ntfy.sh herkese açık; S24'e kendi ntfy'ın kurulmalı</td></tr>
+      <tr><td>Saldırı yüzeyi</td><td><span class="st ok">✓ Var</span></td><td>WhatsApp webhook'u kaldırıldı; dışa açık uç sayısı azaldı</td><td>—</td></tr>
+    </table>
+  </div>
+
+  <h2>Önerilen sıra</h2>
+  <ol class="todo">
+    <li>Şifreli günlük yedek (veri kaybına karşı en büyük boşluk).</li>
+    <li>Uygulama kilidi (parmak izi / PIN).</li>
+    <li>Kendi ntfy sunucun.</li>
+    <li>Bağımlılık açığı taraması kontrol betiğine.</li>
+    <li>Gizlilik etiketleri + hangi verinin hangi AI'a gideceği kuralı.</li>
+    <li>Veritabanı şifreleme ve belirteç değiştirme (dağıtım öncesi şart).</li>
+  </ol>
+
+  <footer>NotAI · 8 Kasım 2026 · Satır sayıları git'teki dosyalardan; derlenmiş çıktı ve bağımlılıklar hariç.</footer>
+</div>

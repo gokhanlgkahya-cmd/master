@@ -27,6 +27,7 @@ cd notai
 | `docs/AGENT.md` | Ajanın (Hermes / Claude Code) `notai` CLI ile çalışması |
 | `docs/rehber/` | 26 adımlık kullanım rehberi (ekran görüntülü HTML) |
 | `docs/raporlar/` | Raporların yerleşimi: bugünkü ekranlar + öneri taslakları |
+| `docs/kod-haritasi/` | Hangi parça hangi dilde (grafik) + güvenlik katmanları ve eksikler (T-18) |
 | `docs/DIS_MODEL_BRIFI.md` | Başka bir AI modeline tasarımı tanıtma brifi |
 | `scripts/e2e/` | Tarayıcı denemeleri (Playwright) ve örnek veri betikleri |
 | `scripts/commit-if-green.sh` | `check.sh` yeşilse commit + push |
