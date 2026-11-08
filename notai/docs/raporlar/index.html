@@ -1,0 +1,205 @@
+<title>NotAI Raporları</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700;800&family=JetBrains+Mono:wght@500&display=swap">
+<style>
+/* Düzen: üstte bugünkü durum (gerçek ekranlar), altta önerilen yerleşim (telefon taslakları) ve seçenek karşılaştırması. Renkler NotAI belirteçlerinden. */
+:root {
+  --bg: #FAF8F5; --surface: #FFFFFF; --sunken: #F3F0EB; --fg: #26231F; --muted: #6F675A;
+  --line: #E7E2DA; --ink: #26231F; --on-ink: #FAF8F5;
+  --ok: #2F6B45; --warn: #9A5B13; --bad: #A33A2B;
+  --t1: #DCEFE3; --t2: #E3ECF7; --t3: #F7E6DA; --t4: #EEE5F5;
+  --font: "Manrope", system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+  --mono: "JetBrains Mono", ui-monospace, Menlo, monospace;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --bg: #171512; --surface: #26231F; --sunken: #3A3530; --fg: #F3F0EB; --muted: #B3AA9C;
+    --line: #3A3530; --ink: #F3F0EB; --on-ink: #171512; --ok: #8FD1A6; --warn: #E7B46F; --bad: #F09A8B;
+    --t1: #24402F; --t2: #253447; --t3: #4A3426; --t4: #3B2F47; color-scheme: dark;
+  }
+}
+:root[data-theme="dark"] {
+  --bg: #171512; --surface: #26231F; --sunken: #3A3530; --fg: #F3F0EB; --muted: #B3AA9C;
+  --line: #3A3530; --ink: #F3F0EB; --on-ink: #171512; --ok: #8FD1A6; --warn: #E7B46F; --bad: #F09A8B;
+  --t1: #24402F; --t2: #253447; --t3: #4A3426; --t4: #3B2F47; color-scheme: dark;
+}
+* { box-sizing: border-box; }
+body { margin: 0; background: var(--bg); color: var(--fg); font-family: var(--font); font-size: 16px; line-height: 1.55; }
+.wrap {
+  max-width: 1040px; margin: 0 auto;
+  padding-left: max(16px, env(safe-area-inset-left, 0px));
+  padding-right: max(16px, env(safe-area-inset-right, 0px));
+  padding-block: 40px 72px;
+}
+.brand { font-weight: 800; font-size: 14px; letter-spacing: .07em; text-transform: uppercase; color: var(--muted); }
+h1 { margin: 6px 0 10px; font-size: clamp(28px, 4.6vw, 42px); line-height: 1.12; font-weight: 800; letter-spacing: -.02em; text-wrap: balance; }
+.lede { margin: 0; max-width: 66ch; color: var(--muted); font-size: 17px; }
+h2 { margin: 52px 0 6px; font-size: 24px; font-weight: 800; letter-spacing: -.01em; text-wrap: balance; }
+.sub { margin: 0 0 22px; color: var(--muted); max-width: 66ch; }
+
+/* Bugün: gerçek ekranlar */
+.now { display: grid; grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); gap: 16px; }
+.now figure { margin: 0; display: grid; gap: 8px; align-content: start; }
+.now img { width: 100%; height: auto; aspect-ratio: 412/915; border-radius: 14px; border: 4px solid var(--ink); background: var(--ink); display: block; }
+.now figcaption { font-size: 13px; line-height: 1.4; }
+.now figcaption b { display: block; font-size: 14px; }
+.now figcaption span { color: var(--muted); }
+.verdict { margin-top: 18px; background: var(--sunken); border-radius: 14px; padding: 14px 16px; max-width: 74ch; }
+
+/* Önerilen: telefon taslakları */
+.phones { display: grid; grid-template-columns: repeat(auto-fit, minmax(270px, 1fr)); gap: 22px; align-items: start; }
+.mock { display: grid; gap: 10px; }
+.mock > p { margin: 0; font-size: 14px; color: var(--muted); }
+.mock > h3 { margin: 0; font-size: 17px; }
+.phone {
+  border: 6px solid var(--ink); border-radius: 26px; background: var(--bg); overflow: hidden;
+  font-size: 12.5px; line-height: 1.35; max-width: 340px; width: 100%;
+}
+.bar { display: flex; align-items: center; gap: 8px; padding: 12px 12px 10px; border-bottom: 1px solid var(--line); background: var(--surface); }
+.bar .t { font-weight: 800; font-size: 15px; }
+.bar .s { color: var(--muted); font-size: 11px; }
+.bar .grow { flex: 1; min-width: 0; }
+.bar .ic { width: 26px; height: 26px; border-radius: 50%; background: var(--sunken); display: grid; place-items: center; font-size: 13px; flex: none; }
+.search { margin: 10px 12px 6px; background: var(--sunken); border-radius: 999px; padding: 7px 12px; color: var(--muted); }
+.row { display: flex; gap: 10px; align-items: center; padding: 9px 12px; }
+.row + .row { border-top: 1px solid var(--line); }
+.av { width: 34px; height: 34px; border-radius: 50%; display: grid; place-items: center; font-size: 15px; flex: none; }
+.row .n { font-weight: 700; font-size: 13px; }
+.row .p { color: var(--muted); font-size: 11.5px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.row .grow { flex: 1; min-width: 0; }
+.row.hl { background: var(--t1); }
+.pin { color: var(--muted); font-size: 11px; }
+.new { font-size: 10px; font-weight: 800; letter-spacing: .05em; background: var(--ink); color: var(--on-ink); border-radius: 999px; padding: 1px 7px; }
+.sec { padding: 10px 12px 4px; font-size: 10.5px; font-weight: 800; letter-spacing: .08em; color: var(--muted); text-transform: uppercase; }
+.card { margin: 4px 12px 8px; background: var(--surface); border: 1px solid var(--line); border-radius: 14px; padding: 10px 12px; display: grid; gap: 4px; }
+.card .h { display: flex; justify-content: space-between; gap: 8px; font-weight: 700; }
+.card .v { font-variant-numeric: tabular-nums; }
+.card .m { color: var(--muted); font-size: 11.5px; }
+.chip { display: inline-block; font-size: 10.5px; font-weight: 700; border-radius: 999px; padding: 1px 8px; background: var(--sunken); }
+.chip.ok { color: var(--ok); } .chip.warn { color: var(--warn); } .chip.bad { color: var(--bad); }
+.tiles { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 6px; margin: 8px 12px; }
+.tile { background: var(--surface); border: 1px solid var(--line); border-radius: 12px; padding: 8px; display: grid; gap: 2px; }
+.tile .l { color: var(--muted); font-size: 10.5px; }
+.tile .v { font-weight: 800; font-size: 14px; font-variant-numeric: tabular-nums; }
+table.mini { width: calc(100% - 24px); margin: 4px 12px 8px; border-collapse: collapse; font-variant-numeric: tabular-nums; }
+table.mini th, table.mini td { text-align: left; padding: 5px 4px; border-bottom: 1px solid var(--line); font-size: 11.5px; }
+table.mini th { color: var(--muted); font-weight: 700; }
+table.mini td.r, table.mini th.r { text-align: right; }
+.ask { margin: 6px 12px 10px; border: 1.5px solid var(--ink); border-radius: 999px; padding: 7px 12px; font-size: 12px; }
+.ask b { font-weight: 700; }
+.answer { margin: 0 12px 10px; background: var(--sunken); border-radius: 12px; padding: 8px 10px; font-size: 12px; }
+.seg { display: flex; gap: 4px; margin: 8px 12px; background: var(--sunken); padding: 3px; border-radius: 10px; }
+.seg span { flex: 1; text-align: center; padding: 5px 0; border-radius: 8px; font-weight: 700; font-size: 11.5px; color: var(--muted); }
+.seg span.on { background: var(--surface); color: var(--fg); border: 1px solid var(--line); }
+.tabbar { display: flex; justify-content: space-around; border-top: 1px solid var(--line); padding: 8px 4px 10px; color: var(--muted); font-size: 10px; background: var(--surface); }
+
+/* Karşılaştırma */
+.tablewrap { overflow-x: auto; }
+table.cmp { border-collapse: collapse; width: 100%; min-width: 640px; background: var(--surface); border: 1px solid var(--line); border-radius: 14px; overflow: hidden; }
+table.cmp th, table.cmp td { text-align: left; vertical-align: top; padding: 12px 14px; border-bottom: 1px solid var(--line); font-size: 14.5px; }
+table.cmp th { background: var(--sunken); font-size: 13px; letter-spacing: .02em; }
+table.cmp tr:last-child td { border-bottom: 0; }
+.rec { font-weight: 800; color: var(--ok); }
+footer { margin-top: 48px; padding-top: 20px; border-top: 1px solid var(--line); color: var(--muted); font-size: 14px; }
+a { color: var(--fg); }
+</style>
+
+<div class="wrap">
+  <span class="brand">NotAI</span>
+  <h1>Raporlar nereden alınacak?</h1>
+  <p class="lede">Bugün her rapor kendi köşesinde duruyor. Önerim üç kapı: ana ekranda tek bir "Raporlar" satırı, her konunun içinde o konunun rapor kartı ve serbest soru ("bu ay Mete Zeytin'e kaç adet?"). Karar senin; aşağıda bugünkü ekranlar ve önerinin taslakları var.</p>
+
+  <h2>Bugün raporlar nerede?</h2>
+  <p class="sub">Gerçek ekranlar, örnek verilerle.</p>
+  <div class="now">
+    <figure><img src="img/01.webp" alt="Ana ekran: iğneli satırlar" width="412" height="915" loading="lazy"><figcaption><b>Ana ekran</b><span>İğneli satırlar: Haftalık, Harcamalar. Sabah planı bildirim + kart.</span></figcaption></figure>
+    <figure><img src="img/19.webp" alt="Haftalık gözden geçirme" width="412" height="915" loading="lazy"><figcaption><b>Haftalık gözden geçirme</b><span>İşlenmemiş, durgun projeler, 7 gün, geciken, biten.</span></figcaption></figure>
+    <figure><img src="img/20.webp" alt="Harcamalar raporu" width="412" height="915" loading="lazy"><figcaption><b>Harcamalar</b><span>Aylık gelir/gider/birikim, dağılımlar, yorumlar.</span></figcaption></figure>
+    <figure><img src="img/21.webp" alt="Varlıklar" width="412" height="915" loading="lazy"><figcaption><b>Varlıklar</b><span>Toplam, 30 gün, türlere göre.</span></figcaption></figure>
+    <figure><img src="img/23.webp" alt="Hareketler" width="412" height="915" loading="lazy"><figcaption><b>Hareketler</b><span>Yolculuk, kalış, yol masrafı.</span></figcaption></figure>
+    <figure><img src="img/24.webp" alt="Fiyat takibi mesajı" width="412" height="915" loading="lazy"><figcaption><b>Fiyat takibi</b><span>Konunun içinde, NotAI mesajı olarak.</span></figcaption></figure>
+    <figure><img src="img/18.webp" alt="Ara / Sor" width="412" height="915" loading="lazy"><figcaption><b>Ara / Sor</b><span>Notlardan cevap; sayısal rapor yok.</span></figcaption></figure>
+  </div>
+  <p class="verdict"><b>Eksik:</b> İş raporu yok. Satılan kg/adet, müşteri ve ürün bazında satış, bekleyen tahsilat, depoda bekleyen ürün ve ortak cari hesap henüz hiçbir ekranda yok. Raporlar da tek bir yerden bulunmuyor.</p>
+
+  <h2>Önerilen yerleşim</h2>
+  <p class="sub">Taslak ekranlardaki sayılar örnektir.</p>
+  <div class="phones">
+
+    <div class="mock">
+      <h3>1 · Ana ekranda "Raporlar" satırı</h3>
+      <p>WhatsApp düzenini bozmadan, iğneli tek satır. Altındaki kısa özet, bakmaya değer bir şey varsa onu söyler.</p>
+      <div class="phone" role="img" aria-label="Taslak: ana ekranda iğneli Raporlar satırı">
+        <div class="bar"><div class="grow"><div class="t">NotAI</div></div><span>＋</span><span>⋮</span></div>
+        <div class="search">Ara ya da notlarına sor</div>
+        <div class="row"><div class="av" style="background:var(--sunken)">✎</div><div class="grow"><div class="n">Ana Günlük</div><div class="p">Kavlak'a 80 gr 500 adet</div></div><span class="pin">📌</span></div>
+        <div class="row hl"><div class="av" style="background:var(--surface)">📊</div><div class="grow"><div class="n">Raporlar <span class="new">YENİ</span></div><div class="p">Bu ay 77,5 kg satış · 3 tahsilat bekliyor</div></div><span class="pin">📌</span></div>
+        <div class="row"><div class="av" style="background:var(--sunken)">🗓</div><div class="grow"><div class="n">Haftalık gözden geçirme</div><div class="p">2 tanımsız kayıt · 1 durgun konu</div></div><span class="pin">📌</span></div>
+        <div class="row"><div class="av" style="background:var(--t3)">🧼</div><div class="grow"><div class="n">Sabun işi</div><div class="p">100 adet Şirinler basıldı</div></div></div>
+        <div class="row"><div class="av" style="background:var(--t2)">🏠</div><div class="grow"><div class="n">Ev</div><div class="p">Kombi servisi yarın 10:00</div></div></div>
+        <div class="tabbar"><span>Günlük</span><span>Görevler</span><span>Takvim</span><span>Hatırlatma</span><span>Ara/Sor</span></div>
+      </div>
+    </div>
+
+    <div class="mock">
+      <h3>2 · Raporlar ekranı</h3>
+      <p>En üstte serbest soru. Altta kartlar: bugün, iş, para, hayat. Her karta dokununca ayrıntılı rapora gidilir; ay okla değişir.</p>
+      <div class="phone" role="img" aria-label="Taslak: Raporlar ekranı">
+        <div class="bar"><span>‹</span><div class="ic">📊</div><div class="grow"><div class="t">Raporlar</div><div class="s">Kasım 2026</div></div><span>‹ ›</span></div>
+        <div class="ask"><b>Sor:</b> bu ay Mete Zeytin'e kaç adet?</div>
+        <div class="answer">250 adet (150 g) · 37,5 kg · 3 satış. <u>Satışları göster</u></div>
+        <div class="sec">Bugün</div>
+        <div class="card"><div class="h"><span>Takip</span><span class="chip warn">4 açık uç</span></div><div class="m">60 Şirinler depoda 10 gün · Kavlak tahsilatı 15 gün</div></div>
+        <div class="card"><div class="h"><span>Düzen karnesi</span><span class="chip bad">2 tanımsız</span></div><div class="m">1 açıklamasız fotoğraf · 1 eşleşmemiş defter satırı</div></div>
+        <div class="sec">İş · Sabun işi</div>
+        <div class="card"><div class="h"><span>Satış</span><span class="v">77,5 kg · 750 ad</span></div><div class="m">Bekleyen tahsilat 18.400 ₺ · Ortak cari: Anıl +2.300 ₺</div></div>
+        <div class="sec">Para · Hayat</div>
+        <div class="card"><div class="h"><span>Harcamalar</span><span class="v">−12.916 ₺</span></div><div class="m">Birikim %84 · İş 5.250 ₺</div></div>
+        <div class="card"><div class="h"><span>Varlıklar · Hareketler</span><span class="v">6,38 M ₺</span></div><div class="m">22 yolculuk · 18 iş</div></div>
+      </div>
+    </div>
+
+    <div class="mock">
+      <h3>3 · Konunun içinde rapor kartı</h3>
+      <p>Sabun işi'ne girince üstte durum kartı; "Rapor"a dokununca müşteri, ürün, tahsilat ve ortak cari tabloları. Veri kutucuklardan gelir, yazı aranmaz.</p>
+      <div class="phone" role="img" aria-label="Taslak: Sabun işi rapor kartı">
+        <div class="bar"><span>‹</span><div class="ic" style="background:var(--t3)">🧼</div><div class="grow"><div class="t">Sabun işi · Rapor</div><div class="s">Kasım 2026</div></div><span>⋮</span></div>
+        <div class="seg"><span class="on">Satış</span><span>Tahsilat</span><span>Stok</span><span>Ortak</span></div>
+        <div class="tiles">
+          <div class="tile"><span class="l">Satılan</span><span class="v">77,5 kg</span></div>
+          <div class="tile"><span class="l">Adet</span><span class="v">750</span></div>
+          <div class="tile"><span class="l">Ciro</span><span class="v">41.200 ₺</span></div>
+        </div>
+        <div class="sec">Müşteriye göre</div>
+        <table class="mini">
+          <tr><th>Müşteri</th><th class="r">Adet</th><th class="r">kg</th><th class="r">Tahsilat</th></tr>
+          <tr><td>Kavlak</td><td class="r">500</td><td class="r">40,0</td><td class="r"><span class="chip bad">bekliyor</span></td></tr>
+          <tr><td>Mete Zeytin</td><td class="r">250</td><td class="r">37,5</td><td class="r"><span class="chip ok">alındı</span></td></tr>
+        </table>
+        <div class="sec">Ürüne göre</div>
+        <table class="mini">
+          <tr><th>Ürün</th><th class="r">Adet</th><th class="r">kg</th></tr>
+          <tr><td>80 g zeytinyağlı</td><td class="r">500</td><td class="r">40,0</td></tr>
+          <tr><td>150 g eşek sütlü</td><td class="r">250</td><td class="r">37,5</td></tr>
+          <tr><td>Şirinler (depoda)</td><td class="r">60</td><td class="r">—</td></tr>
+        </table>
+      </div>
+    </div>
+  </div>
+
+  <h2>Seçenekler</h2>
+  <p class="sub">Üçü birlikte de kullanılabilir. Önerim A + C + Sor.</p>
+  <div class="tablewrap">
+    <table class="cmp">
+      <tr><th>Seçenek</th><th>Nasıl</th><th>Artı</th><th>Eksi</th></tr>
+      <tr><td><b>A · İğneli "Raporlar" satırı</b> <span class="rec">önerilen</span></td><td>Ana ekranda Ana Günlük'ün altında; Haftalık ve Harcamalar bunun içine taşınır</td><td>WhatsApp düzeni bozulmaz; tek kapı; özet satırı dikkat çeker</td><td>Bir dokunuş daha</td></tr>
+      <tr><td><b>B · Alt sekme "Raporlar"</b></td><td>Hatırlatma, Takvim'in içine katılır; yerine Raporlar sekmesi gelir</td><td>Her yerden tek dokunuş</td><td>Sekme düzeni değişir; hatırlatmalar bir kat içeri girer</td></tr>
+      <tr><td><b>C · Konu içi rapor kartı</b> <span class="rec">önerilen</span></td><td>Her konunun üstünde durum kartı; "Rapor" ile ayrıntı</td><td>Rapor bağlamın içinde; alt konu şablonlarından beslenir</td><td>Konular arası toplam için A ya da B yine gerekir</td></tr>
+      <tr><td><b>Sor</b> <span class="rec">önerilen</span></td><td>Ara/Sor'a ve Raporlar'ın üstüne serbest soru: "bu ay kaç kg?"</td><td>Önceden tasarlanmamış raporlar da çıkar</td><td>Cevabın doğruluğu kutucukların düzgün dolmasına bağlı</td></tr>
+    </table>
+  </div>
+
+  <footer>NotAI · 8 Kasım 2026 · Bu sayfa bir taslaktır; ekranlar PC'de karar sonrası tasarlanacak.</footer>
+</div>
