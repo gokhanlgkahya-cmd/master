@@ -1,0 +1,413 @@
+<title>NotAI Kullanım Rehberi</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700;800&family=JetBrains+Mono:wght@500&display=swap">
+<style>
+/* Düzen: solda telefon ekranı, sağda adım metni; bölümler uygulamadaki iş akışı sırasında. Renkler NotAI belirteçlerinden. */
+:root {
+  --bg: #FAF8F5;
+  --surface: #FFFFFF;
+  --sunken: #F3F0EB;
+  --fg: #26231F;
+  --muted: #6F675A;
+  --line: #E7E2DA;
+  --ink: #26231F;
+  --on-ink: #FAF8F5;
+  --font: "Manrope", system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+  --mono: "JetBrains Mono", ui-monospace, "SFMono-Regular", Menlo, monospace;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --bg: #171512; --surface: #26231F; --sunken: #3A3530; --fg: #F3F0EB; --muted: #B3AA9C;
+    --line: #3A3530; --ink: #F3F0EB; --on-ink: #171512; color-scheme: dark;
+  }
+}
+:root[data-theme="dark"] {
+  --bg: #171512; --surface: #26231F; --sunken: #3A3530; --fg: #F3F0EB; --muted: #B3AA9C;
+  --line: #3A3530; --ink: #F3F0EB; --on-ink: #171512; color-scheme: dark;
+}
+* { box-sizing: border-box; }
+body {
+  margin: 0; background: var(--bg); color: var(--fg); font-family: var(--font);
+  font-size: 16px; line-height: 1.6;
+}
+.wrap {
+  max-width: 980px; margin: 0 auto;
+  padding-left: max(16px, env(safe-area-inset-left, 0px));
+  padding-right: max(16px, env(safe-area-inset-right, 0px));
+  padding-block: 40px 72px;
+}
+header.top { display: grid; gap: 14px; padding-bottom: 28px; border-bottom: 1px solid var(--line); }
+.brand { font-weight: 800; font-size: 15px; letter-spacing: .06em; text-transform: uppercase; color: var(--muted); }
+h1 { margin: 0; font-size: clamp(30px, 5vw, 44px); line-height: 1.12; font-weight: 800; letter-spacing: -.02em; text-wrap: balance; }
+.lede { margin: 0; max-width: 64ch; color: var(--muted); font-size: 17px; }
+.note { margin: 0; max-width: 64ch; font-size: 14px; color: var(--muted); background: var(--sunken); border-radius: 12px; padding: 12px 14px; }
+nav.toc { display: flex; flex-wrap: wrap; gap: 8px; padding-top: 20px; }
+nav.toc a {
+  color: var(--fg); text-decoration: none; font-size: 14px; font-weight: 600;
+  border: 1px solid var(--line); border-radius: 999px; padding: 6px 14px; background: var(--surface);
+}
+nav.toc a:hover { background: var(--sunken); }
+nav.toc a:focus-visible, a:focus-visible { outline: 2px solid var(--ink); outline-offset: 2px; }
+section.part { padding-top: 44px; scroll-margin-top: 16px; }
+.part > h2 { margin: 0 0 4px; font-size: 26px; font-weight: 800; letter-spacing: -.01em; text-wrap: balance; }
+.part > p.sub { margin: 0 0 22px; color: var(--muted); max-width: 64ch; }
+.steps { display: grid; gap: 28px; list-style: none; margin: 0; padding: 0; }
+.step {
+  display: grid; grid-template-columns: 250px minmax(0, 1fr); gap: 28px; align-items: start;
+  padding: 20px; border: 1px solid var(--line); border-radius: 20px; background: var(--surface);
+}
+.shot {
+  margin: 0; border-radius: 22px; overflow: hidden; border: 6px solid var(--ink);
+  background: var(--ink); max-width: 100%;
+}
+.shot img { display: block; width: 100%; height: auto; aspect-ratio: 412 / 915; }
+.body { min-width: 0; display: grid; gap: 10px; align-content: start; padding-top: 4px; }
+.num { font-family: var(--mono); font-size: 13px; color: var(--muted); letter-spacing: .04em; }
+.step h3 { margin: 0; font-size: 20px; line-height: 1.3; font-weight: 700; text-wrap: balance; }
+.step p { margin: 0; max-width: 62ch; }
+.step ul { margin: 0; padding-left: 20px; display: grid; gap: 4px; max-width: 62ch; }
+.tip { font-size: 14px; color: var(--muted); border-left: 3px solid var(--line); padding-left: 12px; }
+kbd, .ui {
+  font-family: var(--font); font-weight: 700; font-size: .92em; background: var(--sunken);
+  border-radius: 6px; padding: 1px 6px; white-space: nowrap;
+}
+footer { margin-top: 56px; padding-top: 24px; border-top: 1px solid var(--line); color: var(--muted); font-size: 14px; display: grid; gap: 8px; }
+@media (max-width: 680px) {
+  .step { grid-template-columns: 1fr; gap: 18px; padding: 16px; }
+  .shot { max-width: 300px; justify-self: center; width: 100%; }
+}
+@media (prefers-reduced-motion: no-preference) { html { scroll-behavior: smooth; } }
+</style>
+
+<div class="wrap">
+  <header class="top">
+    <span class="brand">NotAI</span>
+    <h1>Programı adım adım kullanmak</h1>
+    <p class="lede">Aklına geleni yazıyorsun ya da söylüyorsun; NotAI onu doğru konuya koyuyor, işe ve hatırlatmaya çeviriyor, zamanı gelince sana söylüyor. Aşağıdaki görüntüler, sunucuya bağlı uygulamadan örnek verilerle alındı (telefon boyutu).</p>
+    <p class="note">Görüntüler bilgisayar tarayıcısında alındı; telefonda ekranlar aynıdır. Yalnız ses ve konum telefonun kendi özellikleriyle çalışır. "Yolda 0 dk" gibi değerler, örnek kayıtlar aynı dakikada girildiği içindir.</p>
+    <nav class="toc" aria-label="Bölümler">
+      <a href="#ana-ekran">Ana ekran</a>
+      <a href="#yakalama">Yakalama</a>
+      <a href="#ai">AI önerileri</a>
+      <a href="#konular">Konular</a>
+      <a href="#takip">Görev · takvim · hatırlatma</a>
+      <a href="#bulma">Ara ve gözden geçir</a>
+      <a href="#hayat">Para · varlık · hareket</a>
+      <a href="#ayarlar">Ayarlar</a>
+    </nav>
+  </header>
+
+  <section class="part" id="ana-ekran">
+    <h2>Ana ekran</h2>
+    <p class="sub">WhatsApp'taki sohbet listesi gibi: her konu bir "kişi", her kayıt bir mesaj.</p>
+    <ol class="steps">
+      <li class="step">
+        <figure class="shot"><img src="img/01.webp" alt="Ana ekran: bildirim şeridi, arama çubuğu, filtre hapları ve konu listesi" loading="lazy" width="412" height="915"></figure>
+        <div class="body">
+          <span class="num">ADIM 1</span>
+          <h3>Uygulamayı aç</h3>
+          <ul>
+            <li>En üstte <b>son bildirim şeridi</b>: burada fiyat takibinden gelen haber. Dokununca ilgili konu açılır, ✕ kapatır.</li>
+            <li><b>Arama çubuğu</b> ve filtre hapları: Tümü, İşlenmemiş (karar bekleyen kayıtlar; rozetteki sayı), Proje, Alan, Kaynak.</li>
+            <li>İğneli satırlar: <b>Ana Günlük</b> (her şey), <b>Haftalık gözden geçirme</b>, <b>Harcamalar</b>.</li>
+            <li>Her konu renkli, yuvarlak bir simgeyle görünür. Simge konunun adından ve yazdıklarından kendiliğinden seçilir; istersen fotoğraf koyabilirsin.</li>
+            <li>Sağ alttaki <b>kalem</b>: yeni kayıt.</li>
+          </ul>
+        </div>
+      </li>
+    </ol>
+  </section>
+
+  <section class="part" id="yakalama">
+    <h2>Yakalama</h2>
+    <p class="sub">Düşünmeden yaz. Konu, tarih, öncelik sonra gelir; kayıt internetsiz de anında saklanır.</p>
+    <ol class="steps">
+      <li class="step">
+        <figure class="shot"><img src="img/02.webp" alt="Ana Günlük yazma çubuğuna kayıt yazılıyor" loading="lazy" width="412" height="915"></figure>
+        <div class="body">
+          <span class="num">ADIM 2</span>
+          <h3>Kalem düğmesine dokun ve yaz</h3>
+          <p>Ana Günlük açılır, klavye hazırdır. Aklındakini olduğu gibi yaz: <span class="ui">Cuma 9da kombi faturasını öde</span>. Hangi konu olduğunu düşünmene gerek yok.</p>
+        </div>
+      </li>
+      <li class="step">
+        <figure class="shot"><img src="img/03.webp" alt="Gönderilen kayıt sağda balon olarak görünüyor" loading="lazy" width="412" height="915"></figure>
+        <div class="body">
+          <span class="num">ADIM 3</span>
+          <h3>Gönder</h3>
+          <p>Kayıt anında sağda bir balon olur. Balonun solundaki nokta "henüz işlenmedi" demektir; AI baktıktan sonra kaybolur.</p>
+          <p class="tip">Bir konunun içindeyken yazarsan kayıt doğrudan o konuya düşer.</p>
+        </div>
+      </li>
+      <li class="step">
+        <figure class="shot"><img src="img/07.webp" alt="Ekleme paneli: fotoğraf, kamera, belge, konum, kişi, görev, hatırlatma, etkinlik, liste" loading="lazy" width="412" height="915"></figure>
+        <div class="body">
+          <span class="num">ADIM 4</span>
+          <h3>Ataç: ek ya da hazır kalıp</h3>
+          <ul>
+            <li><b>Ekle:</b> fotoğraf, kamera, belge, konum, kişi.</li>
+            <li><b>Oluştur:</b> görev, hatırlatma, etkinlik (tarih ve saatli), liste.</li>
+          </ul>
+        </div>
+      </li>
+      <li class="step">
+        <figure class="shot"><img src="img/08.webp" alt="Sesli not şeridi: süre, dalga, İptal ve Gönder" loading="lazy" width="412" height="915"></figure>
+        <div class="body">
+          <span class="num">ADIM 5</span>
+          <h3>Sesli not</h3>
+          <p>Mikrofona dokun, konuş, <span class="ui">Gönder</span>. Telefonda söylediğin konuşurken yazıya dönüşür ve bu şeritte görünür. Ses de saklanır; ev sunucusundaki Whisper metni sonra düzeltir.</p>
+          <p class="tip">Sunucuya ulaşılamazsa not telefonda bekler, bağlanınca düzeltilir. Hiçbir ses kaybolmaz.</p>
+        </div>
+      </li>
+    </ol>
+  </section>
+
+  <section class="part" id="ai">
+    <h2>AI önerileri ve soruları</h2>
+    <p class="sub">AI kendi kendine bir şey değiştirmez; önerir, sen karar verirsin. İstersen Ayarlar'dan otonom modu açarsın.</p>
+    <ol class="steps">
+      <li class="step">
+        <figure class="shot"><img src="img/04.webp" alt="Kaydın altında öneri çipleri: konu, görev, etiket, kişi, harcama" loading="lazy" width="412" height="915"></figure>
+        <div class="body">
+          <span class="num">ADIM 6</span>
+          <h3>Çiplerle karar ver</h3>
+          <p>"Yarın 11de Ayhan Kimyaya 25 torba kostik siparişi ver, 46.250 TL ödenecek" kaydı için AI şunları önerdi:</p>
+          <ul>
+            <li><b>→ Malzeme hareketleri</b>: hangi konuya ait,</li>
+            <li><b>Görev</b>: Pazartesi 11:00, hatırlatmasıyla,</li>
+            <li><b>#tedarik</b> etiketi, <b>Kişi: Ayhan Kimya</b>,</li>
+            <li><b>Harcama</b>: 46.250 ₺ · İş.</li>
+          </ul>
+          <p>Çipe dokunmak kabul eder, ✕ yoksayar. Yanlış kabul ettiysen geri alabilirsin.</p>
+        </div>
+      </li>
+      <li class="step">
+        <figure class="shot"><img src="img/05.webp" alt="NotAI sorusu: Hangi Ahmet? Cevap alanı dolduruluyor" loading="lazy" width="412" height="915"></figure>
+        <div class="body">
+          <span class="num">ADIM 7</span>
+          <h3>NotAI sorarsa cevapla</h3>
+          <p>"Ahmet ile görüş" belirsiz olduğu için NotAI sordu: <i>Hangi Ahmet? Ne zaman?</i> Cevabını yazıp gönder. AI kaydı cevapla yeniden değerlendirir ve bunu sonraki kayıtlar için öğrenir. <span class="ui">Geç</span> ile atlayabilirsin.</p>
+          <p class="tip">Bir kayıt için en çok 2 soru sorulur. Soru telefonuna bildirim olarak da gelir.</p>
+        </div>
+      </li>
+      <li class="step">
+        <figure class="shot"><img src="img/06.webp" alt="Kayıt ayrıntısı: öneri listesi, Konuya taşı, Arşivle, Sil" loading="lazy" width="412" height="915"></figure>
+        <div class="body">
+          <span class="num">ADIM 8</span>
+          <h3>Kayda dokun: ayrıntı</h3>
+          <p>Bütün öneriler alt alta gelir (✓ kabul, ✕ yoksay). Altta <span class="ui">Konuya taşı</span>, <span class="ui">Arşivle</span>, <span class="ui">Sil</span> var. Silinen kayıt önce çöpe gider; 30 gün içinde geri alınabilir.</p>
+        </div>
+      </li>
+    </ol>
+  </section>
+
+  <section class="part" id="konular">
+    <h2>Konular ve alt konular</h2>
+    <p class="sub">Bir işin altında dallar açabilirsin. Kayıt tektir; alt konuya yazılan, üst konuda ve Ana Günlük'te de görünür.</p>
+    <ol class="steps">
+      <li class="step">
+        <figure class="shot"><img src="img/09.webp" alt="Sabun işi açılışı: genel ve üç alt konu" loading="lazy" width="412" height="915"></figure>
+        <div class="body">
+          <span class="num">ADIM 9</span>
+          <h3>Üst konuyu aç</h3>
+          <p><b>Sabun işi</b> ana ekran gibi açılır: en üstte <b>Sabun işi · genel</b> (doğrudan bu konuya yazılanlar), altında <b>Para alışverişi</b>, <b>Yapılacaklar</b>, <b>Malzeme hareketleri</b>. Üst konuya yazdığını AI uygun alt konuya dağıtmayı önerir.</p>
+        </div>
+      </li>
+      <li class="step">
+        <figure class="shot"><img src="img/10.webp" alt="Malzeme hareketleri yazışması" loading="lazy" width="412" height="915"></figure>
+        <div class="body">
+          <span class="num">ADIM 10</span>
+          <h3>Alt konunun yazışması</h3>
+          <p>Bu dalın kayıtları burada. Alttan yazdığın her şey doğrudan bu dala düşer.</p>
+        </div>
+      </li>
+      <li class="step">
+        <figure class="shot"><img src="img/11.webp" alt="Konu menüsü seçenekleri" loading="lazy" width="412" height="915"></figure>
+        <div class="body">
+          <span class="num">ADIM 11</span>
+          <h3>Konu menüsü (sağ üst ⋮)</h3>
+          <ul>
+            <li>Sabitle, yeniden adlandır, profil fotoğrafı,</li>
+            <li>alt konu ekle, üst konuyu değiştir,</li>
+            <li>fiyat takibi, varlık bilgisi,</li>
+            <li>simgeyi değiştir.</li>
+          </ul>
+        </div>
+      </li>
+      <li class="step">
+        <figure class="shot"><img src="img/12.webp" alt="Yeni konu sayfası: ad ve tür" loading="lazy" width="412" height="915"></figure>
+        <div class="body">
+          <span class="num">ADIM 12</span>
+          <h3>Yeni konu (ana ekranda +)</h3>
+          <p>Ad ve tür:</p>
+          <ul>
+            <li><b>Proje</b>: bitişi olan iş (İzmir tatili),</li>
+            <li><b>Alan</b>: süren sorumluluk (Ev, Sabun işi),</li>
+            <li><b>Kaynak</b>: bilgi ve takip (Pixel 10 Pro).</li>
+          </ul>
+          <p class="tip">Konu açmak zorunlu değil; yazdıkça AI yeni konu da önerir.</p>
+        </div>
+      </li>
+    </ol>
+  </section>
+
+  <section class="part" id="takip">
+    <h2>Görev, takvim, hatırlatma</h2>
+    <p class="sub">Önerilen görevleri kabul ettikçe ya da kendin ekledikçe burada toplanır. Saatli görevler hatırlatmasıyla gelir (saatliyse 15 dk önce, saatsizse o gün 09:00).</p>
+    <ol class="steps">
+      <li class="step">
+        <figure class="shot"><img src="img/13.webp" alt="Görevler: geciken, bugün, yaklaşan" loading="lazy" width="412" height="915"></figure>
+        <div class="body">
+          <span class="num">ADIM 13</span>
+          <h3>Görevler</h3>
+          <p><b>Geciken</b>, <b>Bugün</b>, <b>Yaklaşan</b> diye ayrılır; öncelik sağda. Daireye dokun: tamamlandı. Altta <span class="ui">Görev ekle…</span> alanı.</p>
+        </div>
+      </li>
+      <li class="step">
+        <figure class="shot"><img src="img/14.webp" alt="Görevi düzenle: başlık, tarih, saat, öncelik, tekrar, önce hatırlat" loading="lazy" width="412" height="915"></figure>
+        <div class="body">
+          <span class="num">ADIM 14</span>
+          <h3>Göreve dokun: düzenle</h3>
+          <p>Başlık, tarih, saat, öncelik, tekrar ve <b>önce hatırlat</b> (tam zamanında, 15 dk, 1 sa…). <span class="ui">Tamamla</span> ya da <span class="ui">Kaydet</span>.</p>
+        </div>
+      </li>
+      <li class="step">
+        <figure class="shot"><img src="img/15.webp" alt="Takvim hafta görünümü" loading="lazy" width="412" height="915"></figure>
+        <div class="body">
+          <span class="num">ADIM 15</span>
+          <h3>Takvim · hafta</h3>
+          <p>Üstte haftanın günleri, altta seçili günün saatli işleri. Çizgi şimdiki saati gösterir. Oklarla hafta değişir, saat simgesi bugüne döner.</p>
+        </div>
+      </li>
+      <li class="step">
+        <figure class="shot"><img src="img/16.webp" alt="Takvim ay görünümü" loading="lazy" width="412" height="915"></figure>
+        <div class="body">
+          <span class="num">ADIM 16</span>
+          <h3>Takvim · ay</h3>
+          <p><span class="ui">Ay</span>'a geç: noktalı günlerde iş var. Bir güne dokununca o günün işleri altta listelenir.</p>
+        </div>
+      </li>
+      <li class="step">
+        <figure class="shot"><img src="img/17.webp" alt="Hatırlatmalar: bugün ve yarın, erteleme düğmeleri" loading="lazy" width="412" height="915"></figure>
+        <div class="body">
+          <span class="num">ADIM 17</span>
+          <h3>Hatırlatmalar</h3>
+          <p>Bugün, Yarın, Sonra. Her birinde erteleme: <span class="ui">10 dk</span> <span class="ui">1 sa</span> <span class="ui">Yarın</span>. Bildirimin başlığında konu adı yazar (<i>Hatırlatma · Ev</i>); dokununca o konu açılır.</p>
+          <p class="tip">Şu an hatırlatmalar uygulama açıkken telefondan, her zaman da ev sunucusundan (ntfy) gelir. Uygulama kapalıyken de tam zamanında çalan alarm sıradaki geliştirmede.</p>
+        </div>
+      </li>
+    </ol>
+  </section>
+
+  <section class="part" id="bulma">
+    <h2>Ara ve gözden geçir</h2>
+    <p class="sub">Notların bir arşiv değil, sorulabilen bir hafıza.</p>
+    <ol class="steps">
+      <li class="step">
+        <figure class="shot"><img src="img/18.webp" alt="Ara / Sor ekranında kostik araması" loading="lazy" width="412" height="915"></figure>
+        <div class="body">
+          <span class="num">ADIM 18</span>
+          <h3>Ara / Sor</h3>
+          <p>Kelime ara ya da soru sor: <i>"Kostiğin torbası kaç liraydı?"</i> AI açıkken cevabı yalnız senin notlarından, kaynak göstererek verir. Kapalıyken (bu görüntüdeki gibi) ilgili kayıtları listeler.</p>
+        </div>
+      </li>
+      <li class="step">
+        <figure class="shot"><img src="img/19.webp" alt="Haftalık gözden geçirme kartları" loading="lazy" width="412" height="915"></figure>
+        <div class="body">
+          <span class="num">ADIM 19</span>
+          <h3>Haftalık gözden geçirme</h3>
+          <p>Haftada bir: işlenmemiş kayıtlar, ilerlemeyen projeler, önümüzdeki 7 gün, gecikenler, geçen hafta bitenler. Düğmeler seni ilgili yere götürür.</p>
+          <p class="tip">Her sabah 09:00'da da en önemli 3 işin "sabah planı" olarak gelir.</p>
+        </div>
+      </li>
+    </ol>
+  </section>
+
+  <section class="part" id="hayat">
+    <h2>Para, varlık, hareket</h2>
+    <p class="sub">Harcamalar satırında üç sekme: Harcamalar · Varlıklar · Hareketler.</p>
+    <ol class="steps">
+      <li class="step">
+        <figure class="shot"><img src="img/20.webp" alt="Harcamalar: gelir, gider, birikim, yorumlar, iş-ev-kişisel ve kategoriler" loading="lazy" width="412" height="915"></figure>
+        <div class="body">
+          <span class="num">ADIM 20</span>
+          <h3>Harcamalar ve banka ekstresi</h3>
+          <ul>
+            <li><span class="ui">Ekstre yükle (PDF)</span>: banka ekstresi telefonda okunur, internete gitmez.</li>
+            <li>Hareketler iş/ev/kişisel ve kategoriye ayrılır. Daha önce elle yazdığın bir ödeme ekstrede de varsa iki kez sayılmaz.</li>
+            <li>Gelir, gider, birikim, yorumlar ("abonelikler gelirin %…'i"), dağılımlar. Oklarla ay değişir.</li>
+            <li>Bir satırın kategorisini ya da kapsamını düzeltirsen NotAI o satıcıyı öğrenir.</li>
+          </ul>
+        </div>
+      </li>
+      <li class="step">
+        <figure class="shot"><img src="img/21.webp" alt="Varlıklar: toplam, türlere göre ve liste" loading="lazy" width="412" height="915"></figure>
+        <div class="body">
+          <span class="num">ADIM 21</span>
+          <h3>Varlıklar</h3>
+          <p><span class="ui">Varlık ekle</span>: ev, araç, altın, hisse, döviz, mevduat… Toplam, son 30 gün ve türlere göre dağılım görünür. Sembol verirsen (THYAO, gram altın) ajan günde bir fiyatına bakar ve %2'den büyük değişimi o konuya yazar.</p>
+        </div>
+      </li>
+      <li class="step">
+        <figure class="shot"><img src="img/22.webp" alt="Hareket kayıtları: evden çıkıyorum metroyla, işe geldim; altta konum öğrenildi notu" loading="lazy" width="412" height="915"></figure>
+        <div class="body">
+          <span class="num">ADIM 22</span>
+          <h3>Hareketlerini yaz</h3>
+          <p><span class="ui">Evden çıkıyorum metroyla</span>, <span class="ui">işe geldim</span> yaz. Konum açıksa NotAI teyit eder; bir yerin konumunu ilk seferde öğrenir (alttaki bilgi notu). Eksik varsa sorar: nereye, neyle, iş mi özel mi?</p>
+        </div>
+      </li>
+      <li class="step">
+        <figure class="shot"><img src="img/23.webp" alt="Hareketler raporu: yolculuk, yolda süre, yol masrafı, yerler, son hareketler" loading="lazy" width="412" height="915"></figure>
+        <div class="body">
+          <span class="num">ADIM 23</span>
+          <h3>Hareketler raporu</h3>
+          <p>Aylık: yolculuk sayısı (iş/özel), yolda geçen süre, yol masrafı, ulaşım türleri ve yerler (kaç kez gittin, ne kadar kaldın, orada ne harcadın). En altta son hareketler ve konumla teyit durumu.</p>
+        </div>
+      </li>
+      <li class="step">
+        <figure class="shot"><img src="img/24.webp" alt="Pixel 10 Pro konusunda NotAI'nin fiyat mesajı ve bağlantılar" loading="lazy" width="412" height="915"></figure>
+        <div class="body">
+          <span class="num">ADIM 24</span>
+          <h3>Fiyat takibi</h3>
+          <p>Konu menüsü → <span class="ui">Fiyat takibi</span>: ürün, bağlantılar, hedef fiyat. Ajan günde bir bakar. Yalnız fiyat düşünce, daha ucuz bağlantı çıkınca ya da hedefe inince konuya soldan NotAI mesajı gelir; bağlantılar tıklanır.</p>
+        </div>
+      </li>
+    </ol>
+  </section>
+
+  <section class="part" id="ayarlar">
+    <h2>Ayarlar ve görünüm</h2>
+    <p class="sub">Ana ekranda sağ üst ⋮.</p>
+    <ol class="steps">
+      <li class="step">
+        <figure class="shot"><img src="img/25.webp" alt="Ayarlar: görünüm, ev sunucusu, yapay zekâ" loading="lazy" width="412" height="915"></figure>
+        <div class="body">
+          <span class="num">ADIM 25</span>
+          <h3>Ayarlar</h3>
+          <ul>
+            <li><b>Görünüm:</b> sistem, açık, koyu.</li>
+            <li><b>Ev sunucusu:</b> S24'ün adresi ve belirteci, <span class="ui">Şimdi senkronla</span>.</li>
+            <li><b>Yapay zekâ:</b> sağlayıcı, otonom mod ve eşiği, sesli yakalama ve anlamsal arama durumu.</li>
+            <li><b>Seni tanıma:</b> AI'ın bilmesini istediğin bilgiler ("Ayhan Kimya = kostik tedarikçisi").</li>
+            <li><b>Çöp kutusu.</b></li>
+          </ul>
+        </div>
+      </li>
+      <li class="step">
+        <figure class="shot"><img src="img/26.webp" alt="Koyu temada ana ekran" loading="lazy" width="412" height="915"></figure>
+        <div class="body">
+          <span class="num">ADIM 26</span>
+          <h3>Koyu tema</h3>
+          <p>Telefonun koyu moduna kendiliğinden uyar; Ayarlar'dan sabitleyebilirsin.</p>
+        </div>
+      </li>
+    </ol>
+  </section>
+
+  <footer>
+    <span>Sıradaki geliştirmeler: kapalıyken de çalan alarm, basılı tutma menüsü (yanıtla, ilet, emoji, kopyala, sil), başka konuya kısayol olarak iletme, kaydırarak sekme geçişi, "sadık köpek" takip.</span>
+    <span>NotAI · 8 Kasım 2026</span>
+  </footer>
+</div>
