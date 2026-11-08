@@ -277,3 +277,25 @@ Ayrıntı `docs/DEGERLENDIRME.md` §8.4'te; özet:
   - Senden açık cevap ister: sevk ettim / bekliyor / iptal / ödendi.
 - **Hangi kayıt neyi açar:** Her kayıt türü (üretim, sevkiyat, satış, sipariş, söz) hangi açık ucu açtığını ve neyin onu kapattığını bilir. Bu, alt konu şablonlarının (T-14/T-15) bir parçası olur.
 - **Raporlar:** "Depoda bekleyen ürün", "tahsil edilmemiş sevkiyat", "üretimden satışa ortalama süre".
+
+### N-2 · Tanımsız kayıt kalmasın: 5S mantığı (2026-11-08)
+> "Foto çektim attım, bir şey yazmadım. Bunun ne olduğunu, nereye konumlanacağını öğrenmek istemesi
+> lazım. Sınıflandırılmayan not karmaşa sebebidir. 5S mantığı: çöpleri at, tanımsız bir şey kalmasın,
+> düzenli tut, disipline et."
+
+**Kural:** Hiçbir kayıt tanımsız kalmaz. Açıklamasız fotoğraf, ses ya da belge geldiğinde NotAI sorar.
+- **Önce tahmin eder, hızlı cevaplı sorar:** "Bu fotoğraf ne? Fatura · Ürün/etiket · Müşteriye ait · Sevkiyat · Başka…"
+  - Görüntüdeki yazı okunur ve görüntü anlaşılmaya çalışılır. Gemma 3'ün görüntü okuyabilen sürümü ya da büyük ajan kullanılabilir.
+  - Tahminler ilgili konulardan ve kartlardan seçilir.
+- **Cevapsız kalırsa sadık köpek gibi geri gelir:** hemen soru → akşam özeti → haftalık gözden geçirme.
+- **Sessizce kaybolamaz:** "Diğer olarak bırak" demek de bir karardır ve kaydı tanımlı sayar.
+
+**5S karşılıkları:**
+
+| 5S | NotAI'de |
+|---|---|
+| **Ayıkla** (Seiri) | Anlamsız, tekrar ya da eskimiş kayıtlar için "atayım mı?" önerisi (çöpe; geri alınabilir). Aynı fotoğrafın iki kez gelmesini yakalama. |
+| **Düzenle** (Seiton) | Her kaydın bir yeri olur: konu, alt konu ya da kart. Konunun üstündeki "dağıtılmamış" bölümü boşaltılmaya çalışılır. |
+| **Temizle** (Seiso) | Eskiyen bilgiyi güncelleme, kapanmış açık uçları kapatma, kopyaları birleştirme. |
+| **Standartlaştır** (Seiketsu) | Alt konu şablonları. Tek adlandırma ("Kavlak" / "Kavlak Market" → tek kart). Aynı tür kayıt hep aynı kutucuklarla tutulur. |
+| **Disiplin** (Shitsuke) | Sadık köpek + günlük ve haftalık "düzen turu". "Düzen karnesi": tanımsız kayıt sayısı, bekleyen açık uç, birleştirilmemiş kopya. Hedef: tanımsız kayıt sayısı 0. |
