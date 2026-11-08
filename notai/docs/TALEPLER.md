@@ -426,3 +426,85 @@ Hermes'in Python kodunu gömmek yerine, gereken çekirdeği Rust ile NotAI'ye ya
 - yetki ve onay.
 
 Aynı kod hem uygulamada hem sunucuda çalışır. Başkasına gönderilen sürümde Termux gerekmez. Uzmanlık paketleri (N-6) bu çekirdeğin araç ve kural kaynağıdır.
+
+## T-11 · NotAI'yi Hermes'e MCP aracı olarak açmak + "Asistan" sohbeti
+- NotAI bir **MCP sunucusu** olur. İki biçimde:
+  - S24'teki sunucuda, adresle bağlanılan uç; belirteçle korunur.
+  - `notai mcp` komutu (Hermes alt süreç olarak başlatır).
+- **Araçlar yetkiye göre ayrılır:**
+  - okuma serbest,
+  - yazma kayıt bırakır ve geri alınabilir,
+  - silme/para ya hiç verilmez ya da onaya düşer.
+- **Asistan sohbeti:** Uygulamada karşı tarafı ajan olan bir konu. İstek iş kuyruğuyla gider, cevap MCP aracıyla konuya yazılır.
+
+## T-12 · Ajan iş gelince uyansın (pil)
+- **Sürekli açık kalan:** Yalnız NotAI sunucusu; Rust ile yazıldığı için boşta pil harcamaz.
+- **Ajan başlatıcı:**
+  - AI işlerini biriktirir (ör. 2 dk ya da 5 iş).
+  - Hermes'i ya da Claude Code'u **tek seferlik komutla** çalıştırır (`claude -p "…"`; Hermes'in komut adı cihazda kontrol edilecek).
+  - Ajan işi bitirip kapanır.
+  - Aynı anda tek ajan çalışır; süre sınırı ve yeniden deneme vardır.
+- **Zamanlanmış işler:** Fiyat ve varlık takibi gibi işleri sunucunun saati günde bir tetikler.
+- **Kaldırılacaklar:** Telegram'ı dinleme (yalnız mesaj gönderme kalır), Ubuntu (proot), uyanık tutma kilidi.
+- **"Şimdi işle" düğmesi.**
+- **Yedek plan:** S24 tamamen uyusun istenirse ntfy "uyan" mesajı → MacroDroid → Termux sunucuyu başlatır.
+
+## T-13 · Küçük yerel model (Gemma 2B/4B) için katmanlı okuma
+- **Önce kural, sonra küçük model, en son büyük model.**
+  - Tarih, saat, para, hareket ve ekstre kurallarla çıkar.
+  - Gemma yalnız anlam kararlarını verir.
+  - Zor kalan büyük ajana, yine belirsizse kullanıcıya gider.
+- **Adımlar:** Her adım ayrı, kısa bir istemdir:
+  1. niyet (tek etiket),
+  2. konu (**aday 3–6 konudan seçim**, ürettirme yok),
+  3. görev başlığı,
+  4. kişi (aday listeden).
+- **Teknikler:**
+  - çıktı kalıbı zorlaması (Ollama),
+  - sıcaklık 0,
+  - kullanıcının onayladığı 3–5 örnek,
+  - kritik adımlarda iki okuma + uyuşma kontrolü,
+  - Q6–Q8 sıkıştırma.
+- **Konu profili:** ne hakkında, kelimeler, kişiler, örnekler, "buraya ait olmayan". Konu açılırken iki soruyla başlar, onaylarla büyür.
+  - Ön elemede kullanılır: kelime ve anlam benzerliğiyle aday konular seçilir.
+  - İstemde yalnız aday konuların profili yer alır.
+- **Karne:** 50–100 gerçek kayıttan sınav kâğıdı; her adım ve her model ayrı puanlanır. Hangi adımı Gemma'nın yapacağına bu sonuç karar verir.
+- **İleride:** Yeterli onaylı veri birikince LoRA ile ek eğitim.
+
+## T-14 · 3 katlı hiyerarşi, alt konu şablonları, geçmişi dağıtma, kademeli sınıflandırıcı
+- **Derinlik:** En çok 3 kat (kodda bugün 5).
+- **Kademeli seçim:** Önce ana konu, sonra alt konu. Her adımda az seçenek olur; emin değilse "genel"de kalır ve soru sorar.
+- **Alt konu = süreç (akış):** Satış, Satın alma, Üretim, Tahsilat. Kesişen bilgi (para) konu değil, **veri ve görünüm** olur.
+- **Alt konu şablonu (kutucuklar):**
+  - Satış: müşteri · ürün · adet · fiyat · teslim
+  - Satın alma: tedarikçi · malzeme · miktar · birim fiyat
+  - Tahsilat: kimden · tutar · yöntem · hangi satış
+- **Geçmişi dağıtma:** Yeni alt konu açılınca "ana konuda buna ait 14 eski kayıt var, taşıyayım mı?" diye sorar; toplu onaylanır.
+- **Sınıflandırıcı:**
+  - "Hangi konu?" kararını hafif bir sınıflandırıcı verir: alt konu başına 10–20 örnekle öğrenir, her gece yeniden eğitilir.
+  - Kutucuk doldurmayı Gemma yapar.
+  - Hiçbir konuya uymayan benzer kayıtlar birikince yeni alt konu önerilir.
+
+## T-15 · Tek düzen her seviyede; konu ≠ kart; kutucuklu kayıt; AI ile iş bölümü
+- **Her seviye aynı düzende açılır:**
+  - Üstte o seviyenin **dağıtılmamış** kayıtları: son 2–3 görünür, yukarı kaydırınca geçmiş.
+  - Altta alt başlıklar ya da kartlar.
+- **Konu = süreç** (Satılan sabun). **Kart = varlık** (müşteri Kavlak, ürün "80 g zeytinyağlı").
+  - Kart tektir ama birden çok yerde görünür: Kavlak hem satışta hem tahsilatta görünür, bakiyesi tek kartta toplanır.
+  - Kart açmak şart değildir; satış kartsız da kaydedilir.
+- **Giriş her yerden yapılabilir:** ana akış, konu, alt konu ya da kart. Bağlam kendiliğinden doldurulur.
+- **Raporlar kutucuklardan hesaplanır:**
+  - "bu ay kaç kg": 80 g × 500 = 40 kg,
+  - "Mete Zeytin'e kaç adet".
+- **İş bölümü:** Bilinen eşleşmeleri AI kendisi bağlar. Yeni müşteri ya da kart için önce sorar, sonra öğrenir. Eksik kutucuğu sorar. Birikmiş kayıtları günde bir toplu önerir. İlişkileri izler (sadık köpek).
+
+## T-17 · iOS (ileride)
+- **Ortak kod:** Tauri 2 iOS'u destekliyor; arayüz, Rust çekirdeği ve senkron aynı (yaklaşık %90).
+- **Şartlar:** Mac + Xcode, Apple geliştirici hesabı (yılda 99 $), TestFlight ya da App Store.
+- **iOS'a özel işler:**
+  - konuşma tanıma (Swift),
+  - alarm (AlarmKit ya da yerel bildirim; bekleyen bildirim sınırı 64),
+  - takvim (EventKit),
+  - paylaş uzantısı ve widget (Xcode).
+- **Arka plan:** iOS'ta arka plan çalışması çok kısıtlı; ajan ve zamanlanmış işler sunucuda olur. Termux yok, bu yüzden T-16 zorunlu.
+- **Kural eki:** `CLAUDE.md` dil kuralına "iOS/Swift yapıştırıcı kodu" istisnası eklenir.

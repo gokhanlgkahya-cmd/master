@@ -1,7 +1,9 @@
 # NotAI — Açık sorular (PC'ye geçmeden önce cevaplanacak)
 
 > Derleme: 2026-11-08. Her sorunun yanında **önerim** var; cevap vermezsen öneri varsayılan olur.
-> Kaynak: `DEGERLENDIRME.md`, `TALEPLER.md` (T-01…T-10, N-1…N-4) ve bu oturumdaki konuşmalar.
+> Kaynak: `DEGERLENDIRME.md`, `TALEPLER.md`, `TASARIM_NOTLARI.md`.
+> **Nasıl cevaplanır:** Sorunun altına `> Cevap: …` satırı ekle; yalnız önerime katılmadıklarını yazman da yeter.
+> Cevapsız bırakılan soruda öneri geçerli sayılır.
 
 ## A. Altyapı ve kurulum
 1. S24 sürekli şarja takılı mı, yoksa şarj gerçekten bitiyor mu? — *Önerim: şarjda kalsın, "Pil koruması %85" açık olsun.*
@@ -66,3 +68,5 @@
 46. Eşin kendi telefonunda ayrı bir NotAI mı kullanacak (ayrı veri, aynı paketler)? — *Önerim: evet, ayrı kurulum; seans paketi en sıkı gizlilikle.*
 47. Paketler herkese açık paylaşılacaksa nerede: GitHub mı, HuggingFace mi? Lisans? — *Önerim: GitHub, MIT; kişisel veriden arındırılmış şablon ve sınav kâğıdıyla.*
 48. Ortak cari kuralını doğru anladım mı: her ortağın neti = aldığı − ödediği; toplam net yarı yarıya; fazlası olan farkın yarısını öbürüne verir?
+
+49. iOS ne zaman? Mac erişimi var mı? Çevrende iPhone kullanan hedef kullanıcı var mı? — *Önerim: Android oturduktan sonra (T-17).*

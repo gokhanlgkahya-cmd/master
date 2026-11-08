@@ -70,6 +70,8 @@ core · store (SQLite+sqlx, `.sqlx/` çevrimdışı önbellek, migrations 0001+0
 8. Takvim ucu tamamlanan görevleri de döndürür (üstü çizili gösterilir).
 
 ## 5. Sıradaki adımlar
+> **Güncel sıra ve belge haritası: `docs/DEVAM.md`** (2026-11-08). Aşağıdaki liste tarihçedir.
+
 1. **Android APK** — Gökhan kendi bilgisayarında derleyecek (karar: 2026-11-07). Adımlar `docs/ANDROID.md`. Derlemede hata çıkarsa çıktısı ile düzeltilecek.
 2. ~~CORS~~, ~~ay görünümü~~, ~~Etkinlik~~, ~~create_task kimliği~~, ~~tam zamanında hatırlatma~~, ~~demo ek hatası~~, ~~otonom geri alma arayüz testi~~, ~~Manrope~~ → tamamlandı (yukarıda §3).
 3. Etkinlik ayrı bir tür değil, saatli görevdir (Görevler listesinde de görünür). Ayrı tür (süre, bitiş saati) istenirse ileride.

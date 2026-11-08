@@ -1,5 +1,7 @@
 # NotAI — Proje Kuralları (Claude Code bu dosyayı her oturumda okur)
 
+> **Yeni oturumda önce `docs/DEVAM.md`'yi oku**: nerede kaldığımız, belgelerin haritası, sıradaki iş ve açık sorular orada.
+
 ## Ürün tek cümlede
 Gün içinde hiç düşünmeden not/iş/fikir yakalanan, yapay zekânın bunları kullanıcıyı tanıyarak
 kendiliğinden sınıflandırdığı, zamanı gelince hatırlattığı ve yapılacakları takip ettiği,
@@ -28,7 +30,7 @@ Kullanıcının yöntemi: **Bullet Journal günlük log + PARA (Projeler / Alanl
 - Uygulama kabuğu: **Tauri 2** (Rust) → Android + Windows/Linux masaüstü.
 - Arayüz: **Leptos** (Rust → WASM). İş mantığı JavaScript/TypeScript'te YAZILMAZ.
 - Sunucu: **axum** (Rust). Veritabanı: **SQLite** (`sqlx`, derleme zamanı kontrollü sorgular).
-- İstisnalar (yalnız bunlar): CSS, Faz 1'deki HTML tasarım prototipleri, Tauri'nin zorunlu kıldığı Android/Kotlin yapıştırıcı kodu.
+- İstisnalar (yalnız bunlar): CSS, Faz 1'deki HTML tasarım prototipleri, Tauri'nin zorunlu kıldığı Android/Kotlin (ileride iOS/Swift) yapıştırıcı kodu, `scripts/e2e/` altındaki tarayıcı deneme betikleri (JS).
 
 ## "Hata çıkarmayan" kod standartları
 - `#![forbid(unsafe_code)]` her crate'te.
