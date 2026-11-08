@@ -299,3 +299,45 @@ Ayrıntı `docs/DEGERLENDIRME.md` §8.4'te; özet:
 | **Temizle** (Seiso) | Eskiyen bilgiyi güncelleme, kapanmış açık uçları kapatma, kopyaları birleştirme. |
 | **Standartlaştır** (Seiketsu) | Alt konu şablonları. Tek adlandırma ("Kavlak" / "Kavlak Market" → tek kart). Aynı tür kayıt hep aynı kutucuklarla tutulur. |
 | **Disiplin** (Shitsuke) | Sadık köpek + günlük ve haftalık "düzen turu". "Düzen karnesi": tanımsız kayıt sayısı, bekleyen açık uç, birleştirilmemiş kopya. Hedef: tanımsız kayıt sayısı 0. |
+
+### N-3 · Ortak defteri (Anıl ile) fotoğrafla aktarma (2026-11-08)
+> "İş için ortağım Anıl ile bir defter tutuyoruz. Fotoğraf çekip gönderdiğimde gelir, gider, satılan
+> mal, alınan mal miktarlarını not alıp gerekli yerlere işlemesi lazım."
+
+**Defterin düzeni (her satır):**
+
+| Tarih | Anıl · tanım | Anıl · gelir | Anıl · gider | Gökhan · tanım | Gökhan · gelir | Gökhan · gider |
+|---|---|---|---|---|---|---|
+
+- Her satıra bir açıklama ve tutar yazılıyor.
+- Ortaklar arası nakit de deftere işleniyor. Anıl Gökhan'a nakit verirse: Anıl'da **gider**, Gökhan'da **gelir**.
+
+**İstenen davranış:**
+1. **Fotoğraf → tablo.**
+   - Sayfa fotoğrafı ek olarak saklanır.
+   - El yazısı satır satır okunur: tarih, kişi, tanım, gelir/gider, tutar.
+   - El yazısı Türkçe okumak küçük Gemma'nın işi değil; görüntü okuyabilen büyük modele (ajan) gider.
+2. **Satır satır teyit.**
+   - Okunan tablo, sayfa görüntüsünün yanında gösterilir; her satırda ✓ ya da düzelt.
+   - Para olduğu için toplu ve sessiz kabul yok.
+   - Sayfada toplam yazıyorsa okunan satırların toplamıyla karşılaştırılır; tutmazsa uyarı verilir.
+3. **Mükerrersiz.**
+   - Aynı sayfa ileride yine çekilir (defter doldukça). Daha önce aktarılmış satırlar tanınıp atlanır, yalnız yeni satırlar eklenir. Tanıma ölçütü: tarih + kişi + tanım + tutar. Banka ekstresindeki yöntemin aynısı.
+   - Defterdeki satır, NotAI'ye daha önce yazılmış bir kayıtla aynı olay olabilir. Örneğin "Kavlak'a 500 adet" kaydı ile defterdeki "Kavlak 500 ad · 12.000". Bu durumda ikisi eşleştirilir, iki kez sayılmaz.
+4. **Gerekli yerlere işleme.**
+   - **Para:** İş gelir/gideri olarak harcamalara işlenir (kapsam: iş, konu: Sabun işi), kim ödedi/aldı bilgisiyle.
+   - **Mal:** Tanımdaki miktarlar ("Kavlak 500 ad Şirinler", "shrink 2 rulo") Satılan sabun / Satın alınan… alt konularına işlenir. Müşteri ve ürün kartlarına bağlanır, stok ve açık uçlar (N-1) güncellenir.
+   - **Ortaklar arası nakit:** "Anıl gider + Gökhan gelir, aynı gün, aynı tutar, nakit" bir **iç transferdir**.
+     - İşin gelir/gider raporuna girmez.
+     - Ortakların **cari hesabını** değiştirir: kim işe ne koydu, ne çekti, kim kime borçlu.
+5. **Raporlar.**
+   - İşin aylık gelir/gider ve kârı.
+   - Her ortağın cari durumu.
+   - Satılan ve alınan mal miktarları (kg/adet, müşteri ve ürün bazında).
+6. **Öğrenme.**
+   - El yazısındaki özel adlar sözlüğe girer (Şirinler, Kavlak, Mete Zeytin, shrink).
+   - Düzelttiğin okumalar sonraki sayfalarda kullanılır.
+
+**Yeri:** Sabun işi altında "Ortak defter" (Anıl kartı = ortak). Her defter satırı oradan ilgili alt konulara ve kartlara bağlanır; kopyalanmaz.
+
+**İleri adım (karar değil):** Anıl da NotAI'ye girebilirse defterin dijitali tutulur; fotoğraf yalnız geçiş için kalır. Bu, şu anki tek kullanıcı varsayımını değiştirir.
