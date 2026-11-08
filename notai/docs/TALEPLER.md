@@ -258,3 +258,22 @@ Ayrıntı `docs/DEGERLENDIRME.md` §8.4'te; özet:
 2. **Başlık simgesi:** Harcamalar · Varlıklar · Hareketler başlığında simge hep cüzdan. Sekmeye göre değişmeli (ev / konum).
 3. **Hareketler örnek görünümü:** Ardışık hareketlerde "Yolda 0 dk" görünüyor. 1 dk'nın altındaki yolculuklar süreye katılmasın ya da "—" gösterilsin.
 4. **Ara/Sor:** AI kapalıyken "AI kapalı; ilgili kayıtlar" bilgisi var. Ayarlar'a götüren bir bağlantı eklenmeli.
+
+---
+
+## Gökhan'ın notları (cevap değil, akılda tutulacaklar)
+
+### N-1 · Üretim kaydı, sonrasındaki takibi doğurmalı (2026-11-08)
+> "Bugün 100 adet Şirinler sabunu bastık ama daha kimseye verilmedi. Bu kayıt, sevkiyat ve tahsilat
+> sonuçlarının takibini dikte etmeli. Burada akıllı gibi olan bu."
+
+**Anlamı:** Bir kayıt yalnız olanı değil, **olması gerekeni** de doğurur. NotAI bunu "açık uç" olarak tutar:
+- **Ne açılır:** Üretim kaydı (100 adet Şirinler) stokta 100 adet açar. Bu, "henüz sevk edilmedi" durumundaki bir **açık uç** demektir.
+- **Sevkiyat geldikçe:** "Kavlak'a 40 Şirinler" gibi sevkiyat kayıtları açık ucu azaltır: kalan 60. Her sevkiyat da kendi açık ucunu açar: tahsilat bekleniyor.
+- **Tahsilat geldikçe:** Tahsilat kaydı sevkiyatın açık ucunu kapatır.
+- **Sadık köpek:** Açık uçları izler.
+  - "Şirinler'den 60 adet 10 gündür depoda."
+  - "Kavlak'a giden 40 adetin parası 15 gündür görünmüyor."
+  - Senden açık cevap ister: sevk ettim / bekliyor / iptal / ödendi.
+- **Hangi kayıt neyi açar:** Her kayıt türü (üretim, sevkiyat, satış, sipariş, söz) hangi açık ucu açtığını ve neyin onu kapattığını bilir. Bu, alt konu şablonlarının (T-14/T-15) bir parçası olur.
+- **Raporlar:** "Depoda bekleyen ürün", "tahsil edilmemiş sevkiyat", "üretimden satışa ortalama süre".
