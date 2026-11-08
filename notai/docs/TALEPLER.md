@@ -341,3 +341,19 @@ Ayrıntı `docs/DEGERLENDIRME.md` §8.4'te; özet:
 **Yeri:** Sabun işi altında "Ortak defter" (Anıl kartı = ortak). Her defter satırı oradan ilgili alt konulara ve kartlara bağlanır; kopyalanmaz.
 
 **İleri adım (karar değil):** Anıl da NotAI'ye girebilirse defterin dijitali tutulur; fotoğraf yalnız geçiş için kalır. Bu, şu anki tek kullanıcı varsayımını değiştirir.
+
+### N-4 · İkon: anlaşılınca üretilir, oturunca sabitlenir (2026-11-08)
+> "İçerik güncellenip ne olduğu anlaşıldığında ikon üretilir veya webden bulunur; görünürlüğün artması
+> hedeflenir. Kalıplaşmış ikon güncellenmez; kullanıcı talebi olursa güncellenir veya kullanıcı kendi
+> fotoğrafını yükleyebilir."
+
+**Bugün:** İkon, konu adı ve son kayıtlardaki anahtar kelimelerle sabit bir simge setinden seçiliyor. Kayıt geldikçe **değişebiliyor**.
+
+**İstenen:**
+1. **Belirsiz dönem:** Konu yeniyken ve ne olduğu anlaşılmamışken geçici simge kullanılır (tür simgesi + renk).
+2. **Anlaşılınca:** Konu anlaşıldığında daha tanınır bir ikon üretilir ya da bulunur. Örneğin bir müşterinin logosu, ürünün görseli, markanın simgesi.
+   - Kaynaklar: yerel simge seti → webden logo/favicon (kurum ve marka için) → AI ile üretilen basit simge.
+   - Webden aramada yalnız konu adı dışarı gider.
+3. **Kalıplaşma:** İkon bir kez "oturunca" sabitlenir; kayıt geldikçe artık değişmez. Ne zaman oturduğu kararı açık (aşağıdaki soru listesi).
+4. **Kullanıcı her zaman önce gelir:** "Simgeyi değiştir" ya da kendi fotoğrafını yükleme her zaman mümkündür ve otomatik seçimin üstündedir. Bugün de var.
+5. **Görünürlük:** Ana ekranda ikonlar birbirinden kolay ayrılmalı; aynı simge ve renk iki konuda yan yana gelmemeli.
