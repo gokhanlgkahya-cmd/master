@@ -56,3 +56,13 @@
 38. Senin için "durum" çoğunlukla rakam mı (stok, fiyat, borç), yoksa karar ve söz mü?
 39. Sesli notu en çok nerede kullanıyorsun (araba, atölye, yürürken)?
 40. Masaüstünden ne kadar giriş yapıyorsun? (Tarayıcı eklentisi ve kısayolun önceliğini belirler.)
+
+## H. Dağıtım, paketler, bulut (eklendi: 2026-11-08)
+41. Başkasına gönderilen sürüm nasıl çalışsın: tek başına (sunucusuz) + gömülü ajan mı, yoksa hazır sunucu kurulumuyla mı? — *Önerim: tek başına çalışsın; sunucu isteğe bağlı olsun (Oracle Always Free için hazır kurulum).*
+42. Senin sunucun S24'te mi kalsın, Oracle Always Free'ye mi taşınsın? — *Önerim: S24'te kalsın (veri evde), ajan iş gelince uyansın.*
+43. İş raporları ve ortak defter Google Sheets'e de yazılsın mı (Anıl görsün diye)? — *Önerim: evet, yalnız okunur çıktı.*
+44. Gömülü Rust ajan çekirdeği (T-16) Hermes'in yerine mi geçsin, yanında mı dursun? — *Önerim: çekirdek NotAI'de; gerçek Hermes isteğe bağlı, MCP ile.*
+45. İlk uzmanlık paketleri hangileri olsun (ortak cari, sabun satış/üretim, seans takibi, al-sat)? Hangisi önce? — *Önerim: sabun satış/üretim + ortak cari.*
+46. Eşin kendi telefonunda ayrı bir NotAI mı kullanacak (ayrı veri, aynı paketler)? — *Önerim: evet, ayrı kurulum; seans paketi en sıkı gizlilikle.*
+47. Paketler herkese açık paylaşılacaksa nerede: GitHub mı, HuggingFace mi? Lisans? — *Önerim: GitHub, MIT; kişisel veriden arındırılmış şablon ve sınav kâğıdıyla.*
+48. Ortak cari kuralını doğru anladım mı: her ortağın neti = aldığı − ödediği; toplam net yarı yarıya; fazlası olan farkın yarısını öbürüne verir?

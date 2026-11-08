@@ -357,3 +357,72 @@ Ayrıntı `docs/DEGERLENDIRME.md` §8.4'te; özet:
 3. **Kalıplaşma:** İkon bir kez "oturunca" sabitlenir; kayıt geldikçe artık değişmez. Ne zaman oturduğu kararı açık (aşağıdaki soru listesi).
 4. **Kullanıcı her zaman önce gelir:** "Simgeyi değiştir" ya da kendi fotoğrafını yükleme her zaman mümkündür ve otomatik seçimin üstündedir. Bugün de var.
 5. **Görünürlük:** Ana ekranda ikonlar birbirinden kolay ayrılmalı; aynı simge ve renk iki konuda yan yana gelmemeli.
+
+### N-5 · WhatsApp gibi sıralama ve renkli rozetler (2026-11-08)
+> "Son giriş yapılan sohbet yukarı gelir. Sistemden gelen hatırlatma, mesaj vb. sayılı, renkli rozetle
+> o da yukarı gelsin; sanki birileriyle yazışıyoruz. Okundukça rozet rengi değişecek, sınıflandırılınca
+> kalkacak. Sınıflandırma ve atama gereken işler farklı renkte rozetle bizi yönlendirmeli."
+
+- **Sıralama:** Ana ekranda ve her konunun içinde, en son hareket gören sohbet en üste çıkar. Hareket sayılanlar: senin kaydın, NotAI mesajı, hatırlatma, soru, fiyat haberi. İğneliler en üstte kalır.
+- **Üç rozet durumu:**
+
+| Durum | Rozet | Ne zaman kalkar |
+|---|---|---|
+| Okunmamış (yeni kayıt, NotAI mesajı, hatırlatma) | Dolgun renk + sayı | Açıp görünce "okundu" rengine döner |
+| Okundu ama iş bekliyor (sınıflandırma, atama, soru, onay) | Farklı renk + sayı (ör. turuncu) | İş bitince (yerine kondu, cevaplandı) |
+| Tamam | Yok | — |
+
+- **Yukarı taşınma:** Alt konudaki rozet üst konuya ve ana ekrana toplanarak çıkar. Sabun işi'nde 3 varsa içine girince hangi alt başlıkta olduğu görünür. Telegram'daki klasör sayaçları gibi.
+- **Konu içinde:** Okunmamış kayıtlar "okunmamış mesajlar" çizgisiyle ayrılır. Ekranda göründükçe okundu sayılır.
+- **Sadık köpek bağı:** "İş bekliyor" rozeti sıfırlanmadıkça günlük düzen turunda hatırlatılır (N-2).
+
+### N-6 · İşe özel "uzmanlık paketleri" ve modüler güncelleme (2026-11-08)
+> "Kayıt, sınıflandırma, formül, rapor, hatırlatma ana kemik olmak üzere işlere özel ehilleşen bir
+> sistem olmalı. Şablonlar kullandıkça oluşmalı, başkalarına konusu anlaşıldığında önerilmeli; ileride
+> GitHub/HuggingFace'e hazır skill olarak yüklenebilmeli. Güncellemeler genel değil modüler olmalı;
+> herkes kullanmayacağı skilli programla taşımamalı."
+
+**Ana kemik (çekirdek, herkeste aynı):** kayıt · sınıflandırma · formül · rapor · hatırlatma/takip.
+
+**Uzmanlık paketi:** Bir işin kurallarını taşıyan, çekirdeğe takılıp çıkarılabilen paket.
+- **İçerik:**
+  - tanıma ipuçları,
+  - alt konu yapısı,
+  - kayıt şablonları (kutucuklar),
+  - kartlar,
+  - **formüller** (deterministik, test edilebilir; LLM değil),
+  - açık uç kuralları (N-1),
+  - raporlar,
+  - hatırlatma ve takip kuralları,
+  - yerel LLM için uzmanlık: konu sözlüğü, küçük istemler, örnekler ve paketin kendi **sınav kâğıdı**,
+  - gizlilik etiketleri.
+- **Örnek paketler:**
+  1. **Ortak cari** (Anıl–Gökhan): Her ortak için net = aldığı gelir − ödediği gider. Toplam net ikiye bölünür; fazlası olan, farkın yarısını diğerine borçlu sayılır. Örnek: Anıl +30.000, Gökhan +10.000 → Anıl, Gökhan'a 10.000 öder. Uzun süreli kayıt; ortak defter (N-3) bu paketle işler.
+  2. **Seans takibi** (psikolog):
+     - **Kartlar:** danışan kartı (kod adla), seans kaydı (tarih, süre, ücret, ödeme), haftalık program.
+     - **Kayıt:** sesli seans notu.
+     - **Raporlar:** aylık seans sayısı ve gelir, ödenmemiş seanslar.
+     - **Hatırlatmalar:** seans öncesi, ödeme.
+     - **Gizlilik:** En sıkı düzeyde. Yalnız cihazda kalır, buluta ve dışa aktarıma gitmez. KVKK.
+  3. **Al-sat takibi** (finansal işlemler):
+     - **Kart:** enstrüman (sembol, pozisyon, giriş, stop, hedef).
+     - **Takip:** fiyat takibi (mevcut varlık ve fiyat takibi modülleri); stop'a yaklaşınca uyarı, stop gelince alarm (T-01).
+     - **Raporlar:** günlük ve aylık kâr/zarar.
+     - **Bağlayıcı:** fiyat verisi kaynağı.
+- **Nereden gelir:** Kullandıkça oluşur. AI bir konudaki tekrar eden düzeni fark eder ("bu konuda seans, ücret ve haftalık düzen var") ve hazır paket önerir ya da senin kayıtlarından yeni paket taslağı çıkarır. Sen onaylarsın, yerel paket olur. İstersen kişisel veriden arındırılıp paylaşılır (GitHub / HuggingFace).
+- **Modüler güncelleme:**
+  - Çekirdek küçük kalır.
+  - Her paketin kendi sürümü vardır; yalnız kurulu paketler güncellenir.
+  - Claude Code bağlandığında iyileştirmeyi paket paket yapar: önce paketin sınav kâğıdını çalıştırır, sonra değiştirir, sonra yeniden sınar.
+  - Kullanılmayan paket programda taşınmaz.
+- **Güvenlik:** Paket **veridir, kod değil**: şablon, formül dili, kural. Paylaşılan paket cihazda keyfi kod çalıştıramaz. Kod gerektiren ender durumlar (dış fiyat kaynağı bağlantısı gibi) ayrı ve izole "bağlayıcı" olarak, açık izinle çalışır.
+
+## T-16 · NotAI'ye gömülü küçük ajan çekirdeği (Rust) — öneri
+Hermes'in Python kodunu gömmek yerine, gereken çekirdeği Rust ile NotAI'ye yazmak:
+- LLM sürücüsü (Gemma / OpenAI uyumlu / Anthropic; büyük kısmı var),
+- araç kullanma döngüsü (adım ve süre sınırlı),
+- araçlar: NotAI içi araçlar + web arama/okuma + bildirim/Telegram'a gönderme,
+- tetikleyiciler: kayıt, saat, Asistan sohbeti; iş bitince kapanır,
+- yetki ve onay.
+
+Aynı kod hem uygulamada hem sunucuda çalışır. Başkasına gönderilen sürümde Termux gerekmez. Uzmanlık paketleri (N-6) bu çekirdeğin araç ve kural kaynağıdır.
