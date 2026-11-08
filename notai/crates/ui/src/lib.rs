@@ -62,6 +62,8 @@ struct Ctx {
     compose_focus: RwSignal<bool>,
     /// Kısa bilgi (ör. "Konumla teyit edildi: İş"); dokununca kapanır.
     info: RwSignal<Option<String>>,
+    /// Konuşurken telefonun anında tanıdığı metin.
+    live_text: RwSignal<String>,
 }
 
 fn new_ctx() -> Ctx {
@@ -72,6 +74,7 @@ fn new_ctx() -> Ctx {
         editing: RwSignal::new(None),
         error: RwSignal::new(None),
         info: RwSignal::new(None),
+        live_text: RwSignal::new(String::new()),
         task_draft: RwSignal::new(None),
         compose_focus: RwSignal::new(false),
     }
@@ -157,6 +160,12 @@ pub fn App() -> impl IntoView {
         web::on_notification_tap(move |payload| {
             if let Some(t) = view::tap_target(&payload) {
                 c.screen.set(Screen::Topic(t));
+            }
+        });
+        // Konuşurken anlık metin (Android tanıyıcısı).
+        web::plugin_listener("notai-speech", "partial", move |v| {
+            if let Some(t) = v.get("text").and_then(|t| t.as_str()) {
+                c.live_text.set(t.to_owned());
             }
         });
     }

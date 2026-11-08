@@ -173,7 +173,24 @@ async fn voice(
     mime: String,
     topic_id: Option<String>,
 ) -> Result<(), String> {
-    service::voice(&st.store, data, &mime, topic_id.as_deref()).await
+    service::voice(&st.store, data, &mime, topic_id.as_deref(), Utc::now()).await
+}
+
+#[tauri::command]
+async fn voice_native(
+    st: State<'_, AppState>,
+    draft: Option<String>,
+    path: Option<String>,
+    topic_id: Option<String>,
+) -> Result<(), String> {
+    service::voice_native(
+        &st.store,
+        draft.as_deref(),
+        path.as_deref(),
+        topic_id.as_deref(),
+        Utc::now(),
+    )
+    .await
 }
 
 #[tauri::command]
@@ -431,6 +448,7 @@ fn setup(app: &mut tauri::App) -> Result<(), Box<dyn std::error::Error>> {
 pub fn run() {
     let result = tauri::Builder::default()
         .plugin(tauri_plugin_notification::init())
+        .plugin(tauri_plugin_notai_speech::init())
         .setup(setup)
         .invoke_handler(tauri::generate_handler![
             topics,
@@ -456,6 +474,7 @@ pub fn run() {
             set_settings,
             ask,
             voice,
+            voice_native,
             undo,
             answer_question,
             finance,

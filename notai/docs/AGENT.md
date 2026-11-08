@@ -6,7 +6,7 @@ dağıtırken hangi AI kurgusunun kullanılacağına sonra karar verilecek. Sunu
 destekler (`NOTAI_AI=local | anthropic | external`).
 
 ## Nasıl çalışır?
-1. Kayıt yakalanır (uygulama, WhatsApp webhook'u ya da `notai capture`). Kayıt hemen yazılır,
+1. Kayıt yakalanır (uygulama ya da `notai capture`). Kayıt hemen yazılır,
    "işlenmemiş" olarak bekler.
 2. Ajan `notai jobs` ile bekleyen işleri alır. Her iş, sunucunun kendi modeline vereceği istemin
    **aynısını** içerir: kurallar, konu listesi (kimlikleriyle), onaylı profil bilgileri, son

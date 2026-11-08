@@ -1,0 +1,12 @@
+{
+  "db_name": "SQLite",
+  "query": "INSERT OR IGNORE INTO transcripts (entry_id, attachment_id, state, created_at, updated_at)\n         SELECT id, ?2, 'pending', ?3, ?3 FROM entries WHERE id = ?1 AND source = 'voice'",
+  "describe": {
+    "columns": [],
+    "parameters": {
+      "Right": 3
+    },
+    "nullable": []
+  },
+  "hash": "21de3c6831e34081db647332a28a3327229f8f2803c3176fecf34911f851db10"
+}

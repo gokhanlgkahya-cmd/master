@@ -1,1 +1,1 @@
-{"default":{"identifier":"default","description":"Ana pencere: çekirdek izinler + bildirimler. NotAI komutları uygulamanın kendi komutlarıdır.","local":true,"windows":["main"],"permissions":["core:default","notification:default"]}}
+{"default":{"identifier":"default","description":"Ana pencere: çekirdek izinler + bildirimler + konuşma tanıma. NotAI komutları uygulamanın kendi komutlarıdır.","local":true,"windows":["main"],"permissions":["core:default","notification:default","notai-speech:default"]}}

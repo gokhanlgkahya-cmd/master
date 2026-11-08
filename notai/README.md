@@ -19,7 +19,7 @@ kayıt en altta, altta sabit yazma çubuğu, kaydın altında AI öneri çipleri
 | `crates/store` | SQLite + sqlx (derleme zamanı denetimli sorgular). Her yazma transaction'da ve değişiklik günlüğünde; silme = çöp kutusu. |
 | `crates/ai` | Sağlayıcıdan bağımsız LLM istemcisi (Claude API, yerel Gemma/Ollama), Türkçe istem, katı JSON şema doğrulaması. |
 | `crates/sync` | Telefon ↔ masaüstü ↔ ev sunucusu senkronu (son yazan kazanır + alan kuralları). |
-| `crates/server` | Ev sunucusu (axum): REST, WhatsApp/MacroDroid webhook'u, AI işçisi, sabah planı zamanlayıcısı. |
+| `crates/server` | Ev sunucusu (axum): REST, AI işçisi, ses → yazı (Whisper), sabah planı zamanlayıcısı. |
 | `crates/api` | Sunucu, uygulama ve arayüzün paylaştığı JSON tipleri. |
 | `crates/tokens` | `design/tokens.json` → CSS üreticisi. |
 | `crates/ui` | Leptos arayüzü (Rust → WASM). Tasarım dosyalarını derlerken gömer. |
@@ -49,7 +49,6 @@ cargo build --release -p notai-server
 NOTAI_BIND=0.0.0.0:8787 \
 NOTAI_DATABASE_URL=sqlite://notai.db \
 NOTAI_API_TOKEN=uzun-rastgele-bir-değer \
-NOTAI_WEBHOOK_SECRET=macrodroid-icin-baska-bir-değer \
 NOTAI_AI=local NOTAI_AI_MODEL=gemma3:12b \
 NOTAI_NTFY_URL=http://127.0.0.1:8080/notai \
 ./target/release/notai-server
@@ -60,12 +59,11 @@ NOTAI_NTFY_URL=http://127.0.0.1:8080/notai \
 | `NOTAI_BIND` | `127.0.0.1:8787` | Dinlenecek adres. Tailscale IP'sine bağlamak en güvenlisi. |
 | `NOTAI_DATABASE_URL` | `sqlite://notai.db` | Veritabanı dosyası. |
 | `NOTAI_API_TOKEN` | — | Uygulamanın `Authorization: Bearer` belirteci. Boşsa API açık kalır (yalnız güvenli ağda). |
-| `NOTAI_WEBHOOK_SECRET` | — | WhatsApp webhook'u için `X-NotAI-Secret`. Boşsa webhook kapalı. |
 | `NOTAI_AI` | `none` | `none` · `external` (S24'teki Hermes/Claude Code `notai` CLI ile sınıflandırır — `docs/AGENT.md`) · `local` (Ollama/Gemma) · `anthropic` (`ANTHROPIC_API_KEY` gerekir). |
 | `NOTAI_AI_MODEL`, `NOTAI_AI_BASE_URL` | — / `http://127.0.0.1:11434` | Yerel model adı ve adresi; `anthropic` için varsayılan model `claude-opus-5-5`. |
 | `NOTAI_MORNING_AT`, `NOTAI_TZ` | `09:00`, `Europe/Istanbul` | Sabah planı saati ve saat dilimi. |
 | `NOTAI_NTFY_URL` | — | Sabah planı ve hatırlatmaları telefona bildirim olarak yollamak için ntfy konusu. |
-| `NOTAI_STT_MODEL`, `NOTAI_STT_BASE_URL` | — / `http://127.0.0.1:8000` | Sesli yakalama: Whisper uyumlu ses → yazı servisi (ör. faster-whisper-server). Boşsa sesli yakalama kapalı. |
+| `NOTAI_STT_MODEL`, `NOTAI_STT_BASE_URL` | — / `http://127.0.0.1:8000` | Ses → yazı: Whisper (S24'te whisper.cpp; kurulum `docs/SES.md`). Telefon anında yazar, sunucu düzeltir. Boşsa sesler kuyrukta bekler, Whisper açılınca işlenir. |
 | `NOTAI_VAULT_DIR` | — | Obsidian kasası klasörü. Ayarlıysa sunucu `NotAI/` alt klasörünü her değişiklikte günceller (konular iç içe klasörler, `Ana Günlük/` günlük notları, görevler Tasks biçiminde). Kendi notlarına dokunulmaz. Anında yazmak için `POST /api/vault/export`. |
 | `NOTAI_CORS_ORIGINS` | — | Arayüzü tarayıcıda başka bir adresten açıp sunucuya doğrudan bağlanmak için izinli kökenler, virgülle (ör. `http://localhost:8080`). Boşsa kapalı; belirteç yine zorunludur. Uygulama kabuğu ve `notai` aracı için gerekmez. |
 | `NOTAI_EMBED_MODEL`, `NOTAI_EMBED_BASE_URL` | — / `http://127.0.0.1:11434` | Ara/Sor anlamsal arama: OpenAI uyumlu embeddings (ör. Ollama `bge-m3`). Boşsa yalnız tam metin arama. |
@@ -73,12 +71,7 @@ NOTAI_NTFY_URL=http://127.0.0.1:8080/notai \
 AI kapalıyken her şey çalışır; kayıtlar yalnız "işlenmemiş" kalır. Otonom mod (yüksek güvenli
 önerileri kendiliğinden uygulama, geri alınabilir) uygulamada Ayarlar → AI bölümünden açılır.
 
-### WhatsApp ile yakalama (MacroDroid)
-1. Tetikleyici: *Bildirim alındı* → WhatsApp, kendi sohbetin (ör. "Ş").
-2. Eylem: *HTTP isteği* → `POST http://<S24-Tailscale-IP>:8787/webhook/whatsapp`
-   - Başlık: `X-NotAI-Secret: <NOTAI_WEBHOOK_SECRET>` · `Content-Type: application/json`
-   - Gövde: `{"text": "[notification_text]"}`
-3. Aynı mesaj 5 dakika içinde iki kez gelirse ikinci kayıt açılmaz.
+NotAI WhatsApp'tan kayıt yakalamaz (karar: 2026-11-08); yakalama uygulamadan (yazı, ses, ek) ve `notai capture` ile.
 
 ## Uygulama
 

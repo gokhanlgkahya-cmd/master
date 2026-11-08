@@ -20,7 +20,7 @@ use crate::error::Result;
 use crate::log_change;
 use crate::topics::{find_by_name, get_topic, insert_topic};
 
-/// Konum gelmezse soru bu kadar bekledikten sonra sorulur (WhatsApp/CLI kayıtları).
+/// Konum gelmezse soru bu kadar bekledikten sonra sorulur (CLI / sunucuda yakalanan kayıtlar).
 pub const SETTLE_AFTER_SECS: i64 = 90;
 
 /// Konum denemesinin sonucu (arayüze gösterilir).

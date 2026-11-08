@@ -357,10 +357,17 @@ pub fn focus_later(el: leptos::prelude::NodeRef<leptos::html::Input>) {
 }
 
 /// Tauri bildirim eklentisinin "actionPerformed" olayını (Android'de bildirime dokunma) dinler.
-/// `@tauri-apps/api`'nin `addPluginListener`'ının yaptığını yapar: bir geri çağrıyı kanal
-/// olarak kaydeder. Tauri dışında ya da olayı desteklemeyen masaüstünde sessizce hiçbir şey
-/// yapmaz (orada uygulama açılışındaki "son bildirim" şeridi kullanılır).
+/// Tauri dışında ya da olayı desteklemeyen masaüstünde sessizce hiçbir şey yapmaz (orada
+/// uygulama açılışındaki "son bildirim" şeridi kullanılır).
 pub fn on_notification_tap(cb: impl Fn(serde_json::Value) + 'static) {
+    plugin_listener("notification", "actionPerformed", cb);
+}
+
+/// `@tauri-apps/api`'nin `addPluginListener`'ının yaptığını yapar: geri çağrıyı kanal olarak
+/// kaydeder (`plugin:<eklenti>|register_listener`; erişim listesi yılan_yazımı adı bekler, Tauri
+/// yerel eklentiye camelCase iletir). Kanal mesajı `{ index, message }` sarmalından çıkarılır.
+/// Tauri dışında ya da eklenti yoksa sessizce hiçbir şey yapmaz.
+pub fn plugin_listener(plugin: &str, event: &str, cb: impl Fn(serde_json::Value) + 'static) {
     let Some(window) = web_sys::window() else {
         return;
     };
@@ -381,7 +388,10 @@ pub fn on_notification_tap(cb: impl Fn(serde_json::Value) + 'static) {
     };
     let handler = Closure::<dyn FnMut(JsValue)>::new(move |v: JsValue| {
         if let Ok(json) = serde_wasm_bindgen::from_value::<serde_json::Value>(v) {
-            cb(json);
+            if json.get("end").is_some() {
+                return;
+            }
+            cb(json.get("message").cloned().unwrap_or(json));
         }
     });
     let Ok(id) = transform.call2(&internals, handler.as_ref(), &JsValue::FALSE) else {
@@ -393,7 +403,7 @@ pub fn on_notification_tap(cb: impl Fn(serde_json::Value) + 'static) {
     let _ = js_sys::Reflect::set(
         &args,
         &JsValue::from_str("event"),
-        &JsValue::from_str("actionPerformed"),
+        &JsValue::from_str(event),
     );
     let channel = format!("__CHANNEL__:{}", id.as_f64().unwrap_or_default());
     let _ = js_sys::Reflect::set(
@@ -403,11 +413,11 @@ pub fn on_notification_tap(cb: impl Fn(serde_json::Value) + 'static) {
     );
     if let Ok(p) = invoke.call2(
         &internals,
-        &JsValue::from_str("plugin:notification|registerListener"),
+        &JsValue::from_str(&format!("plugin:{plugin}|register_listener")),
         &args,
     ) && let Ok(p) = p.dyn_into::<js_sys::Promise>()
     {
-        // Masaüstünde bu komut yoktur; reddi yut (konsolda yakalanmamış hata olmasın).
+        // Masaüstünde yerel eklenti yoktur; reddi yut (konsolda yakalanmamış hata olmasın).
         wasm_bindgen_futures::spawn_local(async move {
             let _ = JsFuture::from(p).await;
         });

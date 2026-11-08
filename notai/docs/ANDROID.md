@@ -29,18 +29,18 @@ cargo tauri android build --apk   # arayüzü (trunk) ve Rust kodunu derler, APK
 ```
 APK: `crates\app\gen\android\app\build\outputs\apk\universal\release\app-universal-release-unsigned.apk`
 
-### Bir kez: izinler (konum + mikrofon)
-`cargo tauri android init` sonrası `crates\app\gen\android\app\src\main\AndroidManifest.xml`
-dosyasını aç; `<uses-permission android:name="android.permission.INTERNET" />` satırının altına ekle:
-```xml
-<uses-permission android:name="android.permission.ACCESS_FINE_LOCATION" />
-<uses-permission android:name="android.permission.ACCESS_COARSE_LOCATION" />
-<uses-permission android:name="android.permission.RECORD_AUDIO" />
-```
-- **Konum:** "işe geldim", "evden çıkıyorum" gibi hareket kayıtlarını teyit etmek ve yerlerin
-  konumunu öğrenmek için (yalnız hareket kaydı yazdığında, tek seferlik; arka planda izlenmez).
-- **Mikrofon:** sesli kayıt için.
-İlk kullanımda Android izin sorar; "Uygulamayı kullanırken" yeterli.
+### İzinler ve sesli not
+Mikrofon ve konum izinleri NotAI'nin konuşma eklentisi (`crates/speech`) tarafından APK'ya
+kendiliğinden eklenir; manifest'i elle düzenlemen gerekmez. İlk kullanımda Android sorar;
+"Uygulamayı kullanırken" yeterli.
+- **Sesli not:** mikrofona dokun, konuş, Gönder. Telefonun tanıyıcısı söylediğini **anında** yazar
+  (konuşurken şeritte görünür). Android 13 ve üstünde ses de saklanır; ev sunucusundaki Whisper
+  metni sonra düzeltir (`docs/SES.md`). İnternet yoksa kayıt telefonda kalır, bağlanınca düzeltilir.
+- Türkçe tanıma için telefonda Google konuşma hizmeti olmalı. İnternetsiz tanıma için:
+  *Ayarlar → Google → Tüm hizmetler → Konuşma → Çevrimdışı konuşma tanıma → Türkçe* (indir).
+- **Konum:** yalnız "işe geldim" gibi bir hareket yazdığında, bir kez alınır; arka planda izlenmez.
+- Konuşma eklentisinin Android (Kotlin) kodunu bulut ortamında derleyemedim; ilk derlemede
+  `crates/speech/android` ile ilgili hata çıkarsa çıktının tamamını gönder, düzeltelim.
 
 Telefona yüklemek için en kolay yol geliştirme modu:
 ```powershell

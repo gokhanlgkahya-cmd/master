@@ -33,6 +33,7 @@ serde.workspace = true
 serde_json.workspace = true
 tauri = { version = "2.12", features = [] }
 tauri-plugin-notification = "2"
+tauri-plugin-notai-speech = { path = "../speech" }
 reqwest.workspace = true
 tokio.workspace = true
 uuid.workspace = true

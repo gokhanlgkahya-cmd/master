@@ -1,0 +1,12 @@
+{
+  "db_name": "SQLite",
+  "query": "UPDATE transcripts SET state = 'failed', attempts = ?2, error = ?3, updated_at = ?4\n                         WHERE entry_id = ?1",
+  "describe": {
+    "columns": [],
+    "parameters": {
+      "Right": 4
+    },
+    "nullable": []
+  },
+  "hash": "ca9ef9a964a51227dd61100f4cef9123e84c3877a29b927229331abbbf5ba1df"
+}

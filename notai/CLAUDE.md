@@ -15,7 +15,7 @@ Kullanıcının yöntemi: **Bullet Journal günlük log + PARA (Projeler / Alanl
 ## Kullanıcı hakkında
 - Gökhan, endüstri mühendisi, profesyonel yazılımcı değil. Türkçe konuş, teknik kararları kısa gerekçeyle açıkla.
 - Ana cihaz Android (Samsung). İkinci bir S24 Ultra 7/24 ev sunucusu (n8n, yerel Gemma modelleri).
-- Hızlı yakalama alışkanlığı: WhatsApp'a mesaj atmak.
+- Hızlı yakalama alışkanlığı: WhatsApp'a mesaj atmak. (Karar 2026-11-08: NotAI WhatsApp'tan yakalamaz; yakalama uygulamada yazı + ses.)
 
 ## ÇALIŞMA SIRASI — DEĞİŞMEZ
 1. **Faz 0 – Soru turu.** Kod yazmadan önce `AskUserQuestion` ile tasarım sorularını sor (bkz. docs/DESIGN_PROCESS.md).

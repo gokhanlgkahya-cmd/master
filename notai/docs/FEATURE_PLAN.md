@@ -59,7 +59,7 @@ Her dilim: derlenir + `cargo fmt --check` + `cargo clippy --all-targets -- -D wa
 ## 4. Gökhan'a açık sorular (sonraki oturumda)
 1. ~~AI sağlayıcısı~~ → S24'teki ajanlar (Hermes / Claude Code) dış ajan modu ile (`docs/AGENT.md`); dağıtım kurgusu sonra.
 2. ~~Sabah planı saati~~ → 09:00 (karar verildi).
-3. WhatsApp yakalaması: ne yakalanacağı netleşince (kod hazır, kapalı).
+3. ~~WhatsApp yakalaması~~ — yapılmayacak (Gökhan, 2026-11-08); webhook kaldırıldı.
 
 ## 5. Faz durumu
 | Faz | Durum | Not |

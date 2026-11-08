@@ -25,7 +25,7 @@ pub enum Source {
     App,
     /// Sesli yakalama.
     Voice,
-    /// WhatsApp → MacroDroid → webhook.
+    /// Eski WhatsApp yakalaması (2026-11-08 kaldırıldı; eski kayıtlar okunabilsin diye duruyor).
     WhatsApp,
     /// Android "paylaş" menüsü.
     Share,

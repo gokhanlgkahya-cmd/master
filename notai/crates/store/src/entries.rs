@@ -21,7 +21,7 @@ pub struct NewEntry {
     pub source: Source,
     pub topic: Option<TopicId>,
     pub captured_at: DateTime<Utc>,
-    /// Aynı anahtarla ikinci yakalama yeni kayıt açmaz (WhatsApp yinelemeleri).
+    /// Aynı anahtarla ikinci yakalama yeni kayıt açmaz (ör. ekstre / yeniden gönderim).
     pub dedupe_key: Option<String>,
 }
 
@@ -95,6 +95,15 @@ pub(crate) async fn update_entry_fields(
         status,
         trashed,
         now_s
+    )
+    .execute(&mut *conn)
+    .await?;
+    // Metin yalnız ses → yazı düzeltmesinde değişir; değişmediyse arama dizini dokunulmaz.
+    let text = entry.text.as_str();
+    sqlx::query!(
+        "UPDATE entries SET text = ?2 WHERE id = ?1 AND text != ?2",
+        id,
+        text
     )
     .execute(&mut *conn)
     .await?;

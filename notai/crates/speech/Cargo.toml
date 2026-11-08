@@ -1,0 +1,18 @@
+[package]
+name = "tauri-plugin-notai-speech"
+description = "NotAI: Android konuşma tanıma (anında metin) + ses kaydı (Whisper düzeltmesi için)"
+version.workspace = true
+edition.workspace = true
+rust-version.workspace = true
+publish.workspace = true
+license.workspace = true
+links = "tauri-plugin-notai-speech"
+
+[dependencies]
+tauri = { version = "2.12", features = [] }
+
+[build-dependencies]
+tauri-plugin = { version = "2", features = ["build"] }
+
+[lints]
+workspace = true

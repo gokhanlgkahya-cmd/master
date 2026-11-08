@@ -278,58 +278,6 @@ async fn api_token_is_enforced_but_health_is_open() {
 }
 
 #[tokio::test]
-async fn whatsapp_webhook_requires_secret_and_dedupes() {
-    let mut cfg = Config::defaults();
-    cfg.webhook_secret = Some("macrodroid".into());
-    let h = harness(cfg, ScriptedLlm::new()).await;
-    let body = json!({ "text": "Numune yolla – GemOlive", "sent_at": "2026-11-06T06:20:00Z" });
-
-    let (s, _) = h
-        .call("POST", "/webhook/whatsapp", Some(body.clone()), &[])
-        .await;
-    assert_eq!(s, StatusCode::UNAUTHORIZED);
-    let (s, first) = h
-        .call(
-            "POST",
-            "/webhook/whatsapp",
-            Some(body.clone()),
-            &[("x-notai-secret", "macrodroid")],
-        )
-        .await;
-    assert_eq!(s, StatusCode::CREATED);
-    assert_eq!(first["duplicate"], false);
-    let (s, second) = h
-        .call(
-            "POST",
-            "/webhook/whatsapp",
-            Some(body),
-            &[("x-notai-secret", "macrodroid")],
-        )
-        .await;
-    assert_eq!(s, StatusCode::OK);
-    assert_eq!(second["duplicate"], true);
-    assert_eq!(first["id"], second["id"]);
-
-    let (_, j) = h.get("/api/journal").await;
-    assert_eq!(j["groups"][0]["items"][0]["source"], "whats_app");
-    assert_eq!(j["unprocessed"], 1);
-}
-
-#[tokio::test]
-async fn webhook_disabled_without_secret() {
-    let h = harness(Config::defaults(), ScriptedLlm::new()).await;
-    let (s, _) = h
-        .call(
-            "POST",
-            "/webhook/whatsapp",
-            Some(json!({ "text": "x" })),
-            &[("x-notai-secret", "")],
-        )
-        .await;
-    assert_eq!(s, StatusCode::UNAUTHORIZED);
-}
-
-#[tokio::test]
 async fn morning_plan_scheduler_fires_once_and_notifies() {
     let ntfy = MockServer::start().await;
     Mock::given(method("POST"))
@@ -478,7 +426,7 @@ async fn http_sync_between_phone_and_real_server() {
         "Telefondan: numune yolla"
     );
 
-    // Sunucuya WhatsApp'tan gelen kayıt telefona iner.
+    // Sunucuda (ör. CLI ile) yakalanan kayıt telefona iner.
     h.call(
         "POST",
         "/api/entries",

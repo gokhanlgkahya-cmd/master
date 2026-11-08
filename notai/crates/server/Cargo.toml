@@ -1,6 +1,6 @@
 [package]
 name = "notai-server"
-description = "NotAI ev sunucusu: REST + WhatsApp webhook + AI işçisi + zamanlayıcı (axum)"
+description = "NotAI ev sunucusu: REST + AI işçisi + zamanlayıcı (axum)"
 version.workspace = true
 edition.workspace = true
 rust-version.workspace = true

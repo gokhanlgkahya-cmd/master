@@ -46,6 +46,9 @@ pub fn Composer(
     let voice = RwSignal::new(Voice::Idle);
     let secs = RwSignal::new(0_u32);
     let recorder = StoredValue::new_local(None::<Recorder>);
+    // Telefonun tanıyıcısı kullanılıyor mu (Android); değilse tarayıcı ses kaydı.
+    let native = StoredValue::new(false);
+    let bs = StoredValue::new_local(b.clone());
     let ticker = StoredValue::new(None::<IntervalHandle>);
     let field = NodeRef::<Input>::new();
     let photo = NodeRef::<Input>::new();
@@ -205,17 +208,37 @@ pub fn Composer(
         panel.set(Panel::Closed);
         voice.set(Voice::Starting);
         secs.set(0);
+        c.live_text.set(String::new());
+        let b = bs.get_value();
         spawn_local(async move {
+            let tick = move || {
+                let h = set_interval_with_handle(
+                    move || secs.update(|s| *s += 1),
+                    Duration::from_secs(1),
+                )
+                .ok();
+                ticker.set_value(h);
+            };
+            // Önce telefonun tanıyıcısı (anında metin); yoksa tarayıcı kaydı.
+            match b.speech_start().await {
+                Ok(()) => {
+                    native.set_value(true);
+                    voice.set(Voice::Recording);
+                    tick();
+                    return;
+                }
+                Err(e) if e != crate::backend::NO_SPEECH && e.contains("izni") => {
+                    voice.set(Voice::Idle);
+                    c.error.set(Some(e));
+                    return;
+                }
+                Err(_) => native.set_value(false),
+            }
             match Recorder::start().await {
                 Ok(r) => {
                     recorder.set_value(Some(r));
                     voice.set(Voice::Recording);
-                    let h = set_interval_with_handle(
-                        move || secs.update(|s| *s += 1),
-                        Duration::from_secs(1),
-                    )
-                    .ok();
-                    ticker.set_value(h);
+                    tick();
                 }
                 Err(e) => {
                     voice.set(Voice::Idle);
@@ -226,6 +249,14 @@ pub fn Composer(
     };
     let cancel_voice = move || {
         stop_ticker();
+        c.live_text.set(String::new());
+        if native.get_value() {
+            native.set_value(false);
+            let b = bs.get_value();
+            spawn_local(async move {
+                let _ = b.speech_cancel().await;
+            });
+        }
         let mut r = None;
         recorder.update_value(|x| r = x.take());
         if let Some(r) = r {
@@ -237,6 +268,55 @@ pub fn Composer(
         let (b, topic) = (b.clone(), topic.clone());
         move || {
             stop_ticker();
+            if native.get_value() {
+                native.set_value(false);
+                voice.set(Voice::Sending);
+                let (b, topic) = (b.clone(), topic.clone());
+                spawn_local(async move {
+                    match b.speech_stop().await {
+                        Ok(r) => {
+                            let draft = Some(r.text.trim().to_owned()).filter(|t| !t.is_empty());
+                            if draft.is_none() && r.path.is_none() {
+                                voice.set(Voice::Idle);
+                                c.live_text.set(String::new());
+                                c.error
+                                    .set(Some(r.error.unwrap_or_else(|| {
+                                        "Ses anlaşılamadı; tekrar dene.".into()
+                                    })));
+                                return;
+                            }
+                            let note = match (&draft, &r.path) {
+                                (None, Some(_)) => Some(
+                                    "Ses kaydedildi; ev sunucusu yazıya çevirince metin gelecek."
+                                        .to_owned(),
+                                ),
+                                _ => None,
+                            };
+                            run_in(
+                                c,
+                                b,
+                                move |b| async move {
+                                    let res = b.voice_native(draft, r.path, topic).await;
+                                    voice.set(Voice::Idle);
+                                    c.live_text.set(String::new());
+                                    res.map_err(|e| format!("Sesli not kaydedilemedi: {e}"))
+                                },
+                                move |()| {
+                                    if let Some(n) = note {
+                                        c.info.set(Some(n));
+                                    }
+                                },
+                            );
+                        }
+                        Err(e) => {
+                            voice.set(Voice::Idle);
+                            c.live_text.set(String::new());
+                            c.error.set(Some(e));
+                        }
+                    }
+                });
+                return;
+            }
             let mut r = None;
             recorder.update_value(|x| r = x.take());
             let Some(r) = r else {
@@ -267,6 +347,12 @@ pub fn Composer(
     };
     on_cleanup(move || {
         stop_ticker();
+        if native.get_value() {
+            let b = bs.get_value();
+            spawn_local(async move {
+                let _ = b.speech_cancel().await;
+            });
+        }
         let mut r = None;
         recorder.update_value(|x| r = x.take());
         if let Some(r) = r {
@@ -330,10 +416,16 @@ pub fn Composer(
             Voice::Sending => "Yazıya çevriliyor…",
             _ => "Kaydediliyor",
         };
-        let live = move || match voice.get() {
-            Voice::Starting => "Mikrofon izni bekleniyor…",
-            Voice::Sending => "Kayıt gönderiliyor; metin akışa düşecek.",
-            _ => "Konuş; bitince Gönder’e dokun. Kayıt yazıya çevrilip kaydedilir.",
+        let live = move || {
+            let t = c.live_text.get();
+            match voice.get() {
+                Voice::Starting => "Mikrofon izni bekleniyor…".to_owned(),
+                Voice::Sending if !t.is_empty() => t,
+                Voice::Sending => "Kayıt gönderiliyor; metin akışa düşecek.".to_owned(),
+                _ if !t.is_empty() => t,
+                _ => "Konuş; bitince Gönder’e dokun. Söylediğin yazıya çevrilip kaydedilir."
+                    .to_owned(),
+            }
         };
         let busy = move || voice.get() != Voice::Recording;
         let bars = WAVE

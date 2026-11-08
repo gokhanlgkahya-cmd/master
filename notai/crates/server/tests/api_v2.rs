@@ -381,11 +381,107 @@ async fn voice_capture_and_attachments() {
         .await;
     assert_eq!(s, StatusCode::BAD_REQUEST);
 
+    // Whisper yoksa da kayıt kaybolmaz: yer tutucu + ses, kuyrukta bekler.
     let no_media = self::h(Config::defaults(), ScriptedLlm::new(), false).await;
-    let (s, _, _) = no_media
+    let (s, v, _) = no_media
         .raw("POST", "/api/voice", "audio/webm", vec![1, 2, 3])
         .await;
-    assert_eq!(s, StatusCode::BAD_REQUEST);
+    assert_eq!(s, StatusCode::CREATED);
+    let v: Value = serde_json::from_slice(&v).unwrap();
+    assert_eq!(v["pending"], true);
+    assert_eq!(v["text"], notai_store::VOICE_PLACEHOLDER);
+}
+
+struct FailStt;
+impl Transcriber for FailStt {
+    fn transcribe<'a>(&'a self, _audio: &'a [u8], _mime: &'a str) -> AiFuture<'a, String> {
+        Box::pin(async { Err(notai_ai::AiError::NoContent) })
+    }
+}
+
+#[tokio::test]
+async fn phone_draft_is_corrected_by_whisper_after_sync_and_retries() {
+    use notai_server::worker::transcribe_one;
+    let h = h(Config::defaults(), ScriptedLlm::new(), false).await;
+    // Telefon: anında tanınan metin + ses, internetsiz yazılır.
+    let phone = Store::open_in_memory("telefon").await.unwrap();
+    let draft = phone
+        .capture_voice(
+            Some("yarın izmir deki kostik firmasını ara"),
+            Some((vec![7; 32], "audio/wav".into())),
+            None,
+            t0(),
+        )
+        .await
+        .unwrap();
+    let placeholder = phone
+        .capture_voice(None, Some((vec![8; 16], "audio/wav".into())), None, t0())
+        .await
+        .unwrap();
+    assert_eq!(placeholder.text.as_str(), notai_store::VOICE_PLACEHOLDER);
+    assert!(
+        phone.next_ai_job(t0()).await.unwrap().map(|e| e.id) == Some(draft.id),
+        "taslak AI'a gider, yer tutucu gitmez"
+    );
+    // Senkron: sunucuda iki ses kuyruğa girer.
+    for c in phone.own_changes_since(0, 1000).await.unwrap() {
+        h.state.store.apply_remote(&c, true).await.unwrap();
+    }
+    assert_eq!(h.state.store.pending_transcripts().await.unwrap(), 2);
+    // Whisper geçici hata verir → yeniden denenecek, kayıt aynı.
+    let failing = AppState {
+        stt: Some(Arc::new(FailStt) as Arc<dyn Transcriber>),
+        ..h.state.clone()
+    };
+    assert!(transcribe_one(&failing).await.unwrap());
+    assert!(transcribe_one(&failing).await.unwrap());
+    assert!(
+        !transcribe_one(&failing).await.unwrap(),
+        "ikisi de bekleme süresinde"
+    );
+    // Whisper geldi: bekleme sonrası ikisi de düzeltilir.
+    h.clock.set(t0() + Duration::minutes(2));
+    let ok = AppState {
+        stt: Some(Arc::new(FakeStt) as Arc<dyn Transcriber>),
+        ..h.state.clone()
+    };
+    assert!(transcribe_one(&ok).await.unwrap());
+    assert!(transcribe_one(&ok).await.unwrap());
+    assert!(!transcribe_one(&ok).await.unwrap());
+    assert_eq!(h.state.store.pending_transcripts().await.unwrap(), 0);
+    let fixed = h.state.store.entry(placeholder.id).await.unwrap();
+    assert!(
+        fixed.text.as_str().starts_with("Yarın İzmir'deki"),
+        "{}",
+        fixed.text.as_str()
+    );
+    // Düzeltilmiş metin AI'a gider.
+    let mut ai = Vec::new();
+    while let Some(e) = h
+        .state
+        .store
+        .next_ai_job_excluding(t0() + Duration::minutes(3), &ai)
+        .await
+        .unwrap()
+    {
+        ai.push(e.id);
+    }
+    assert!(ai.contains(&placeholder.id));
+    // Telefon düzeltmeyi senkronla alır.
+    for c in h.state.store.own_changes_since(0, 1000).await.unwrap() {
+        phone.apply_remote(&c, false).await.unwrap();
+    }
+    assert!(
+        phone
+            .entry(draft.id)
+            .await
+            .unwrap()
+            .text
+            .as_str()
+            .starts_with("Yarın İzmir'deki")
+    );
+    let hits = phone.search("kostik", 10).await.unwrap();
+    assert!(!hits.is_empty(), "arama dizini güncel");
 }
 
 #[tokio::test]
@@ -1281,7 +1377,7 @@ async fn movements_are_detected_located_asked_and_reported() {
     assert_eq!(n["kind"], "location");
     assert_eq!(n["title"], "Konumu aç · İş");
 
-    // Akşam WhatsApp'tan: konum gelmez; zamanlayıcı soruyu sorar.
+    // Akşam CLI'dan: konum gelmez; zamanlayıcı soruyu sorar.
     h.clock.set(t0() + Duration::hours(10));
     let e3 = cap("işten çıktım").await;
     h.clock

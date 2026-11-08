@@ -414,13 +414,72 @@ pub async fn ask(store: &Store, question: &str, tz: Tz) -> CmdResult<AskView> {
 }
 
 /// Sesli yakalama: ses ev sunucusunda yazıya çevrilir, kayıt senkronla gelir.
-pub async fn voice(store: &Store, data: Vec<u8>, mime: &str, topic: Option<&str>) -> CmdResult<()> {
-    let r = Remote::require(store).await?;
-    let path = topic
+/// Sesli not (masaüstü kaydı): telefonda/bilgisayarda hemen yazılır (yer tutucu + ses);
+/// ev sunucusu senkronla alır, Whisper'la yazıya çevirir, metin geri gelir. İnternetsiz çalışır.
+pub async fn voice(
+    store: &Store,
+    data: Vec<u8>,
+    mime: &str,
+    topic: Option<&str>,
+    now: DateTime<Utc>,
+) -> CmdResult<()> {
+    let topic = topic
         .filter(|t| !t.is_empty())
-        .map_or_else(|| "/voice".to_owned(), |t| format!("/voice?topic_id={t}"));
-    r.post_bytes::<serde_json::Value>(&path, mime, data).await?;
-    sync_now(store).await.map(|_| ())
+        .map(id::<TopicId>)
+        .transpose()?;
+    store
+        .capture_voice(None, Some((data, mime.to_owned())), topic, now)
+        .await
+        .map_err(err)?;
+    // Sunucu yoksa ya da ulaşılamıyorsa kayıt bekler; sonraki senkronda gider.
+    let _ = sync_now(store).await;
+    Ok(())
+}
+
+/// Android tanıyıcısının sonucu: anında metin (taslak) + varsa önbellekteki WAV. Ses ev
+/// sunucusunda Whisper'la yazıya çevrilip taslağı düzeltir.
+pub async fn voice_native(
+    store: &Store,
+    draft: Option<&str>,
+    path: Option<&str>,
+    topic: Option<&str>,
+    now: DateTime<Utc>,
+) -> CmdResult<()> {
+    let topic = topic
+        .filter(|t| !t.is_empty())
+        .map(id::<TopicId>)
+        .transpose()?;
+    let audio = match path.filter(|p| !p.is_empty()) {
+        Some(p) => Some((read_voice_file(p)?, "audio/wav".to_owned())),
+        None => None,
+    };
+    store
+        .capture_voice(draft, audio, topic, now)
+        .await
+        .map_err(err)?;
+    if let Some(p) = path {
+        let _ = std::fs::remove_file(p);
+    }
+    let _ = sync_now(store).await;
+    Ok(())
+}
+
+/// Yalnız eklentinin önbelleğe yazdığı ses dosyası okunur (keyfi dosya okunmasın).
+fn read_voice_file(p: &str) -> CmdResult<Vec<u8>> {
+    let path = std::path::Path::new(p);
+    let name_ok = path
+        .file_name()
+        .and_then(|n| n.to_str())
+        .is_some_and(|n| n.starts_with("notai-voice-") && n.ends_with(".wav"));
+    let dir_ok = path
+        .parent()
+        .and_then(|d| d.file_name())
+        .and_then(|n| n.to_str())
+        .is_some_and(|n| n == "cache");
+    if !name_ok || !dir_ok {
+        return Err(format!("geçersiz ses dosyası: {p}"));
+    }
+    std::fs::read(path).map_err(|e| format!("ses dosyası okunamadı: {e}"))
 }
 
 pub async fn undo(store: &Store, suggestion: &str, now: DateTime<Utc>) -> CmdResult<()> {

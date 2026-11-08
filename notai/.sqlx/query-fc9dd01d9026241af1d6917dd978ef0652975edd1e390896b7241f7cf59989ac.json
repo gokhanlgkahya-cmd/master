@@ -1,0 +1,62 @@
+{
+  "db_name": "SQLite",
+  "query": "SELECT t.entry_id AS \"entry_id!\", a.mime AS \"mime!\", a.data AS \"data?\", e.text AS \"text!\"\n                 FROM transcripts t\n                 JOIN attachments a ON a.id = t.attachment_id\n                 JOIN entries e ON e.id = t.entry_id\n                WHERE t.state = 'pending' AND (t.next_at IS NULL OR t.next_at <= ?1)\n                  AND e.status != 'trashed'\n                ORDER BY t.created_at LIMIT 1",
+  "describe": {
+    "columns": [
+      {
+        "name": "entry_id!",
+        "ordinal": 0,
+        "type_info": "Text",
+        "origin": {
+          "Table": {
+            "table": "transcripts",
+            "name": "entry_id"
+          }
+        }
+      },
+      {
+        "name": "mime!",
+        "ordinal": 1,
+        "type_info": "Text",
+        "origin": {
+          "Table": {
+            "table": "attachments",
+            "name": "mime"
+          }
+        }
+      },
+      {
+        "name": "data?",
+        "ordinal": 2,
+        "type_info": "Blob",
+        "origin": {
+          "Table": {
+            "table": "attachments",
+            "name": "data"
+          }
+        }
+      },
+      {
+        "name": "text!",
+        "ordinal": 3,
+        "type_info": "Text",
+        "origin": {
+          "Table": {
+            "table": "entries",
+            "name": "text"
+          }
+        }
+      }
+    ],
+    "parameters": {
+      "Right": 1
+    },
+    "nullable": [
+      false,
+      false,
+      true,
+      false
+    ]
+  },
+  "hash": "fc9dd01d9026241af1d6917dd978ef0652975edd1e390896b7241f7cf59989ac"
+}

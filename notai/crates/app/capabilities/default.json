@@ -1,7 +1,7 @@
 {
   "$schema": "../gen/schemas/desktop-schema.json",
   "identifier": "default",
-  "description": "Ana pencere: çekirdek izinler + bildirimler. NotAI komutları uygulamanın kendi komutlarıdır.",
+  "description": "Ana pencere: çekirdek izinler + bildirimler + konuşma tanıma. NotAI komutları uygulamanın kendi komutlarıdır.",
   "windows": ["main"],
-  "permissions": ["core:default", "notification:default"]
+  "permissions": ["core:default", "notification:default", "notai-speech:default"]
 }

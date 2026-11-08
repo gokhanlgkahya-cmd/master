@@ -1,0 +1,4 @@
+"$schema" = "schemas/schema.json"
+[default]
+description = "Konuşma tanıma: başlat, bitir, vazgeç ve anlık metin olayı."
+permissions = ["allow-start", "allow-stop", "allow-cancel", "allow-register-listener"]

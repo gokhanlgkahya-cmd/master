@@ -1,0 +1,21 @@
+{
+  "db_name": "SQLite",
+  "query": "SELECT COUNT(*) AS \"n!: i64\" FROM suggestions\n                            WHERE entry_id = ?1 AND decision != 'pending' AND kind != 'question'",
+  "describe": {
+    "columns": [
+      {
+        "name": "n!: i64",
+        "ordinal": 0,
+        "type_info": "Integer",
+        "origin": "Expression"
+      }
+    ],
+    "parameters": {
+      "Right": 1
+    },
+    "nullable": [
+      false
+    ]
+  },
+  "hash": "778aa47b0b663eead72ac6f83c5766e3204914a2d1dd6fd5322d340e16076dd2"
+}

@@ -2,8 +2,8 @@
 
 ## Genel görünüm
 ```
- [Android uygulaması]        [Masaüstü uygulaması]        [WhatsApp]
-  Tauri 2 + Leptos            Tauri 2 + Leptos              │ (MacroDroid bildirim → webhook)
+ [Android uygulaması]        [Masaüstü uygulaması]
+  Tauri 2 + Leptos            Tauri 2 + Leptos
   yerel SQLite (offline)      yerel SQLite                  ▼
         │      senkron (HTTPS, değişiklik günlüğü)     ┌─────────────────────┐
         └──────────────────────────────────────────────►  notai-server (axum) │  ← S24 Ultra ev sunucusu
@@ -23,11 +23,11 @@ crates/
   ai/        LLM istemcisi (sağlayıcıdan bağımsız trait), prompt'lar, JSON şema doğrulama
   ui/        Leptos bileşenleri + ekranlar (tokens.json'dan üretilen CSS değişkenleri)
   app/       Tauri 2 kabuğu (Android + masaüstü), bildirimler, ses kaydı, widget
-  server/    axum: REST + webhook (WhatsApp/MacroDroid), zamanlayıcı, AI kuyruğu
+  server/    axum: REST, zamanlayıcı, AI kuyruğu, ses → yazı
 ```
 
 ## Veri modeli (çekirdek)
-- **Entry** (her yakalanan şey): id, ham metin, kaynak (uygulama/ses/WhatsApp), zaman, durum (gelen_kutusu → işlendi → arşiv)
+- **Entry** (her yakalanan şey): id, ham metin, kaynak (uygulama/ses), zaman, durum (gelen_kutusu → işlendi → arşiv)
 - **Note** / **Task** (Entry'den türetilir): görevlerde tarih, öncelik, tekrar, hatırlatma
 - **Area** (PARA): Proje (bitiş tarihli) · Alan (süreklilik) · Kaynak · Arşiv
 - **Tag**, **Link** (not↔not), **Person** (kişiler)

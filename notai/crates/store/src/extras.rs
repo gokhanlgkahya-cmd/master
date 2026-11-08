@@ -461,6 +461,7 @@ pub(crate) async fn insert_attachment(
     )
     .execute(&mut *conn)
     .await?;
+    crate::transcripts::enqueue_if_voice(conn, &p.entry, &p.id, kind, now).await?;
     Ok(())
 }
 

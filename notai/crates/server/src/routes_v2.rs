@@ -15,11 +15,9 @@ use notai_api::{
     TopicEditRequest, TrashItemView, WeeklyReviewView, convert,
 };
 use notai_core::agenda::{agenda, week_start, weekly_review};
-use notai_core::entry::Source;
 use notai_core::reminders::{Snooze, group};
-use notai_core::text::EntryText;
 use notai_core::{Entry, EntryId, ProfileFactId, SuggestionId, TaskId, TopicId};
-use notai_store::{AttachmentKind, NewAttachment, NewEntry, Store};
+use notai_store::{AttachmentKind, NewAttachment, Store};
 use serde::Deserialize;
 use serde_json::{Value, json};
 
@@ -391,6 +389,9 @@ async fn ask_notes(State(st): State<AppState>, Json(b): Json<AskBody>) -> ApiRes
 #[derive(Debug, Deserialize)]
 struct VoiceQuery {
     topic_id: Option<TopicId>,
+    /// Telefonun anında tanıdığı metin (varsa); Whisper sonra düzeltir.
+    #[serde(default)]
+    draft: Option<String>,
 }
 
 fn content_type(h: &HeaderMap) -> String {
@@ -407,46 +408,37 @@ async fn voice(
     headers: HeaderMap,
     body: Bytes,
 ) -> ApiResult<(StatusCode, Json<Value>)> {
-    let Some(stt) = st.stt.as_deref() else {
-        return Err(bad(
-            "sesli yakalama için ses servisi tanımlı değil (NOTAI_STT_MODEL)",
-        ));
-    };
     if body.is_empty() {
         return Err(bad("ses kaydı boş"));
     }
     let mime = content_type(&headers);
-    let text = stt
-        .transcribe(&body, &mime)
-        .await
-        .map_err(|e| bad(format!("ses yazıya çevrilemedi: {e}")))?;
-    let captured = st
+    // Kayıt hemen yazılır (telefonun metni ya da yer tutucu); Whisper varsa hemen düzeltir,
+    // yoksa / başaramazsa ses kuyrukta bekler ve sonra yeniden denenir.
+    let entry = st
         .store
-        .capture(NewEntry {
-            text: EntryText::new(&text)?,
-            source: Source::Voice,
-            topic: q.topic_id,
-            captured_at: st.now(),
-            dedupe_key: None,
-        })
-        .await?;
-    let entry = captured.entry().clone();
-    st.store
-        .add_attachment(
-            NewAttachment {
-                entry: entry.id,
-                kind: AttachmentKind::Audio,
-                name: "ses kaydı".into(),
-                mime,
-                data: Some(body.to_vec()),
-                value: None,
-            },
+        .capture_voice(
+            q.draft.as_deref(),
+            Some((body.to_vec(), mime.clone())),
+            q.topic_id,
             st.now(),
         )
         .await?;
+    let pending = match st.stt.as_deref() {
+        Some(stt) => {
+            let r = stt
+                .transcribe(&body, &mime)
+                .await
+                .map_err(|e| e.to_string());
+            let out = st.store.finish_transcript(entry.id, r, st.now()).await?;
+            matches!(out, notai_store::TranscriptOutcome::Retry)
+        }
+        None => true,
+    };
+    let entry = st.store.entry(entry.id).await?;
+    let text = entry.text.as_str().to_owned();
     Ok((
         StatusCode::CREATED,
-        Json(json!({ "entry": entry, "text": text })),
+        Json(json!({ "entry": entry, "text": text, "pending": pending })),
     ))
 }
 

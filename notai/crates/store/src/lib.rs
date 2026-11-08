@@ -20,6 +20,7 @@ mod suggestions;
 mod sync_apply;
 mod tasks;
 mod topics;
+mod transcripts;
 mod watch;
 
 pub mod changes;
@@ -47,6 +48,9 @@ pub use suggestions::DecisionOutcome;
 pub use sync_apply::Applied;
 pub use tasks::TaskView;
 pub use topics::NewTopic;
+pub use transcripts::{
+    MAX_ATTEMPTS, TranscriptJob, TranscriptOutcome, VOICE_FAILED, VOICE_PLACEHOLDER,
+};
 pub use watch::DueWatch;
 
 /// AI işi başarısız olursa yeniden deneme bekleme süreleri (dakika). Bu kadar denemeden

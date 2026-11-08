@@ -1,7 +1,7 @@
 //! HTTP uçları.
 
 use axum::extract::{Path, Query, Request, State};
-use axum::http::{HeaderMap, StatusCode};
+use axum::http::StatusCode;
 use axum::middleware::Next;
 use axum::response::Response;
 use axum::routing::{get, post};
@@ -14,7 +14,7 @@ use notai_core::task::{Due, NewTask, Priority};
 use notai_core::text::{EntryText, FactText, TaskTitle, TopicName};
 use notai_core::topic::{KindFilter, ParaKind};
 use notai_core::{Entry, EntryId, SuggestionId, TaskId, TopicId};
-use notai_store::{Captured, NewEntry, NewTopic, TaskView};
+use notai_store::{NewEntry, NewTopic, TaskView};
 use serde::Deserialize;
 use serde_json::{Value, json};
 
@@ -50,7 +50,6 @@ pub fn router(state: AppState) -> Router {
     let cors = cors_layer(&state.cfg.cors_origins);
     let app = Router::new()
         .route("/health", get(|| async { Json(json!({ "status": "ok" })) }))
-        .route("/webhook/whatsapp", post(whatsapp_webhook))
         .nest("/api", api)
         .with_state(state);
     match cors {
@@ -452,59 +451,6 @@ async fn sync_pull(
     let limit = q.limit.unwrap_or(notai_sync::BATCH);
     Ok(Json(
         notai_sync::handle_pull(&st.store, &q.device, q.after, limit).await?,
-    ))
-}
-
-// ---------- WhatsApp (MacroDroid) webhook ----------
-
-#[derive(Debug, Deserialize)]
-struct WhatsAppBody {
-    text: String,
-    /// MacroDroid'in bildirim zamanı (yoksa sunucu saati).
-    sent_at: Option<DateTime<Utc>>,
-}
-
-/// Aynı metin 5 dakikalık pencerede ikinci kez gelirse yineleme sayılır.
-fn dedupe_key(text: &EntryText, at: DateTime<Utc>) -> String {
-    let bucket = at.timestamp() / 300;
-    format!("wa:{bucket}:{}", text.as_str())
-}
-
-async fn whatsapp_webhook(
-    State(st): State<AppState>,
-    headers: HeaderMap,
-    Json(body): Json<WhatsAppBody>,
-) -> ApiResult<(StatusCode, Json<Value>)> {
-    let Some(expected) = st.cfg.webhook_secret.as_deref() else {
-        return Err(ApiError::Unauthorized);
-    };
-    let given = headers
-        .get("x-notai-secret")
-        .and_then(|v| v.to_str().ok())
-        .unwrap_or_default();
-    if !ct_eq(given.as_bytes(), expected.as_bytes()) {
-        return Err(ApiError::Unauthorized);
-    }
-    let text = EntryText::new(&body.text)?;
-    let at = body.sent_at.unwrap_or_else(|| st.now());
-    let key = dedupe_key(&text, at);
-    let captured = st
-        .store
-        .capture(NewEntry {
-            text,
-            source: Source::WhatsApp,
-            topic: None,
-            captured_at: at,
-            dedupe_key: Some(key),
-        })
-        .await?;
-    let (status, duplicate) = match &captured {
-        Captured::New(_) => (StatusCode::CREATED, false),
-        Captured::Duplicate(_) => (StatusCode::OK, true),
-    };
-    Ok((
-        status,
-        Json(json!({ "id": captured.entry().id, "duplicate": duplicate })),
     ))
 }
 

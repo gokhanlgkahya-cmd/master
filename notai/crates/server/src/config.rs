@@ -30,8 +30,6 @@ pub struct Config {
     /// `/api` için `Authorization: Bearer` belirteci. Boşsa kimlik doğrulama kapalı
     /// (yalnız Tailscale/ev ağı içinde önerilir).
     pub api_token: Option<String>,
-    /// WhatsApp/MacroDroid webhook'u için paylaşılan gizli değer (`X-NotAI-Secret`).
-    pub webhook_secret: Option<String>,
     pub tz: Tz,
     pub user_name: String,
     pub morning_at: NaiveTime,
@@ -59,7 +57,6 @@ impl Config {
             database_url: "sqlite://notai.db".into(),
             origin: "sunucu".into(),
             api_token: None,
-            webhook_secret: None,
             tz: notai_core::DEFAULT_TZ,
             user_name: "Gökhan".into(),
             morning_at: NaiveTime::from_hms_opt(9, 0, 0).unwrap_or(NaiveTime::MIN),
@@ -94,7 +91,6 @@ impl Config {
             cfg.origin = v;
         }
         cfg.api_token = non_empty("NOTAI_API_TOKEN");
-        cfg.webhook_secret = non_empty("NOTAI_WEBHOOK_SECRET");
         if let Some(v) = non_empty("NOTAI_TZ") {
             cfg.tz = v.parse().map_err(|_| ConfigError::Invalid("NOTAI_TZ", v))?;
         }

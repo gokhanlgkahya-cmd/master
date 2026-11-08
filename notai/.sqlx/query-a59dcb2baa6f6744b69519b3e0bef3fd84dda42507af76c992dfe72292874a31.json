@@ -1,0 +1,12 @@
+{
+  "db_name": "SQLite",
+  "query": "DELETE FROM suggestions WHERE entry_id = ?1 AND decision = 'pending' AND kind != 'question'",
+  "describe": {
+    "columns": [],
+    "parameters": {
+      "Right": 1
+    },
+    "nullable": []
+  },
+  "hash": "a59dcb2baa6f6744b69519b3e0bef3fd84dda42507af76c992dfe72292874a31"
+}

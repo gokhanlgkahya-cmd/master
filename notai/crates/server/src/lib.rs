@@ -1,6 +1,6 @@
 //! NotAI ev sunucusu (S24 Ultra üzerinde 7/24).
 //!
-//! REST API + WhatsApp/MacroDroid webhook'u + AI işçisi + zamanlayıcı.
+//! REST API + AI işçisi + zamanlayıcı.
 //! Erişim yalnız ev ağı / Tailscale üzerinden önerilir; API anahtarları yalnız burada.
 
 #![forbid(unsafe_code)]

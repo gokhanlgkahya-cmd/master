@@ -133,6 +133,20 @@ fn enc(s: &str) -> String {
     urlencoding::encode(s).into_owned()
 }
 
+/// Telefonun konuşma tanıyıcısı yok (masaüstü / tarayıcı): ses kaydına düşülür.
+pub const NO_SPEECH: &str = "konuşma tanıma bu cihazda yok";
+
+/// Tanıyıcının sonucu.
+#[derive(Debug, Clone, Default, serde::Deserialize)]
+pub struct SpeechResult {
+    #[serde(default)]
+    pub text: String,
+    #[serde(default)]
+    pub path: Option<String>,
+    #[serde(default)]
+    pub error: Option<String>,
+}
+
 impl Backend {
     #[must_use]
     pub fn detect() -> Self {
@@ -576,6 +590,51 @@ impl Backend {
     }
 
     /// Ses kaydını gönderir: sunucu yazıya çevirip kayıt olarak yakalar.
+    /// Telefonun konuşma tanıyıcısını başlatır (yalnız Android uygulamasında vardır).
+    pub async fn speech_start(&self) -> BResult<()> {
+        match self {
+            Self::Tauri => Self::call::<Value>("plugin:notai-speech|start", json!({}))
+                .await
+                .map(|_| ()),
+            _ => Err(NO_SPEECH.into()),
+        }
+    }
+
+    /// Tanımayı bitirir: anında metin + varsa ses dosyası.
+    pub async fn speech_stop(&self) -> BResult<SpeechResult> {
+        match self {
+            Self::Tauri => Self::call("plugin:notai-speech|stop", json!({})).await,
+            _ => Err(NO_SPEECH.into()),
+        }
+    }
+
+    pub async fn speech_cancel(&self) -> BResult<()> {
+        match self {
+            Self::Tauri => Self::call::<Value>("plugin:notai-speech|cancel", json!({}))
+                .await
+                .map(|_| ()),
+            _ => Err(NO_SPEECH.into()),
+        }
+    }
+
+    /// Tanıyıcının sonucunu kaydeder (metin hemen; ses ev sunucusunda düzeltilir).
+    pub async fn voice_native(
+        &self,
+        draft: Option<String>,
+        path: Option<String>,
+        topic: Option<String>,
+    ) -> BResult<()> {
+        match self {
+            Self::Tauri => Self::call::<Value>(
+                "voice_native",
+                json!({ "draft": draft, "path": path, "topicId": topic }),
+            )
+            .await
+            .map(|_| ()),
+            _ => Err(NO_SPEECH.into()),
+        }
+    }
+
     pub async fn voice(&self, bytes: Vec<u8>, mime: String, topic: Option<String>) -> BResult<()> {
         match self {
             Self::Tauri => Self::call::<Value>(

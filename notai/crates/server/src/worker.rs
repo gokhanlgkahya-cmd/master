@@ -43,6 +43,29 @@ pub async fn process_one(state: &AppState) -> Result<bool, StoreError> {
     Ok(true)
 }
 
+/// Bekleyen bir sesi Whisper'la yazıya çevirir (telefonun metnini düzeltir). Dönüş: iş var mıydı?
+pub async fn transcribe_one(state: &AppState) -> Result<bool, StoreError> {
+    let Some(stt) = state.stt.as_deref() else {
+        return Ok(false);
+    };
+    let Some(job) = state.store.next_transcript(state.now()).await? else {
+        return Ok(false);
+    };
+    let result = if job.audio.is_empty() {
+        Err("ses verisi yok".to_owned())
+    } else {
+        stt.transcribe(&job.audio, &job.mime)
+            .await
+            .map_err(|e| e.to_string())
+    };
+    let outcome = state
+        .store
+        .finish_transcript(job.entry, result, state.now())
+        .await?;
+    tracing::info!(entry = %job.entry, ?outcome, "ses yazıya çevrildi");
+    Ok(true)
+}
+
 /// Vektörü olmayan kayıtların vektörlerini hesaplar. Dönüş: hesaplanan sayı.
 pub async fn embed_pending(state: &AppState) -> Result<usize, StoreError> {
     let Some(emb) = state.embedder.as_deref() else {
@@ -76,20 +99,29 @@ pub async fn embed_pending(state: &AppState) -> Result<usize, StoreError> {
 /// Kapatma sinyaline kadar kuyruğu işler.
 pub async fn run(state: AppState, mut shutdown: watch::Receiver<bool>) {
     loop {
-        let worked = match process_one(&state).await {
-            Ok(true) => true,
-            Ok(false) => match embed_pending(&state).await {
-                Ok(n) => n > 0,
-                Err(e) => {
-                    tracing::error!(error = %e, "vektör işçisi depo hatası");
-                    false
-                }
-            },
+        // Önce ses (metin düzeltilince AI düzgün metne bakar), sonra AI, sonra vektörler.
+        let transcribed = match transcribe_one(&state).await {
+            Ok(w) => w,
             Err(e) => {
-                tracing::error!(error = %e, "AI işçisi depo hatası");
+                tracing::error!(error = %e, "ses işçisi depo hatası");
                 false
             }
         };
+        let worked = transcribed
+            || match process_one(&state).await {
+                Ok(true) => true,
+                Ok(false) => match embed_pending(&state).await {
+                    Ok(n) => n > 0,
+                    Err(e) => {
+                        tracing::error!(error = %e, "vektör işçisi depo hatası");
+                        false
+                    }
+                },
+                Err(e) => {
+                    tracing::error!(error = %e, "AI işçisi depo hatası");
+                    false
+                }
+            };
         let pause = if worked {
             Duration::from_millis(50)
         } else {

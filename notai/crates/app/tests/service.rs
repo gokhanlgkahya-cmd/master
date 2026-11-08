@@ -237,12 +237,45 @@ async fn v2_v4_local_features() {
     let a = service::ask(&s, "kostik", tz).await.unwrap();
     assert!(a.answer.is_none());
     assert_eq!(a.sources.len(), 1);
+    // Ses sunucusuz da kaydedilir: yer tutucu + ses; ev sunucusu sonra yazıya çevirir.
+    service::voice(&s, vec![1, 2], "audio/webm", None, now)
+        .await
+        .unwrap();
+    let j = s
+        .journal(notai_core::journal::JournalFilter::All, None, 50)
+        .await
+        .unwrap();
     assert!(
-        service::voice(&s, vec![1, 2], "audio/webm", None)
-            .await
-            .unwrap_err()
-            .contains("ev sunucusu")
+        j.iter()
+            .any(|i| i.entry.text.as_str() == notai_store::VOICE_PLACEHOLDER)
     );
+    // Android tanıyıcısı: anında metin + önbellekteki WAV (yalnız eklentinin dosyası okunur).
+    let dir = std::env::temp_dir()
+        .join(format!("notai-test-{}", uuid::Uuid::now_v7()))
+        .join("cache");
+    std::fs::create_dir_all(&dir).unwrap();
+    let wav = dir.join("notai-voice-1.wav");
+    std::fs::write(&wav, b"RIFF....WAVE").unwrap();
+    service::voice_native(
+        &s,
+        Some("Kombi servisini yarın ara"),
+        Some(wav.to_str().unwrap()),
+        None,
+        now,
+    )
+    .await
+    .unwrap();
+    assert!(!wav.exists(), "önbellek dosyası silinir");
+    let bad = dir.join("baska.txt");
+    std::fs::write(&bad, b"x").unwrap();
+    assert!(
+        service::voice_native(&s, None, Some(bad.to_str().unwrap()), None, now)
+            .await
+            .is_err()
+    );
+    service::voice_native(&s, Some("Yalnız metin"), None, None, now)
+        .await
+        .unwrap();
     assert!(service::set_settings(&s, Some(true), None).await.is_err());
     assert_eq!(
         service::settings(&s).await.unwrap().ai_provider,
