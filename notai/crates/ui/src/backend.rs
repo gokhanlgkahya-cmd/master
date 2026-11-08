@@ -627,6 +627,40 @@ impl Backend {
         }
     }
 
+    /// Kaydın hareket durumu (arayüz konum denemesi yapsın mı?).
+    pub async fn movement_check(&self, entry: String) -> BResult<notai_api::MovementCheckView> {
+        match self {
+            Self::Tauri => Self::call("movement_check", json!({ "id": entry })).await,
+            Self::Http(h) => h.get(&format!("/entries/{entry}/movement")).await,
+            Self::Demo(_) => Ok(notai_api::MovementCheckView::default()),
+        }
+    }
+
+    /// Hareket için konum (ya da alınamadı).
+    pub async fn locate(
+        &self,
+        entry: String,
+        req: notai_api::LocateRequest,
+    ) -> BResult<notai_api::LocateView> {
+        match self {
+            Self::Tauri => Self::call("locate", json!({ "id": entry, "req": req })).await,
+            Self::Http(h) => h.post(&format!("/entries/{entry}/location"), &req).await,
+            Self::Demo(_) => Ok(notai_api::LocateView::default()),
+        }
+    }
+
+    /// Aylık hareket raporu ("2026-11"; yoksa bu ay).
+    pub async fn movements(&self, month: Option<String>) -> BResult<notai_api::MovesView> {
+        match self {
+            Self::Tauri => Self::call("movements", json!({ "month": month })).await,
+            Self::Http(h) => match month {
+                Some(m) => h.get(&format!("/movements?month={m}")).await,
+                None => h.get("/movements").await,
+            },
+            Self::Demo(_) => Err(NOT_IN_DEMO.into()),
+        }
+    }
+
     /// Varlıklar özeti.
     pub async fn assets(&self) -> BResult<notai_api::AssetsView> {
         match self {

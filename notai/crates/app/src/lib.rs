@@ -186,6 +186,31 @@ async fn set_watch(
 }
 
 #[tauri::command]
+async fn movement_check(
+    st: State<'_, AppState>,
+    id: String,
+) -> Result<notai_api::MovementCheckView, String> {
+    service::movement_check(&st.store, &id).await
+}
+
+#[tauri::command]
+async fn locate(
+    st: State<'_, AppState>,
+    id: String,
+    req: notai_api::LocateRequest,
+) -> Result<notai_api::LocateView, String> {
+    service::locate(&st.store, &id, &req, Utc::now()).await
+}
+
+#[tauri::command]
+async fn movements(
+    st: State<'_, AppState>,
+    month: Option<String>,
+) -> Result<notai_api::MovesView, String> {
+    service::movements(&st.store, month.as_deref(), Utc::now(), st.tz).await
+}
+
+#[tauri::command]
 async fn assets(st: State<'_, AppState>) -> Result<notai_api::AssetsView, String> {
     service::assets(&st.store, Utc::now(), st.tz).await
 }
@@ -436,6 +461,9 @@ pub fn run() {
             finance,
             set_watch,
             assets,
+            movement_check,
+            locate,
+            movements,
             create_asset,
             set_asset,
             import_statement,

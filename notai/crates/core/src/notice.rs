@@ -19,6 +19,8 @@ pub enum NoticeKind {
     Question,
     /// Fiyat / ürün takibinde değişiklik.
     Watch,
+    /// Hareket için konum gerekli ("konumu aç").
+    Location,
 }
 
 /// Gönderilen bir bildirim ve gideceği yer.
@@ -111,6 +113,26 @@ impl Notice {
         Self {
             title: titled("Varlık", Some(&topic.1)),
             ..Self::watch(headline, topic, entry, at)
+        }
+    }
+
+    /// Konum gerekli: "Konumu aç · İş" / "İş yerini öğrenmem için…". Dokununca konu açılır.
+    #[must_use]
+    pub fn location(
+        body: &str,
+        topic: Option<(TopicId, String)>,
+        entry: EntryId,
+        at: DateTime<Utc>,
+    ) -> Self {
+        let (topic, topic_name) = topic.map_or((None, None), |(id, n)| (Some(id), Some(n)));
+        Self {
+            kind: NoticeKind::Location,
+            title: titled("Konumu aç", topic_name.as_deref()),
+            body: body.to_owned(),
+            topic,
+            topic_name,
+            entry: Some(entry),
+            at,
         }
     }
 

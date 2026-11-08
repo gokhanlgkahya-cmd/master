@@ -1,0 +1,50 @@
+{
+  "db_name": "SQLite",
+  "query": "SELECT p.topic_id AS \"topic_id!\", p.info AS \"info!\", t.name AS \"name!\"\n             FROM places p JOIN topics t ON t.id = p.topic_id\n            WHERE t.kind != 'archive'",
+  "describe": {
+    "columns": [
+      {
+        "name": "topic_id!",
+        "ordinal": 0,
+        "type_info": "Text",
+        "origin": {
+          "Table": {
+            "table": "places",
+            "name": "topic_id"
+          }
+        }
+      },
+      {
+        "name": "info!",
+        "ordinal": 1,
+        "type_info": "Text",
+        "origin": {
+          "Table": {
+            "table": "places",
+            "name": "info"
+          }
+        }
+      },
+      {
+        "name": "name!",
+        "ordinal": 2,
+        "type_info": "Text",
+        "origin": {
+          "Table": {
+            "table": "topics",
+            "name": "name"
+          }
+        }
+      }
+    ],
+    "parameters": {
+      "Right": 0
+    },
+    "nullable": [
+      false,
+      false,
+      false
+    ]
+  },
+  "hash": "6c732a2d236c904104ccb096922fb8ad66ed40f41604be865c610a99025a3d45"
+}

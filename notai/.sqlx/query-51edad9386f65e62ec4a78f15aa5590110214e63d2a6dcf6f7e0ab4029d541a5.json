@@ -1,0 +1,12 @@
+{
+  "db_name": "SQLite",
+  "query": "INSERT INTO movements (id, entry_id, at, data, settled, updated_at) VALUES (?1, ?2, ?3, ?4, ?5, ?6)\n         ON CONFLICT (id) DO UPDATE SET at = excluded.at, data = excluded.data,\n             settled = excluded.settled, updated_at = excluded.updated_at",
+  "describe": {
+    "columns": [],
+    "parameters": {
+      "Right": 6
+    },
+    "nullable": []
+  },
+  "hash": "51edad9386f65e62ec4a78f15aa5590110214e63d2a6dcf6f7e0ab4029d541a5"
+}

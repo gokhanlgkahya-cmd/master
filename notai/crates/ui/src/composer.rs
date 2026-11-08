@@ -85,11 +85,12 @@ pub fn Composer(
                     |()| {},
                 );
             } else {
+                let b2 = b.clone();
                 run_in(
                     c,
                     b.clone(),
-                    move |b| async move { b.capture(t, topic).await },
-                    |()| {},
+                    move |b| async move { b.capture_id(t, topic).await },
+                    move |id| crate::movement_follow_up(c, b2, id),
                 );
             }
         }
@@ -413,7 +414,9 @@ pub fn Composer(
                     let (b, topic) = (b.clone(), topic.clone());
                     view! { <ListForm panel=panel draft=text on_done=move |t: String| {
                         let topic = topic.clone();
-                        run_in(c, b.clone(), move |b| async move { b.capture(t, topic).await }, |()| {});
+                        let b2 = b.clone();
+                        run_in(c, b.clone(), move |b| async move { b.capture_id(t, topic).await },
+                            move |id| crate::movement_follow_up(c, b2, id));
                     }/> }.into_any()
                 }
             }

@@ -498,3 +498,177 @@ async fn assets_value_history_and_price_messages() {
             .is_err()
     );
 }
+
+#[tokio::test]
+async fn movements_from_text_location_questions_and_sync() {
+    use notai_core::movement::{Check, Fix, Mode, MoveKind};
+    let s = store("telefon").await;
+    let at = |m: i64| now() + Duration::minutes(m);
+    let cap = |text: &'static str, m: i64| {
+        let s = &s;
+        async move {
+            s.capture(NewEntry {
+                text: EntryText::new(text).unwrap(),
+                source: Source::App,
+                topic: None,
+                captured_at: at(m),
+                dedupe_key: None,
+            })
+            .await
+            .unwrap()
+            .entry()
+            .clone()
+        }
+    };
+    let question_of = |e: EntryId| {
+        let s = &s;
+        async move {
+            s.suggestions_for(e)
+                .await
+                .unwrap()
+                .into_iter()
+                .find(|x| x.question_and_answer().is_some_and(|(_, a)| a.is_none()))
+        }
+    };
+    // 1) Evden çıkış: Ev ve İş yerleri açılır, kayıt Hareketler/Ev'e yazılır, AI'a gitmez.
+    let e1 = cap("Evden çıkıyorum", 0).await;
+    let places = s.places().await.unwrap();
+    let ev = places.iter().find(|p| p.name == "Ev").unwrap().topic;
+    let is = places.iter().find(|p| p.name == "İş").unwrap().topic;
+    assert_eq!(e1.topic(), Some(ev));
+    assert!(
+        s.next_ai_job(at(1)).await.unwrap().is_none(),
+        "yalnız hareket"
+    );
+    let m1 = s.movement_for(e1.id).await.unwrap().unwrap();
+    assert_eq!((m1.kind, m1.place), (MoveKind::Depart, Some(ev)));
+    // Konum geldi: Ev'in yeri öğrenilir, sonra eksikler sorulur.
+    let home = Fix::from_degrees(40.99, 29.03, 15.0).unwrap();
+    let out = s
+        .locate_movement(e1.id, Some(home), at(0))
+        .await
+        .unwrap()
+        .unwrap();
+    assert!(out.message.contains("öğrenildi"), "{}", out.message);
+    assert!(!out.need_location);
+    let q = question_of(e1.id).await.expect("soru");
+    assert!(
+        q.question_and_answer()
+            .unwrap()
+            .0
+            .as_str()
+            .starts_with("Nereye, neyle")
+    );
+    s.answer_question(
+        q.id,
+        notai_core::text::AnswerText::new("metroyla işe").unwrap(),
+        at(2),
+    )
+    .await
+    .unwrap();
+    let m1 = s.movement_for(e1.id).await.unwrap().unwrap();
+    assert_eq!((m1.mode, m1.to), (Some(Mode::Metro), Some(is)));
+    assert!(
+        s.next_ai_job(at(3)).await.unwrap().is_none(),
+        "cevap AI'a gitmez"
+    );
+
+    // 2) İşe varış: konum kapalı ve İş'in yeri bilinmiyor → elzem.
+    let e2 = cap("işe geldim", 50).await;
+    let out = s
+        .locate_movement(e2.id, None, at(50))
+        .await
+        .unwrap()
+        .unwrap();
+    assert!(out.need_location, "{}", out.message);
+    assert!(
+        question_of(e2.id).await.is_none(),
+        "kalkışta ulaşım vardı, yer belli"
+    );
+
+    // 3) Ertesi sefer evden çıkışta konum teyit edilir.
+    let e3 = cap("evden çıktım", 24 * 60).await;
+    let near = Fix::from_degrees(40.9905, 29.03, 20.0).unwrap();
+    s.locate_movement(e3.id, Some(near), at(24 * 60))
+        .await
+        .unwrap();
+    assert!(matches!(
+        s.movement_for(e3.id).await.unwrap().unwrap().check,
+        Check::Confirmed { .. }
+    ));
+
+    // 4) Yeni yer, konum hiç gelmez (WhatsApp): bekleme sonrası amaç sorulur.
+    let e4 = cap("Ayhan Kimya'ya geldim taksiyle", 24 * 60 + 40).await;
+    let sup = s
+        .places()
+        .await
+        .unwrap()
+        .into_iter()
+        .find(|p| p.name == "Ayhan Kimya")
+        .unwrap();
+    assert_eq!(e4.topic(), Some(sup.topic));
+    assert!(
+        s.settle_movements(at(24 * 60 + 41))
+            .await
+            .unwrap()
+            .is_empty(),
+        "henüz erken"
+    );
+    assert_eq!(s.settle_movements(at(24 * 60 + 45)).await.unwrap().len(), 1);
+    let q = question_of(e4.id).await.unwrap();
+    assert_eq!(
+        q.question_and_answer().unwrap().0.as_str(),
+        "Ayhan Kimya iş için mi, özel mi?"
+    );
+    s.answer_question(
+        q.id,
+        notai_core::text::AnswerText::new("iş").unwrap(),
+        at(24 * 60 + 46),
+    )
+    .await
+    .unwrap();
+    let sup = s
+        .places()
+        .await
+        .unwrap()
+        .into_iter()
+        .find(|p| p.name == "Ayhan Kimya")
+        .unwrap();
+    assert_eq!(
+        sup.info.scope,
+        Some(notai_core::finance::Scope::Is),
+        "amaç öğrenildi"
+    );
+
+    // Hareket olmayan kayıt etkilenmez.
+    let plain = cap("Kostik siparişini ver", 24 * 60 + 50).await;
+    assert!(s.movement_for(plain.id).await.unwrap().is_none());
+    assert_eq!(
+        s.movements_between(at(-1), at(3 * 24 * 60))
+            .await
+            .unwrap()
+            .len(),
+        4
+    );
+
+    // Senkron: yerler ve hareketler sunucuya gider; yalnız hareket kayıtları AI'a girmez.
+    let server = store("sunucu").await;
+    for c in s.own_changes_since(0, 1000).await.unwrap() {
+        server.apply_remote(&c, true).await.unwrap();
+    }
+    assert_eq!(server.places().await.unwrap().len(), 3);
+    assert_eq!(
+        server
+            .movements_between(at(-1), at(3 * 24 * 60))
+            .await
+            .unwrap()
+            .len(),
+        4
+    );
+    let job = server.next_ai_job(at(3 * 24 * 60)).await.unwrap();
+    assert_eq!(
+        job.map(|e| e.id),
+        Some(plain.id),
+        "yalnız hareket olmayan kayıt"
+    );
+}

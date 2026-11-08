@@ -2,11 +2,12 @@
 //! dağılımı, kategoriler, düzenli ödemeler, hareketler (kategori/kapsam düzeltilir, öğrenilir) ve
 //! banka ekstresi yükleme. Ekstre yerelde okunur; mükerrer satır eklenmez.
 //! Varlıklar sekmesi (2026-11-08): menkul/gayrimenkul toplamı, 30 günlük değişim, tür dağılımı.
+//! Hareketler sekmesi (2026-11-08): yolculuklar (iş/özel), yerlerde kalış, ulaşım türü, yol masrafı.
 
 use leptos::html::Input;
 use leptos::prelude::*;
 use leptos::task::spawn_local;
-use notai_api::{AssetRowView, AssetsView, FinanceView, ShareView, TransactionView};
+use notai_api::{AssetRowView, AssetsView, FinanceView, MovesView, ShareView, TransactionView};
 
 use crate::sheets::AssetSheet;
 use crate::view::TopicLook;
@@ -24,7 +25,8 @@ fn shift_month(m: &str, delta: i32) -> String {
 #[component]
 pub fn Finance() -> impl IntoView {
     let c = ctx();
-    let assets_tab = RwSignal::new(false);
+    let tab = RwSignal::new(Tab::Spend);
+    let assets_tab = Memo::new(move |_| tab.get() == Tab::Assets);
     let month = RwSignal::new(None::<String>);
     let message = RwSignal::new(None::<String>);
     let file = NodeRef::<Input>::new();
@@ -79,7 +81,7 @@ pub fn Finance() -> impl IntoView {
             <div class="flowbar__who">
                 <Avatar look=TopicLook::plain("wallet") small=true/>
                 <div class="flowbar__text">
-                    <span class="flowbar__name">{move || if assets_tab.get() { "Varlıklar" } else { "Harcamalar" }}</span>
+                    <span class="flowbar__name">{move || tab.get().title()}</span>
                     <span class="flowbar__sub">{move || if assets_tab.get() { "Menkul ve gayrimenkuller".to_owned() } else {
                         match data.get() { Some(Ok(v)) => v.title, _ => String::new() } }}</span>
                 </div>
@@ -90,14 +92,17 @@ pub fn Finance() -> impl IntoView {
             })}
         </header>
         <div class="fin-switch">
-            <div class="switch2" role="tablist" aria-label="Bölüm">
-                <button role="tab" aria-selected=move || (!assets_tab.get()).to_string()
-                    on:click=move |_| assets_tab.set(false)>"Harcamalar"</button>
-                <button role="tab" aria-selected=move || assets_tab.get().to_string()
-                    on:click=move |_| assets_tab.set(true)>"Varlıklar"</button>
+            <div class="seg3" role="tablist" aria-label="Bölüm">
+                {[Tab::Spend, Tab::Assets, Tab::Moves].into_iter().map(|t| view! {
+                    <button role="tab" aria-selected=move || (tab.get() == t).to_string()
+                        on:click=move |_| tab.set(t)>{t.title()}</button>
+                }).collect_view()}
             </div>
         </div>
-        {move || if assets_tab.get() { view! { <Assets/> }.into_any() } else { let on_file = on_file.clone(); view! {
+        {move || match tab.get() {
+            Tab::Assets => view! { <Assets/> }.into_any(),
+            Tab::Moves => view! { <Moves month=month/> }.into_any(),
+            Tab::Spend => { let on_file = on_file.clone(); view! {
         <div class="body scroll">
             <div class="fin-actions">
                 <button class="btn btn--outline" on:click=move |_| { if let Some(el) = file.get_untracked() { el.click(); } }>
@@ -113,10 +118,133 @@ pub fn Finance() -> impl IntoView {
                 Some(Ok(v)) => report(v).into_any(),
             }}
         </div>
-        }.into_any() }}
+        }.into_any() } }}
         <ErrorNote/>
         <TabBar/>
     }
+}
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+enum Tab {
+    Spend,
+    Assets,
+    Moves,
+}
+
+impl Tab {
+    const fn title(self) -> &'static str {
+        match self {
+            Self::Spend => "Harcamalar",
+            Self::Assets => "Varlıklar",
+            Self::Moves => "Hareketler",
+        }
+    }
+}
+
+/// Hareketler sekmesi: ay seçimi Harcamalar'la ortak.
+#[component]
+fn Moves(month: RwSignal<Option<String>>) -> impl IntoView {
+    let c = ctx();
+    let data = LocalResource::new(move || {
+        let m = month.get();
+        let _ = c.version.get();
+        let b = backend();
+        async move { b.movements(m).await }
+    });
+    view! {
+        <div class="body scroll">
+            {move || match data.get() {
+                None => loading(),
+                Some(Err(e)) => failed(e),
+                Some(Ok(v)) => moves_report(v).into_any(),
+            }}
+        </div>
+    }
+}
+
+fn moves_report(v: MovesView) -> impl IntoView {
+    if v.trips == 0 && v.recent.is_empty() {
+        return view! {
+            <div class="empty">
+                <span class="empty__icon"><Icon name="pin"/></span>
+                <h2 class="empty__title">"Bu ay hareket yok"</h2>
+                <p class="empty__text">"\"Evden çıkıyorum\", \"metroyla işe gidiyorum\", \"Ayhan Kimya'ya geldim\" gibi yaz. Eksik ayrıntıyı NotAI sorar; konum açıksa kendisi teyit eder."</p>
+            </div>
+        }
+        .into_any();
+    }
+    let insights = (!v.insights.is_empty()).then(|| {
+        let items = v
+            .insights
+            .iter()
+            .map(|i| view! { <li class="fin-insight"><Icon name="spark" size="xs"/><span>{i.clone()}</span></li> })
+            .collect_view();
+        view! { <ul class="card fin-insights" aria-label="Yorumlar">{items}</ul> }
+    });
+    let split = if v.trips_unknown > 0 {
+        format!(
+            "{} iş · {} özel · {} belirsiz",
+            v.trips_is, v.trips_other, v.trips_unknown
+        )
+    } else {
+        format!("{} iş · {} özel", v.trips_is, v.trips_other)
+    };
+    let places = v
+        .places
+        .into_iter()
+        .map(|p| {
+            let meta = [
+                Some(format!("{} kez", p.visits)),
+                Some(p.stay.clone()).filter(|s| !s.is_empty()),
+                p.scope.clone(),
+                (!p.located).then(|| "konumu öğrenilmedi".to_owned()),
+            ]
+            .into_iter()
+            .flatten()
+            .collect::<Vec<_>>()
+            .join(" · ");
+            view! {
+                <li class="fin-tx">
+                    <span class="fin-tx__body">
+                        <span class="fin-tx__desc">{p.name}</span>
+                        <span class="fin-tx__meta"><span>{meta}</span></span>
+                    </span>
+                    <span class="fin-tx__amt tnum">{p.cost.unwrap_or_default()}</span>
+                </li>
+            }
+        })
+        .collect_view();
+    let recent = v
+        .recent
+        .into_iter()
+        .map(|r| {
+            view! {
+                <li class="fin-tx" class:fin-tx--far=r.far>
+                    <span class="fin-tx__date tnum">{r.when}</span>
+                    <span class="fin-tx__body">
+                        <span class="fin-tx__desc">{r.text}</span>
+                        <span class="fin-tx__meta"><span>{r.check}</span></span>
+                    </span>
+                </li>
+            }
+        })
+        .collect_view();
+    view! {
+        <div class="fin-tiles">
+            <div class="fin-tile"><span class="fin-tile__label">"Yolculuk"</span><span class="fin-tile__val tnum">{v.trips}</span>
+                <span class="fin-tile__sub">{split}</span></div>
+            <div class="fin-tile"><span class="fin-tile__label">"Yolda"</span><span class="fin-tile__val tnum">{v.travel}</span></div>
+            <div class="fin-tile"><span class="fin-tile__label">"Yol masrafı"</span><span class="fin-tile__val tnum">{v.transport_is}</span>
+                <span class="fin-tile__sub">{format!("iş için · özel {}", v.transport_other)}</span></div>
+        </div>
+        {insights}
+        {shares("Ulaşım", v.by_mode, true)}
+        <h2 class="grouphead">"Yerler"</h2>
+        <ul class="card fin-txs">{places}</ul>
+        <h2 class="grouphead">"Son hareketler"</h2>
+        <ul class="card fin-txs">{recent}</ul>
+    }
+    .into_any()
 }
 
 /// Varlıklar sekmesi.

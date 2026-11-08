@@ -35,6 +35,7 @@ pub fn notice(n: &notai_core::notice::Notice) -> crate::NoticeView {
             notai_core::notice::NoticeKind::Reminder => "reminder",
             notai_core::notice::NoticeKind::Question => "question",
             notai_core::notice::NoticeKind::Watch => "watch",
+            notai_core::notice::NoticeKind::Location => "location",
         }
         .to_owned(),
         title: n.title.clone(),
@@ -602,6 +603,204 @@ pub fn finance_view(
             .iter()
             .map(|(k, l)| ((*k).to_owned(), (*l).to_owned()))
             .collect(),
+    }
+}
+
+/// Hareketler görünümü (`moves`: ayın hareketleri; rapor için bir gün öncesi de verilebilir).
+#[must_use]
+pub fn moves_view(
+    moves: &[notai_core::movement::Movement],
+    places: &[notai_core::movement::Place],
+    spends: &[notai_core::movement::SpendAt],
+    year: i32,
+    month: u32,
+    tz: Tz,
+) -> crate::MovesView {
+    use chrono::{Datelike, TimeZone};
+    use notai_core::movement::{Check, MoveKind, duration_label, report};
+    let start = |y: i32, m: u32| {
+        tz.with_ymd_and_hms(y, m, 1, 0, 0, 0)
+            .earliest()
+            .map(|d| d.with_timezone(&Utc))
+    };
+    let (ny, nm) = if month == 12 {
+        (year + 1, 1)
+    } else {
+        (year, month + 1)
+    };
+    let (Some(from), Some(to)) = (start(year, month), start(ny, nm)) else {
+        return crate::MovesView::default();
+    };
+    let r = report(moves, places, spends, from, to);
+    let name = |t: Option<notai_core::TopicId>| {
+        t.and_then(|t| places.iter().find(|p| p.topic == t))
+            .map(|p| p.name.clone())
+    };
+    let money = |m: notai_core::finance::Money| m.format_abs();
+    let total_modes: u32 = r.by_mode.iter().map(|x| x.1).sum::<u32>().max(1);
+    let places_v: Vec<crate::PlaceStatView> = r
+        .places
+        .iter()
+        .map(|p| {
+            let pl = places.iter().find(|x| x.topic == p.place);
+            let stay = if p.timed_stays > 0 {
+                format!(
+                    "toplam {} · ort. {}",
+                    duration_label(p.stay_minutes),
+                    duration_label(p.stay_minutes / i64::from(p.timed_stays))
+                )
+            } else {
+                String::new()
+            };
+            crate::PlaceStatView {
+                topic_id: p.place.to_string(),
+                name: pl.map_or_else(|| "?".to_owned(), |x| x.name.clone()),
+                visits: p.visits,
+                stay,
+                cost: (p.cost.0 > 0).then(|| money(p.cost)),
+                scope: pl.and_then(|x| x.info.scope).map(|s| s.label().to_owned()),
+                located: pl.is_some_and(|x| x.info.fix.is_some()),
+            }
+        })
+        .collect();
+    let mut ms: Vec<&notai_core::movement::Movement> =
+        moves.iter().filter(|m| m.at >= from && m.at < to).collect();
+    ms.sort_by_key(|m| std::cmp::Reverse(m.at));
+    let recent = ms
+        .iter()
+        .take(30)
+        .map(|m| {
+            let local = m.at.with_timezone(&tz);
+            let what = match (m.kind, name(m.place), name(m.to)) {
+                (MoveKind::Depart, Some(a), Some(b)) => format!("{a} → {b}"),
+                (MoveKind::Depart, Some(a), None) => {
+                    format!("{} çıkış", notai_core::tr::ablative(&a))
+                }
+                (MoveKind::Depart, None, Some(b)) => format!("→ {b}"),
+                (MoveKind::Depart, None, None) => "Çıkış".to_owned(),
+                (MoveKind::Arrive, Some(b), _) => {
+                    format!("{} varış", notai_core::tr::dative(&b))
+                }
+                (MoveKind::Arrive, None, _) => "Varış (yer belirsiz)".to_owned(),
+            };
+            let text = match m.mode {
+                Some(md) => format!("{what} · {}", md.label()),
+                None => what,
+            };
+            let (check, far) = match m.check {
+                Check::Confirmed { .. } | Check::Matched { .. } => {
+                    ("konumla teyitli".to_owned(), false)
+                }
+                Check::Learned => ("yerin konumu öğrenildi".to_owned(), false),
+                Check::Far { distance_m } => (
+                    format!(
+                        "konum {} uzak",
+                        if distance_m < 1000 {
+                            format!("{distance_m} m")
+                        } else {
+                            format!("{},{} km", distance_m / 1000, (distance_m % 1000) / 100)
+                        }
+                    ),
+                    true,
+                ),
+                Check::NoLocation => ("konumsuz".to_owned(), false),
+                Check::Waiting => (String::new(), false),
+            };
+            crate::MoveRowView {
+                entry_id: m.entry.to_string(),
+                when: format!(
+                    "{} {} {}",
+                    local.day(),
+                    notai_core::tr::month_short(local.month()),
+                    local.format("%H:%M")
+                ),
+                text,
+                check,
+                far,
+            }
+        })
+        .collect();
+    let mut insights = Vec::new();
+    if r.trips > 0 {
+        let mut s = format!(
+            "Bu ay {} yolculuk: {} iş, {} özel",
+            r.trips, r.trips_is, r.trips_other
+        );
+        if r.trips_unknown > 0 {
+            s.push_str(&format!(", {} amacı belirsiz", r.trips_unknown));
+        }
+        s.push('.');
+        insights.push(s);
+    }
+    if let Some(p) = places_v.iter().find(|p| p.visits > 0) {
+        let avg = r
+            .places
+            .iter()
+            .find(|x| x.place.to_string() == p.topic_id)
+            .filter(|x| x.timed_stays > 0)
+            .map(|x| {
+                format!(
+                    ", ortalama {} kaldın",
+                    duration_label(x.stay_minutes / i64::from(x.timed_stays))
+                )
+            })
+            .unwrap_or_default();
+        insights.push(format!(
+            "En sık gittiğin yer: {} ({} kez{avg}).",
+            p.name, p.visits
+        ));
+    }
+    if let Some((m, n)) = r.by_mode.first() {
+        insights.push(format!("En çok {} kullandın ({n} yolculuk).", m.label()));
+    }
+    if r.transport_is.0 > 0 || r.transport_other.0 > 0 {
+        insights.push(format!(
+            "Yol masrafı: iş {}, özel {}.",
+            money(r.transport_is),
+            money(r.transport_other)
+        ));
+    }
+    if r.far > 0 {
+        insights.push(format!(
+            "{} hareket konumla uyuşmadı; listede \"uzak\" yazanlara bak.",
+            r.far
+        ));
+    }
+    let unlocated: Vec<&str> = places_v
+        .iter()
+        .filter(|p| !p.located && p.visits > 0)
+        .map(|p| p.name.as_str())
+        .collect();
+    if !unlocated.is_empty() {
+        insights.push(format!(
+            "Konumu henüz öğrenilmemiş: {}. Konum açıkken bir kez varış yazman yeterli.",
+            unlocated.join(", ")
+        ));
+    }
+    crate::MovesView {
+        month: format!("{year}-{month:02}"),
+        title: format!("{} {year}", notai_core::tr::month_name(month)),
+        trips: r.trips,
+        trips_is: r.trips_is,
+        trips_other: r.trips_other,
+        trips_unknown: r.trips_unknown,
+        travel: duration_label(r.travel_minutes),
+        transport_is: money(r.transport_is),
+        transport_other: money(r.transport_other),
+        at_places: money(r.at_places),
+        by_mode: r
+            .by_mode
+            .iter()
+            .map(|(m, n)| crate::ShareView {
+                key: format!("{m:?}").to_lowercase(),
+                label: m.label().to_owned(),
+                amount: format!("{n} yolculuk"),
+                pct: i64::from(*n) * 100 / i64::from(total_modes),
+            })
+            .collect(),
+        places: places_v,
+        recent,
+        insights,
     }
 }
 

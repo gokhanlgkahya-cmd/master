@@ -472,6 +472,26 @@ impl Store {
                 }
                 wins && present
             }
+            ("place", Some(p)) => {
+                let pl: crate::movement::PlacePayload = from_json("senkron yeri", p)?;
+                let topic_ok = exists(&mut tx, "topic", &pl.topic.to_string()).await?;
+                if topic_ok && (wins || local.is_none()) {
+                    crate::movement::upsert_place_raw(&mut tx, pl.topic, &pl.info, c.at).await?;
+                    true
+                } else {
+                    false
+                }
+            }
+            ("movement", Some(p)) => {
+                let m: notai_core::movement::Movement = from_json("senkron hareketi", p)?;
+                let entry_ok = exists(&mut tx, "entry", &m.entry.to_string()).await?;
+                if entry_ok && (wins || local.is_none()) {
+                    crate::movement::upsert_movement_raw(&mut tx, &m, c.at).await?;
+                    true
+                } else {
+                    false
+                }
+            }
             ("merchant_rule", Some(p)) => {
                 let r: notai_core::finance::MerchantRule = from_json("senkron satıcı kuralı", p)?;
                 if wins || local.is_none() {

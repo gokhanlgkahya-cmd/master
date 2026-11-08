@@ -29,6 +29,19 @@ cargo tauri android build --apk   # arayüzü (trunk) ve Rust kodunu derler, APK
 ```
 APK: `crates\app\gen\android\app\build\outputs\apk\universal\release\app-universal-release-unsigned.apk`
 
+### Bir kez: izinler (konum + mikrofon)
+`cargo tauri android init` sonrası `crates\app\gen\android\app\src\main\AndroidManifest.xml`
+dosyasını aç; `<uses-permission android:name="android.permission.INTERNET" />` satırının altına ekle:
+```xml
+<uses-permission android:name="android.permission.ACCESS_FINE_LOCATION" />
+<uses-permission android:name="android.permission.ACCESS_COARSE_LOCATION" />
+<uses-permission android:name="android.permission.RECORD_AUDIO" />
+```
+- **Konum:** "işe geldim", "evden çıkıyorum" gibi hareket kayıtlarını teyit etmek ve yerlerin
+  konumunu öğrenmek için (yalnız hareket kaydı yazdığında, tek seferlik; arka planda izlenmez).
+- **Mikrofon:** sesli kayıt için.
+İlk kullanımda Android izin sorar; "Uygulamayı kullanırken" yeterli.
+
 Telefona yüklemek için en kolay yol geliştirme modu:
 ```powershell
 cargo tauri android dev           # USB ile bağlı telefonda (USB hata ayıklama açık) çalıştırır

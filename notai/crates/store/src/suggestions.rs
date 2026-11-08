@@ -220,9 +220,15 @@ impl Store {
         let mut tx = self.pool.begin().await?;
         let mut suggestion = load_suggestion(&mut tx, id).await?;
         let entry = load_entry(&mut tx, suggestion.entry).await?;
+        let text = answer.as_str().to_owned();
         suggestion.answer(answer, now)?;
         write_decision(&mut tx, &self.origin, &suggestion, now).await?;
-        requeue_ai(&mut tx, entry.id).await?;
+        // Hareket sorusu: cevap NotAI'de işlenir; yalnız hareketse AI'a gitmez.
+        let only_movement =
+            crate::movement::apply_answer(&mut tx, &self.origin, entry.id, &text, now).await?;
+        if !only_movement {
+            requeue_ai(&mut tx, entry.id).await?;
+        }
         tx.commit().await?;
         Ok(entry)
     }

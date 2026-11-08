@@ -1,0 +1,26 @@
+{
+  "db_name": "SQLite",
+  "query": "SELECT data FROM movements WHERE entry_id = ?1",
+  "describe": {
+    "columns": [
+      {
+        "name": "data",
+        "ordinal": 0,
+        "type_info": "Text",
+        "origin": {
+          "Table": {
+            "table": "movements",
+            "name": "data"
+          }
+        }
+      }
+    ],
+    "parameters": {
+      "Right": 1
+    },
+    "nullable": [
+      false
+    ]
+  },
+  "hash": "7d1cf48d8dda83ac31104652d33a8642dfc1d182130298fdc43a4a1fe29e2696"
+}

@@ -197,6 +197,47 @@ pub async fn current_position() -> Result<(f64, f64), String> {
     Ok((num("latitude")?, num("longitude")?))
 }
 
+/// Hareket teyidi için konum: (enlem, boylam, doğruluk m). En çok 8 sn bekler; 1 dk'lık
+/// önbellekteki konum da kabul edilir (pil dostu).
+pub async fn current_fix() -> Result<(f64, f64, f64), String> {
+    let geo = web_sys::window()
+        .ok_or("pencere yok")?
+        .navigator()
+        .geolocation()
+        .map_err(|_| "Bu cihazda konum desteklenmiyor.".to_owned())?;
+    let opts = web_sys::PositionOptions::new();
+    opts.set_enable_high_accuracy(true);
+    opts.set_timeout(8000);
+    opts.set_maximum_age(60_000);
+    let promise = js_sys::Promise::new(&mut |resolve, reject| {
+        if let Err(e) =
+            geo.get_current_position_with_error_callback_and_options(&resolve, Some(&reject), &opts)
+        {
+            let _ = reject.call1(&JsValue::NULL, &e);
+        }
+    });
+    let pos = JsFuture::from(promise).await.map_err(|e| {
+        let code = js_sys::Reflect::get(&e, &JsValue::from_str("code"))
+            .ok()
+            .and_then(|c| c.as_f64())
+            .map_or(0, |c| c as u32);
+        view::geo_error(code)
+    })?;
+    let coords =
+        js_sys::Reflect::get(&pos, &JsValue::from_str("coords")).map_err(|_| view::geo_error(0))?;
+    let num = |k: &str| {
+        js_sys::Reflect::get(&coords, &JsValue::from_str(k))
+            .ok()
+            .and_then(|v| v.as_f64())
+            .ok_or_else(|| view::geo_error(0))
+    };
+    Ok((
+        num("latitude")?,
+        num("longitude")?,
+        num("accuracy").unwrap_or(50.0),
+    ))
+}
+
 /// Süren ses kaydı.
 pub struct Recorder {
     rec: web_sys::MediaRecorder,

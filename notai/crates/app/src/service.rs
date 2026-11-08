@@ -573,6 +573,8 @@ pub async fn due_notices(
 ) -> CmdResult<Vec<notai_core::notice::Notice>> {
     use notai_core::notice::Notice;
     let mut out = Vec::new();
+    // Konum gelmeyen hareketler: eksik soruları açılır (aşağıda soru bildirimi olarak çıkar).
+    store.settle_movements(now).await.map_err(err)?;
     let tasks = store.reminder_tasks().await.map_err(err)?;
     for (task, at) in notai_core::reminders::due_now(&tasks, now, tz) {
         store.mark_reminder_fired(task.id, at).await.map_err(err)?;
@@ -665,6 +667,80 @@ pub async fn set_watch(
     let mut t = store.topic(id::<TopicId>(topic)?).await.map_err(err)?;
     t.watch = convert::watch_config(req)?;
     store.update_topic(&t, now).await.map_err(err)
+}
+
+// ---------------- Konum hareketleri (2026-11-08) ----------------
+
+pub async fn movement_check(store: &Store, entry: &str) -> CmdResult<notai_api::MovementCheckView> {
+    let m = store
+        .movement_for(id::<EntryId>(entry)?)
+        .await
+        .map_err(err)?;
+    Ok(notai_api::MovementCheckView {
+        movement: m.is_some(),
+        wants_location: m.is_some_and(|m| m.fix.is_none()),
+    })
+}
+
+/// Arayüzün aldığı konum (ya da alınamadı). Elzemse "Konumu aç" şeridi kurulur.
+pub async fn locate(
+    store: &Store,
+    entry: &str,
+    req: &notai_api::LocateRequest,
+    now: DateTime<Utc>,
+) -> CmdResult<notai_api::LocateView> {
+    let eid = id::<EntryId>(entry)?;
+    let fix = match (req.lat, req.lon) {
+        (Some(lat), Some(lon)) => Some(
+            notai_core::movement::Fix::from_degrees(lat, lon, req.accuracy_m.unwrap_or(50.0))
+                .map_err(err)?,
+        ),
+        _ => None,
+    };
+    let Some(out) = store.locate_movement(eid, fix, now).await.map_err(err)? else {
+        return Ok(notai_api::LocateView::default());
+    };
+    if out.need_location {
+        let e = store.entry(eid).await.map_err(err)?;
+        let topic = topic_named(store, e.topic()).await;
+        let n = notai_core::notice::Notice::location(&out.message, topic, eid, now);
+        store.set_notice(&n).await.map_err(err)?;
+    }
+    Ok(notai_api::LocateView {
+        message: out.message,
+        need_location: out.need_location,
+    })
+}
+
+pub async fn movements(
+    store: &Store,
+    month: Option<&str>,
+    now: DateTime<Utc>,
+    tz: Tz,
+) -> CmdResult<notai_api::MovesView> {
+    use chrono::Datelike;
+    let today = now.with_timezone(&tz).date_naive();
+    let (y, m) = match month {
+        Some(s) => s
+            .split_once('-')
+            .and_then(|(y, m)| Some((y.parse().ok()?, m.parse().ok()?)))
+            .filter(|(_, m): &(i32, u32)| (1..=12).contains(m))
+            .ok_or_else(|| format!("geçersiz ay: {s}"))?,
+        None => (today.year(), today.month()),
+    };
+    let first = NaiveDate::from_ymd_opt(y, m, 1).ok_or("geçersiz ay")?;
+    let from = (first - Duration::days(3))
+        .and_hms_opt(0, 0, 0)
+        .ok_or("geçersiz ay")?
+        .and_utc();
+    let to = (first + Duration::days(35))
+        .and_hms_opt(0, 0, 0)
+        .ok_or("geçersiz ay")?
+        .and_utc();
+    let moves = store.movements_between(from, to).await.map_err(err)?;
+    let places = store.places().await.map_err(err)?;
+    let spends = store.spends_between(from, to).await.map_err(err)?;
+    Ok(convert::moves_view(&moves, &places, &spends, y, m, tz))
 }
 
 // ---------------- Varlıklar (2026-11-08) ----------------

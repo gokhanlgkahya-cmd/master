@@ -371,6 +371,76 @@ pub struct WatchRequest {
     pub active: Option<bool>,
 }
 
+/// Kaydın hareket durumu: arayüz konum denemesi yapsın mı?
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize, Default)]
+pub struct MovementCheckView {
+    pub movement: bool,
+    pub wants_location: bool,
+}
+
+/// Arayüzün gönderdiği konum; alınamadıysa alanlar boş.
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize, Default)]
+pub struct LocateRequest {
+    #[serde(default)]
+    pub lat: Option<f64>,
+    #[serde(default)]
+    pub lon: Option<f64>,
+    #[serde(default)]
+    pub accuracy_m: Option<f64>,
+}
+
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize, Default)]
+pub struct LocateView {
+    /// Kullanıcıya kısa durum ("Konumla teyit edildi: İş (120 m)."); boşsa gösterilmez.
+    pub message: String,
+    pub need_location: bool,
+}
+
+/// Hareketler ekranı (bir ay).
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize, Default)]
+pub struct MovesView {
+    pub month: String,
+    pub title: String,
+    pub trips: u32,
+    pub trips_is: u32,
+    pub trips_other: u32,
+    pub trips_unknown: u32,
+    /// "14 sa 20 dk" (yolda geçen).
+    pub travel: String,
+    /// İş yolculuklarının yol masrafı.
+    pub transport_is: String,
+    pub transport_other: String,
+    pub at_places: String,
+    pub by_mode: Vec<ShareView>,
+    pub places: Vec<PlaceStatView>,
+    pub recent: Vec<MoveRowView>,
+    pub insights: Vec<String>,
+}
+
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+pub struct PlaceStatView {
+    pub topic_id: String,
+    pub name: String,
+    pub visits: u32,
+    /// "toplam 92 sa · ort. 9 sa 10 dk"; çıkışı bilinmiyorsa boş.
+    pub stay: String,
+    pub cost: Option<String>,
+    pub scope: Option<String>,
+    pub located: bool,
+}
+
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+pub struct MoveRowView {
+    pub entry_id: String,
+    /// "9 Kas 08:00".
+    pub when: String,
+    /// "Ev'den çıkış · Metro" / "İş'e varış".
+    pub text: String,
+    /// "konumla teyitli" / "konum İş'e 3,2 km uzak" / "".
+    pub check: String,
+    pub far: bool,
+}
+
 /// Varlıklar ekranı.
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize, Default)]
 pub struct AssetsView {

@@ -72,6 +72,10 @@ pub async fn tick(state: &AppState) -> Result<bool, StoreError> {
     let now = state.now();
     state.store.purge_trash(now).await?;
     fire_reminders(state).await?;
+    // Konum gelmeyen hareketler (WhatsApp, CLI): eksikleri sor.
+    for (entry, q) in state.store.settle_movements(now).await? {
+        notify_question(state, entry, &q).await?;
+    }
 
     let last_sent = state
         .store

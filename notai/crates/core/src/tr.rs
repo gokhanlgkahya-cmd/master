@@ -32,6 +32,41 @@ pub fn tr_lower(s: &str) -> String {
     out
 }
 
+fn last_vowel_back(name: &str) -> bool {
+    tr_lower(name)
+        .chars()
+        .rev()
+        .find(|c| "aeıioöuü".contains(*c))
+        .is_none_or(|c| "aıou".contains(c))
+}
+
+/// Özel ada "-e/-a" hal eki, kesme işaretiyle: "İş'e", "Ev'e", "Ayhan Kimya'ya", "Kadıköy'e".
+#[must_use]
+pub fn dative(name: &str) -> String {
+    let ends_vowel = tr_lower(name)
+        .chars()
+        .last()
+        .is_some_and(|c| "aeıioöuü".contains(c));
+    let v = if last_vowel_back(name) { 'a' } else { 'e' };
+    if ends_vowel {
+        format!("{name}'y{v}")
+    } else {
+        format!("{name}'{v}")
+    }
+}
+
+/// Özel ada "-den/-dan/-ten/-tan" eki: "İş'ten", "Ev'den", "Ayhan Kimya'dan".
+#[must_use]
+pub fn ablative(name: &str) -> String {
+    let hard = tr_lower(name)
+        .chars()
+        .last()
+        .is_some_and(|c| "çfhkpsşt".contains(c));
+    let d = if hard { 't' } else { 'd' };
+    let v = if last_vowel_back(name) { "an" } else { "en" };
+    format!("{name}'{d}{v}")
+}
+
 /// Haftanın günü adı ("Çarşamba").
 #[must_use]
 pub const fn weekday_name(day: Weekday) -> &'static str {
@@ -84,6 +119,26 @@ pub fn date_long(date: NaiveDate, current_year: i32) -> String {
             month_name(date.month()),
             date.year()
         )
+    }
+}
+
+#[cfg(test)]
+mod suffix_tests {
+    use super::{ablative, dative};
+
+    #[test]
+    fn case_suffixes_follow_harmony() {
+        assert_eq!(dative("İş"), "İş'e");
+        assert_eq!(dative("Ayhan Kimya"), "Ayhan Kimya'ya");
+        assert_eq!(dative("Kadıköy"), "Kadıköy'e");
+        assert_eq!(dative("Ofis"), "Ofis'e");
+        assert_eq!(dative("Market"), "Market'e");
+        assert_eq!(dative("Okul"), "Okul'a");
+        assert_eq!(ablative("İş"), "İş'ten");
+        assert_eq!(ablative("Ev"), "Ev'den");
+        assert_eq!(ablative("Ayhan Kimya"), "Ayhan Kimya'dan");
+        assert_eq!(ablative("Kadıköy"), "Kadıköy'den");
+        assert_eq!(ablative("Depo"), "Depo'dan");
     }
 }
 

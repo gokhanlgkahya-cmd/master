@@ -1197,3 +1197,125 @@ async fn assets_are_added_priced_by_agent_and_summarized() {
     let (_, v) = h.get("/api/assets").await;
     assert_eq!(v["assets"].as_array().unwrap().len(), 1);
 }
+
+#[tokio::test]
+async fn movements_are_detected_located_asked_and_reported() {
+    let ntfy = MockServer::start().await;
+    Mock::given(method("POST"))
+        .and(query_param("title", "Konumu aç · İş"))
+        .respond_with(ResponseTemplate::new(200))
+        .expect(1)
+        .mount(&ntfy)
+        .await;
+    Mock::given(method("POST"))
+        .respond_with(ResponseTemplate::new(200))
+        .mount(&ntfy)
+        .await;
+    let mut cfg = Config::defaults();
+    cfg.ntfy_url = Some(ntfy.uri());
+    let h = h(cfg, ScriptedLlm::new(), false).await;
+    let cap = |text: &'static str| {
+        let h = &h;
+        async move {
+            let (s, e) = h.post("/api/entries", json!({ "text": text })).await;
+            assert_eq!(s, StatusCode::CREATED, "{e}");
+            e["id"].as_str().unwrap().to_owned()
+        }
+    };
+    // Sabah: evden çıkış (konum açık) → Ev öğrenilir, ulaşım sorulur.
+    let e1 = cap("Evden çıkıyorum").await;
+    let (_, c) = h.get(&format!("/api/entries/{e1}/movement")).await;
+    assert_eq!(c, json!({ "movement": true, "wants_location": true }));
+    let (_, l) = h
+        .post(
+            &format!("/api/entries/{e1}/location"),
+            json!({ "lat": 40.99, "lon": 29.03, "accuracy_m": 12.0 }),
+        )
+        .await;
+    assert!(
+        l["message"]
+            .as_str()
+            .unwrap()
+            .contains("Ev konumu öğrenildi"),
+        "{l}"
+    );
+    let (_, n) = h.get("/api/notice").await;
+    assert_eq!(n["kind"], "question");
+    assert!(n["body"].as_str().unwrap().starts_with("Nereye, neyle"));
+    // Cevap: Ana Günlük'teki soru balonundan.
+    let (_, j) = h.get("/api/journal").await;
+    let item = j["groups"]
+        .as_array()
+        .unwrap()
+        .iter()
+        .flat_map(|g| g["items"].as_array().unwrap().clone())
+        .find(|i| i["id"] == e1.as_str())
+        .unwrap();
+    assert_eq!(item["topic"]["name"], "Ev");
+    assert_eq!(item["unprocessed"], false, "yalnız hareket: AI beklemez");
+    let q = item["suggestions"]
+        .as_array()
+        .unwrap()
+        .iter()
+        .find(|s| s["kind"] == "question")
+        .unwrap()["id"]
+        .as_str()
+        .unwrap()
+        .to_owned();
+    let (s, _) = h
+        .post(
+            &format!("/api/suggestions/{q}/answer"),
+            json!({ "text": "metroyla işe" }),
+        )
+        .await;
+    assert_eq!(s, StatusCode::OK);
+
+    // İşe varış, konum kapalı: İş'in yeri bilinmiyor → "Konumu aç · İş".
+    h.clock.set(t0() + Duration::minutes(50));
+    let e2 = cap("işe geldim").await;
+    let (_, l) = h
+        .post(&format!("/api/entries/{e2}/location"), json!({}))
+        .await;
+    assert_eq!(l["need_location"], true);
+    let (_, n) = h.get("/api/notice").await;
+    assert_eq!(n["kind"], "location");
+    assert_eq!(n["title"], "Konumu aç · İş");
+
+    // Akşam WhatsApp'tan: konum gelmez; zamanlayıcı soruyu sorar.
+    h.clock.set(t0() + Duration::hours(10));
+    let e3 = cap("işten çıktım").await;
+    h.clock
+        .set(t0() + Duration::hours(10) + Duration::minutes(3));
+    scheduler::tick(&h.state).await.unwrap();
+    let (_, n) = h.get("/api/notice").await;
+    assert_eq!(n["kind"], "question", "{n}");
+    assert_eq!(n["entry_id"], e3.as_str());
+    h.clock.set(t0() + Duration::hours(11));
+    let _ = cap("eve geldim").await;
+
+    let month = t0().format("%Y-%m").to_string();
+    let (_, r) = h.get(&format!("/api/movements?month={month}")).await;
+    assert_eq!(r["trips"], 2, "{r}");
+    assert_eq!(r["trips_is"], 2);
+    let work = r["places"]
+        .as_array()
+        .unwrap()
+        .iter()
+        .find(|p| p["name"] == "İş")
+        .unwrap()
+        .clone();
+    assert_eq!(work["visits"], 1);
+    assert!(
+        work["stay"]
+            .as_str()
+            .unwrap()
+            .starts_with("toplam 9 sa 10 dk"),
+        "{work}"
+    );
+    assert_eq!(r["recent"][3]["text"], "Ev → İş · Metro");
+    assert!(r["insights"].as_array().unwrap().iter().any(|i| {
+        i.as_str()
+            .unwrap()
+            .contains("Konumu henüz öğrenilmemiş: İş")
+    }));
+}

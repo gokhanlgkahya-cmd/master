@@ -1,0 +1,26 @@
+{
+  "db_name": "SQLite",
+  "query": "SELECT data FROM movements WHERE settled = 0 AND at <= ?1 ORDER BY at",
+  "describe": {
+    "columns": [
+      {
+        "name": "data",
+        "ordinal": 0,
+        "type_info": "Text",
+        "origin": {
+          "Table": {
+            "table": "movements",
+            "name": "data"
+          }
+        }
+      }
+    ],
+    "parameters": {
+      "Right": 1
+    },
+    "nullable": [
+      false
+    ]
+  },
+  "hash": "047433bdd8bf610bd1109605e9b4e39f3bdc1660f1af6afc2d2a8909db01d2f0"
+}

@@ -1,0 +1,26 @@
+{
+  "db_name": "SQLite",
+  "query": "SELECT m.data FROM movements m JOIN entries e ON e.id = m.entry_id\n            WHERE m.at >= ?1 AND e.status != 'trashed' ORDER BY m.at",
+  "describe": {
+    "columns": [
+      {
+        "name": "data",
+        "ordinal": 0,
+        "type_info": "Text",
+        "origin": {
+          "Table": {
+            "table": "movements",
+            "name": "data"
+          }
+        }
+      }
+    ],
+    "parameters": {
+      "Right": 1
+    },
+    "nullable": [
+      false
+    ]
+  },
+  "hash": "e9225ac4ebce7f0386477cd91d4192490b3616f46bfcfe7e43811d8d39c7a3c6"
+}

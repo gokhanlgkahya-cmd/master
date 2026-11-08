@@ -1005,3 +1005,8 @@ input:focus-visible + .checkbox__box, input:focus-visible + .toggle__track, .che
 /* Izgara içindeki kutular metin girişinin doğal genişliğiyle taşmasın. */
 .fields > .fieldbox { min-width: 0; }
 .fieldbox__val input { width: 100%; min-width: 0; }
+
+/* Kısa bilgi notu (hareket teyidi vb.): hata notunun nötr eşi. */
+.info-note { margin: 0 var(--space-4) var(--space-2); padding: var(--space-2) var(--space-3); border-radius: var(--radius-md); background: var(--color-surface-sunken); color: var(--color-text); font-size: var(--font-size-sm); line-height: var(--font-line-height-sm); }
+.fin-switch .seg3 { flex: 1; }
+.fin-tx--far .fin-tx__meta { color: var(--color-error); }

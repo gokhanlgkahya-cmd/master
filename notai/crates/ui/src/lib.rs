@@ -60,6 +60,8 @@ struct Ctx {
     task_draft: RwSignal<Option<String>>,
     /// Ana ekrandaki "Yeni kayıt" düğmesiyle gelindi: akışın yazma alanına odaklan.
     compose_focus: RwSignal<bool>,
+    /// Kısa bilgi (ör. "Konumla teyit edildi: İş"); dokununca kapanır.
+    info: RwSignal<Option<String>>,
 }
 
 fn new_ctx() -> Ctx {
@@ -69,6 +71,7 @@ fn new_ctx() -> Ctx {
         selected: RwSignal::new(None),
         editing: RwSignal::new(None),
         error: RwSignal::new(None),
+        info: RwSignal::new(None),
         task_draft: RwSignal::new(None),
         compose_focus: RwSignal::new(false),
     }
@@ -161,6 +164,7 @@ pub fn App() -> impl IntoView {
     Effect::new(move |_| {
         let _ = c.screen.get();
         c.error.set(None);
+        c.info.set(None);
         c.selected.set(None);
         c.editing.set(None);
     });
@@ -222,13 +226,51 @@ fn TabBar() -> impl IntoView {
 #[component]
 fn ErrorNote() -> impl IntoView {
     let c = ctx();
-    move || {
-        c.error.get().map(|e| {
+    move || match (c.error.get(), c.info.get()) {
+        (Some(e), _) => Some(
             view! {
                 <p class="error-note" role="alert" on:click=move |_| c.error.set(None)>{e}</p>
             }
-        })
+            .into_any(),
+        ),
+        (None, Some(i)) => Some(
+            view! {
+                <p class="info-note" role="status" on:click=move |_| c.info.set(None)>{i}</p>
+            }
+            .into_any(),
+        ),
+        (None, None) => None,
     }
+}
+
+/// Kayıt bir hareketse ("işe geldim"): konum alınır (izin varsa), sunucu teyit eder; sonuç kısa
+/// bilgi olarak gösterilir. Konum kapalıysa ve gerekliyse "konumu aç" uyarısı gelir.
+fn movement_follow_up(c: Ctx, b: Backend, entry: String) {
+    spawn_local(async move {
+        let Ok(check) = b.movement_check(entry.clone()).await else {
+            return;
+        };
+        if !check.wants_location {
+            return;
+        }
+        let req = match web::current_fix().await {
+            Ok((lat, lon, acc)) => notai_api::LocateRequest {
+                lat: Some(lat),
+                lon: Some(lon),
+                accuracy_m: Some(acc),
+            },
+            Err(_) => notai_api::LocateRequest::default(),
+        };
+        match b.locate(entry, req).await {
+            Ok(v) => {
+                if !v.message.is_empty() {
+                    c.info.set(Some(v.message));
+                }
+                c.version.update(|x| *x += 1);
+            }
+            Err(e) => c.error.set(Some(e)),
+        }
+    });
 }
 
 /// Yükleniyor / hata / içerik üçlüsünün ilk ikisi.

@@ -10,6 +10,7 @@ pub mod assets;
 pub mod config;
 pub mod error;
 pub mod finance;
+pub mod moves;
 pub mod routes;
 pub mod routes_v2;
 pub mod scheduler;

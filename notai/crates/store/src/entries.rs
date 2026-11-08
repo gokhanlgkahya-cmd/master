@@ -124,7 +124,16 @@ pub(crate) async fn update_entry(
 impl Store {
     /// Kaydı yakalar. AI'ı beklemez: kayıt hemen yazılır, AI işi kuyruğa düşer.
     pub async fn capture(&self, new: NewEntry) -> Result<Captured> {
-        self.capture_as(new, false).await
+        let c = self.capture_as(new, false).await?;
+        if let Captured::New(e) = &c {
+            // Kayıt yazıldı; hareket çıkarma hatası kaydı geri almaz (yalnız günlüğe).
+            match self.detect_movement(e, e.captured_at).await {
+                Ok(Some(_)) => return Ok(Captured::New(self.entry(e.id).await?)),
+                Ok(None) => {}
+                Err(err) => tracing::warn!(error = %err, "hareket çıkarılamadı"),
+            }
+        }
+        Ok(c)
     }
 
     /// NotAI'nin bir konuya yazdığı mesaj (ör. fiyat takibi). Sınıflandırılmaz (AI işi yok),

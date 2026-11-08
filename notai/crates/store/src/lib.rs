@@ -15,6 +15,7 @@ mod error;
 mod extras;
 mod facts;
 mod finance;
+mod movement;
 mod suggestions;
 mod sync_apply;
 mod tasks;
@@ -41,6 +42,7 @@ pub use extras::{
     NewAttachment,
 };
 pub use finance::{ImportReport, PendingStatement, pdf_text};
+pub use movement::{LocateOutcome, SETTLE_AFTER_SECS};
 pub use suggestions::DecisionOutcome;
 pub use sync_apply::Applied;
 pub use tasks::TaskView;
