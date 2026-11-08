@@ -8,6 +8,7 @@
 
 #![forbid(unsafe_code)]
 
+mod asset;
 mod codec;
 mod entries;
 mod error;
@@ -33,6 +34,7 @@ pub use entries::{Captured, JournalItem, NewEntry, TopicRef};
 pub use suggestions::{MAX_QUESTIONS_PER_ENTRY, NewQuestion, QaContext};
 
 const NOTICE_KEY: &str = "last_notice";
+pub use asset::ASSETS_ROOT;
 pub use error::{Result, StoreError};
 pub use extras::{
     AttachmentKind, AttachmentMeta, DecisionExample, ExportSnapshot, MAX_ATTACHMENT_BYTES,

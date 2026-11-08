@@ -186,6 +186,28 @@ async fn set_watch(
 }
 
 #[tauri::command]
+async fn assets(st: State<'_, AppState>) -> Result<notai_api::AssetsView, String> {
+    service::assets(&st.store, Utc::now(), st.tz).await
+}
+
+#[tauri::command]
+async fn create_asset(
+    st: State<'_, AppState>,
+    req: notai_api::AssetRequest,
+) -> Result<String, String> {
+    service::create_asset(&st.store, &req, Utc::now(), st.tz).await
+}
+
+#[tauri::command]
+async fn set_asset(
+    st: State<'_, AppState>,
+    id: String,
+    req: notai_api::AssetRequest,
+) -> Result<(), String> {
+    service::set_asset(&st.store, &id, &req, Utc::now(), st.tz).await
+}
+
+#[tauri::command]
 async fn finance(
     st: State<'_, AppState>,
     month: Option<String>,
@@ -413,6 +435,9 @@ pub fn run() {
             answer_question,
             finance,
             set_watch,
+            assets,
+            create_asset,
+            set_asset,
             import_statement,
             classify_transaction,
             notice,

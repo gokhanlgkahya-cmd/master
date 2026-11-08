@@ -90,6 +90,26 @@ NotAI fiyat takiplerini çalıştır.
 ```
 Termux'ta günde bir çalıştırmak için `termux-job-scheduler` ya da n8n'de zamanlanmış akış kullanılabilir.
 
+## Varlık fiyatları
+Varlıklar ekranında fiyat sembolü verilmiş varlıkların (ör. `THYAO`, `gram altın`, `USD/TRY`, `BTC`)
+birim fiyatını ajan günde bir bildirir:
+
+| Komut | Ne yapar |
+|---|---|
+| `notai assets` | Bugün fiyatı güncellenmemiş sembollü varlıklar: konu, tür, sembol, miktar, birim, son değer |
+| `notai asset-price <konu-id> <birim-fiyat>` | Birim fiyatı TL olarak bildirir (ör. `3.400,50`); değer = miktar × fiyat |
+
+Değişim %2'den büyükse konuya NotAI mesajı yazılır ve bildirim gider; küçük değişim yalnız kaydedilir.
+Claude Code için `~/.claude/commands/notai-varlik.md`:
+```markdown
+NotAI varlık fiyatlarını güncelle.
+1. `notai assets` çalıştır. Boş dizi dönerse "güncellenecek varlık yok" de ve bitir.
+2. Her varlık için `symbol`ün güncel BİRİM fiyatını TL olarak bul (hisse: Borsa İstanbul son fiyat;
+   altın: gram alış; döviz: TCMB/piyasa TL karşılığı; kripto: TL fiyat). Emin olamadığını atla.
+3. `notai asset-price <topic_id> <fiyat>` ile bildir.
+4. Sonunda değişenleri kısaca özetle.
+```
+
 ## Banka ekstreleri (kurallarla okunamayanlar)
 Ekstre PDF'leri önce ev sunucusunda/uygulamada **yerel** kurallarla okunur (banka verisi hiçbir
 AI'a gitmez). Biçim tanınmazsa ekstre ajan işi olarak bekler:

@@ -120,6 +120,9 @@ pub struct Topic {
     /// Fiyat / ürün takibi ayarı (varsa).
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub watch: Option<crate::watch::WatchConfig>,
+    /// Varlık bilgisi (menkul / gayrimenkul).
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub asset: Option<crate::asset::AssetInfo>,
     pub pinned: bool,
 }
 
@@ -134,6 +137,7 @@ impl Topic {
             avatar: None,
             parent: None,
             watch: None,
+            asset: None,
             pinned: false,
         }
     }

@@ -6,6 +6,7 @@
 #![forbid(unsafe_code)]
 
 pub mod agenda;
+pub mod asset;
 pub mod entry;
 pub mod error;
 pub mod finance;

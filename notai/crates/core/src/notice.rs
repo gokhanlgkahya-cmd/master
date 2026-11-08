@@ -100,6 +100,20 @@ impl Notice {
         }
     }
 
+    /// Varlık değeri: "Varlık · Altın birikimi" / "Değer arttı: …". Takip gibi konuyu açar.
+    #[must_use]
+    pub fn asset(
+        headline: &str,
+        topic: (TopicId, String),
+        entry: EntryId,
+        at: DateTime<Utc>,
+    ) -> Self {
+        Self {
+            title: titled("Varlık", Some(&topic.1)),
+            ..Self::watch(headline, topic, entry, at)
+        }
+    }
+
     /// Şeritte gösterilecek kadar yeni mi?
     #[must_use]
     pub fn is_fresh(&self, now: DateTime<Utc>) -> bool {

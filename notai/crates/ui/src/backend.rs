@@ -627,6 +627,41 @@ impl Backend {
         }
     }
 
+    /// Varlıklar özeti.
+    pub async fn assets(&self) -> BResult<notai_api::AssetsView> {
+        match self {
+            Self::Tauri => Self::call("assets", json!({})).await,
+            Self::Http(h) => h.get("/assets").await,
+            Self::Demo(_) => Err(NOT_IN_DEMO.into()),
+        }
+    }
+
+    /// Yeni varlık ("Varlıklar" altında konu); kimliği döner.
+    pub async fn create_asset(&self, req: notai_api::AssetRequest) -> BResult<String> {
+        match self {
+            Self::Tauri => Self::call("create_asset", json!({ "req": req })).await,
+            Self::Http(h) => h
+                .post::<Value>("/assets", &req)
+                .await
+                .map(|v| v["topic_id"].as_str().unwrap_or_default().to_owned()),
+            Self::Demo(_) => Err(NOT_IN_DEMO.into()),
+        }
+    }
+
+    /// Konunun varlık bilgisini günceller (`kind` boşsa kaldırır).
+    pub async fn set_asset(&self, topic: String, req: notai_api::AssetRequest) -> BResult<()> {
+        match self {
+            Self::Tauri => Self::call::<Value>("set_asset", json!({ "id": topic, "req": req }))
+                .await
+                .map(|_| ()),
+            Self::Http(h) => h
+                .post::<Value>(&format!("/topics/{topic}/asset"), &req)
+                .await
+                .map(|_| ()),
+            Self::Demo(_) => Err(NOT_IN_DEMO.into()),
+        }
+    }
+
     /// Aylık harcama görünümü ("2026-10"; yoksa bu ay).
     pub async fn finance(&self, month: Option<String>) -> BResult<notai_api::FinanceView> {
         match self {

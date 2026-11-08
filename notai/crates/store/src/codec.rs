@@ -75,6 +75,7 @@ pub(crate) struct TopicRow {
     pub avatar: Option<String>,
     pub parent_id: Option<String>,
     pub watch: Option<String>,
+    pub asset: Option<String>,
     pub pinned: i64,
 }
 
@@ -101,6 +102,11 @@ impl TryFrom<TopicRow> for Topic {
                 .watch
                 .as_deref()
                 .map(|w| from_json("konu takibi", w))
+                .transpose()?,
+            asset: r
+                .asset
+                .as_deref()
+                .map(|a| from_json("varlık", a))
                 .transpose()?,
             pinned: bool_from(r.pinned),
         })

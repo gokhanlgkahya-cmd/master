@@ -403,3 +403,98 @@ async fn statement_import_is_deduplicated_matched_and_learns() {
     assert_eq!(r.imported, 1);
     assert!(s.pending_statements().await.unwrap().is_empty());
 }
+
+#[tokio::test]
+async fn assets_value_history_and_price_messages() {
+    use notai_core::asset::{AssetInfo, AssetKind};
+    use notai_core::finance::Money;
+    let s = store("sunucu").await;
+    let d = |m: u32, day: u32| NaiveDate::from_ymd_opt(2026, m, day).unwrap();
+    let root = s.assets_root(now()).await.unwrap();
+    assert_eq!(root.name.as_str(), notai_store::ASSETS_ROOT);
+    assert_eq!(s.assets_root(now()).await.unwrap().id, root.id, "tek kök");
+    let mut n = NewTopic::new(
+        TopicName::new("Altın birikimi").unwrap(),
+        ParaKind::Resource,
+    );
+    n.parent = Some(root.id);
+    let mut gold = s.create_topic(n, now()).await.unwrap();
+    gold.asset = Some(
+        AssetInfo::new(
+            AssetKind::Altin,
+            Some("12,5"),
+            Some("gram"),
+            Some("gram altın"),
+            Money(4_000_000),
+            d(10, 1),
+        )
+        .unwrap(),
+    );
+    s.update_topic(&gold, now()).await.unwrap();
+    assert!(
+        s.assets_total_on(d(9, 30)).await.unwrap().is_none(),
+        "geçmiş yok"
+    );
+    // Sonradan eklenen daire: 30 gün önceki toplamda kendi ilk değeriyle sayılır.
+    let mut flat = s
+        .create_topic(
+            NewTopic::new(TopicName::new("Kadıköy daire").unwrap(), ParaKind::Resource),
+            now(),
+        )
+        .await
+        .unwrap();
+    flat.asset = Some(
+        AssetInfo::new(
+            AssetKind::Gayrimenkul,
+            None,
+            None,
+            None,
+            Money(500_000_000),
+            d(11, 5),
+        )
+        .unwrap(),
+    );
+    s.update_topic(&flat, now()).await.unwrap();
+    assert_eq!(
+        s.assets_to_price(d(11, 6)).await.unwrap().len(),
+        1,
+        "yalnız sembollü"
+    );
+    // Küçük değişim: mesaj yok.
+    assert!(
+        s.price_asset(gold.id, Money(322_000), now(), d(11, 6))
+            .await
+            .unwrap()
+            .is_none()
+    );
+    assert!(
+        s.assets_to_price(d(11, 6)).await.unwrap().is_empty(),
+        "bugün fiyatlandı"
+    );
+    // Büyük değişim: NotAI mesajı.
+    let msg = s
+        .price_asset(gold.id, Money(340_000), now(), d(11, 7))
+        .await
+        .unwrap()
+        .expect("mesaj");
+    assert!(msg.from_notai);
+    assert!(msg.text.as_str().contains("arttı"), "{}", msg.text.as_str());
+    assert_eq!(
+        s.topic(gold.id).await.unwrap().asset.unwrap().value,
+        Money(4_250_000)
+    );
+    // 1 Kas: altın 40.000, daire ilk değeriyle 5.000.000 → bugünkü fark yalnız altın artışı.
+    let past = s.assets_total_on(d(11, 1)).await.unwrap().unwrap();
+    assert_eq!(past, Money(504_000_000));
+    let topics = s.asset_topics().await.unwrap();
+    let total: i64 = topics
+        .iter()
+        .map(|t| t.asset.as_ref().unwrap().value.0)
+        .sum();
+    assert_eq!(total - past.0, 250_000);
+    assert!(
+        s.price_asset(root.id, Money(1), now(), d(11, 7))
+            .await
+            .is_err()
+    );
+}

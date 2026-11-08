@@ -6,6 +6,7 @@
 #![forbid(unsafe_code)]
 
 pub mod agent;
+pub mod assets;
 pub mod config;
 pub mod error;
 pub mod finance;

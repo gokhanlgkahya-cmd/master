@@ -62,6 +62,7 @@ pub fn api_routes() -> Router<AppState> {
         .merge(crate::agent::routes())
         .merge(crate::finance::routes())
         .merge(crate::watch::routes())
+        .merge(crate::assets::routes())
 }
 
 fn bad(msg: impl Into<String>) -> ApiError {

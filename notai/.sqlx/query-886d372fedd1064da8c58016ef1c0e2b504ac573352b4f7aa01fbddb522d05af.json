@@ -1,6 +1,6 @@
 {
   "db_name": "SQLite",
-  "query": "SELECT id, name, kind, due_date, icon, avatar, parent_id, watch, pinned FROM topics ORDER BY name",
+  "query": "SELECT t.id, t.name, t.kind, t.due_date, t.icon, t.avatar, t.parent_id, t.watch, t.asset, t.pinned,\n                      (SELECT e.captured_at FROM entries e\n                        WHERE e.topic_id = t.id AND e.status IN ('inbox', 'processed')\n                        ORDER BY e.captured_at DESC LIMIT 1) AS \"last_at: String\",\n                      (SELECT e.text FROM entries e\n                        WHERE e.topic_id = t.id AND e.status IN ('inbox', 'processed')\n                        ORDER BY e.captured_at DESC LIMIT 1) AS \"last_text: String\",\n                      (SELECT COUNT(DISTINCT s.entry_id) FROM suggestions s\n                         JOIN entries e ON e.id = s.entry_id\n                        WHERE e.topic_id = t.id AND s.decision = 'pending'\n                          AND e.status IN ('inbox', 'processed')) AS \"pending!: i64\"\n               FROM topics t",
   "describe": {
     "columns": [
       {
@@ -92,8 +92,19 @@
         }
       },
       {
-        "name": "pinned",
+        "name": "asset",
         "ordinal": 8,
+        "type_info": "Text",
+        "origin": {
+          "Table": {
+            "table": "topics",
+            "name": "asset"
+          }
+        }
+      },
+      {
+        "name": "pinned",
+        "ordinal": 9,
         "type_info": "Integer",
         "origin": {
           "Table": {
@@ -101,6 +112,34 @@
             "name": "pinned"
           }
         }
+      },
+      {
+        "name": "last_at: String",
+        "ordinal": 10,
+        "type_info": "Text",
+        "origin": {
+          "Table": {
+            "table": "entries",
+            "name": "captured_at"
+          }
+        }
+      },
+      {
+        "name": "last_text: String",
+        "ordinal": 11,
+        "type_info": "Text",
+        "origin": {
+          "Table": {
+            "table": "entries",
+            "name": "text"
+          }
+        }
+      },
+      {
+        "name": "pending!: i64",
+        "ordinal": 12,
+        "type_info": "Integer",
+        "origin": "Expression"
       }
     ],
     "parameters": {
@@ -115,8 +154,12 @@
       true,
       true,
       true,
+      true,
+      false,
+      true,
+      true,
       false
     ]
   },
-  "hash": "2e8d72e2a41ac399fb8603f82fb4b18cc4b511c8e361707deb779cb575a101a5"
+  "hash": "886d372fedd1064da8c58016ef1c0e2b504ac573352b4f7aa01fbddb522d05af"
 }

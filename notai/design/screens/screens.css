@@ -994,3 +994,14 @@ input:focus-visible + .checkbox__box, input:focus-visible + .toggle__track, .che
 .bubble--notai { background: var(--color-surface-sunken); white-space: pre-line; }
 .bubble--notai a { color: var(--color-text); text-decoration: underline; overflow-wrap: anywhere; }
 .entry--notai .meta { gap: var(--space-1); }
+
+/* Varlıklar (2026-11-08): Harcamalar | Varlıklar seçici, 2'li kutu, satır = yazışmayı aç + düzenle. */
+.fin-switch { display: flex; padding: var(--space-2) var(--space-4) 0; }
+.fin-switch .switch2 { flex: 1; }
+.fin-tiles--2 { grid-template-columns: repeat(2, 1fr); }
+.fin-asset { align-items: center; padding-right: var(--space-1); }
+.fin-asset__main { flex: 1; min-width: 0; display: flex; align-items: flex-start; gap: var(--space-3); padding: 0; border: 0; background: transparent; color: inherit; font: inherit; text-align: left; cursor: pointer; }
+.fin-asset .iconbtn { color: var(--color-meta); }
+/* Izgara içindeki kutular metin girişinin doğal genişliğiyle taşmasın. */
+.fields > .fieldbox { min-width: 0; }
+.fieldbox__val input { width: 100%; min-width: 0; }

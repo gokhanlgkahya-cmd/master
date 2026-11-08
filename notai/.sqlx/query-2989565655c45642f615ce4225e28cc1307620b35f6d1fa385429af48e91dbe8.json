@@ -1,6 +1,6 @@
 {
   "db_name": "SQLite",
-  "query": "SELECT id, name, kind, due_date, icon, avatar, parent_id, watch, pinned FROM topics WHERE name_key = ?1",
+  "query": "SELECT id, name, kind, due_date, icon, avatar, parent_id, watch, asset, pinned FROM topics ORDER BY name",
   "describe": {
     "columns": [
       {
@@ -92,8 +92,19 @@
         }
       },
       {
-        "name": "pinned",
+        "name": "asset",
         "ordinal": 8,
+        "type_info": "Text",
+        "origin": {
+          "Table": {
+            "table": "topics",
+            "name": "asset"
+          }
+        }
+      },
+      {
+        "name": "pinned",
+        "ordinal": 9,
         "type_info": "Integer",
         "origin": {
           "Table": {
@@ -104,7 +115,7 @@
       }
     ],
     "parameters": {
-      "Right": 1
+      "Right": 0
     },
     "nullable": [
       false,
@@ -115,8 +126,9 @@
       true,
       true,
       true,
+      true,
       false
     ]
   },
-  "hash": "9ab89aab8003582f711c09133bf4f474f107bf5b236840bb4c2bb330b8611551"
+  "hash": "2989565655c45642f615ce4225e28cc1307620b35f6d1fa385429af48e91dbe8"
 }

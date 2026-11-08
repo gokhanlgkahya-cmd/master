@@ -322,6 +322,9 @@ pub const fn kind_icon(kind: &ParaKind) -> &'static str {
 #[must_use]
 pub fn icon_for<S: AsRef<str>>(topic: &Topic, recent: &[S]) -> String {
     topic.icon.clone().unwrap_or_else(|| {
+        if let Some(a) = &topic.asset {
+            return a.kind.icon().to_owned();
+        }
         suggest_icon(topic.name.as_str(), recent)
             .unwrap_or_else(|| kind_icon(&topic.kind))
             .to_owned()

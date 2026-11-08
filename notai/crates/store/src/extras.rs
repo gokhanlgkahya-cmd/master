@@ -181,7 +181,7 @@ impl Store {
     /// Her konunun son hareketi (son kayıt ya da son görev güncellemesi).
     pub async fn topic_activity(&self) -> Result<Vec<TopicActivityTimes>> {
         let rows = sqlx::query!(
-            r#"SELECT t.id, t.name, t.kind, t.due_date, t.icon, t.avatar, t.parent_id, t.watch, t.pinned,
+            r#"SELECT t.id, t.name, t.kind, t.due_date, t.icon, t.avatar, t.parent_id, t.watch, t.asset, t.pinned,
                       (SELECT MAX(x) FROM (
                           SELECT MAX(e.captured_at) AS x FROM entries e WHERE e.topic_id = t.id
                           UNION ALL
@@ -203,6 +203,7 @@ impl Store {
                         avatar: r.avatar,
                         parent_id: r.parent_id,
                         watch: r.watch,
+                        asset: r.asset,
                         pinned: r.pinned,
                     })?,
                     last_activity: r.last.as_deref().map(|s| parse_ts("konu", s)).transpose()?,
@@ -493,7 +494,7 @@ impl Store {
     pub async fn export_snapshot(&self) -> Result<ExportSnapshot> {
         let topic_rows = sqlx::query_as!(
             TopicRow,
-            "SELECT id, name, kind, due_date, icon, avatar, parent_id, watch, pinned FROM topics ORDER BY name"
+            "SELECT id, name, kind, due_date, icon, avatar, parent_id, watch, asset, pinned FROM topics ORDER BY name"
         )
         .fetch_all(&self.pool)
         .await?;

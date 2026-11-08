@@ -25,6 +25,9 @@ Ajan (sınıflandırma) komutları:
   watches                    Kontrol zamanı gelmiş fiyat/ürün takipleri (ürün, bağlantılar, şema).
   watch-report <konu-id> [dosya]
                              Bulunan teklifleri gönderir; yalnız değişince konuya yazılır.
+  assets                     Bugün fiyatı güncellenecek varlıklar (sembol, miktar, son değer).
+  asset-price <konu-id> <birim-fiyat>
+                             Birim fiyatı (TL) bildirir; değer = miktar × fiyat, ≥%2 değişim konuya yazılır.
   statements                 Kurallarla okunamayan banka ekstreleri (metin + şema, JSON).
   statement-answer <id> [dosya]
                              Ekstredeki hareketleri (şemaya uygun JSON) gönderir.
@@ -52,6 +55,8 @@ pub enum Cmd {
     Ask { question: String },
     Statements,
     Watches,
+    Assets,
+    AssetPrice { topic: String, unit_price: String },
     WatchReport { topic: String, file: Option<String> },
     StatementAnswer { id: String, file: Option<String> },
 }
@@ -84,6 +89,11 @@ pub fn parse(args: &[String]) -> Result<Cmd, String> {
         }),
         Some("statements") => Ok(Cmd::Statements),
         Some("watches") => Ok(Cmd::Watches),
+        Some("assets") => Ok(Cmd::Assets),
+        Some("asset-price") => Ok(Cmd::AssetPrice {
+            topic: need(args.get(1).cloned().unwrap_or_default(), "konu kimliği")?,
+            unit_price: need(args.get(2).cloned().unwrap_or_default(), "birim fiyat")?,
+        }),
         Some("watch-report") => Ok(Cmd::WatchReport {
             topic: need(args.get(1).cloned().unwrap_or_default(), "konu kimliği")?,
             file: args.get(2).filter(|f| *f != "-").cloned(),
@@ -177,6 +187,19 @@ pub async fn run(
         Cmd::Jobs { limit } => {
             let v: Value = c.get(&format!("/agent/jobs?limit={limit}")).await?;
             Ok(pretty(&v))
+        }
+        Cmd::Assets => {
+            let v: Value = c.get("/agent/assets").await?;
+            serde_json::to_string_pretty(&v).map_err(|e| e.to_string())
+        }
+        Cmd::AssetPrice { topic, unit_price } => {
+            let v: Value = c
+                .post(
+                    &format!("/agent/assets/{topic}/price"),
+                    &serde_json::json!({ "unit_price": unit_price }),
+                )
+                .await?;
+            Ok(v["message"].as_str().unwrap_or("işlendi").to_owned())
         }
         Cmd::Watches => {
             let v: Value = c.get("/agent/watches").await?;
@@ -337,6 +360,15 @@ mod tests {
         );
         assert_eq!(parse(&a("statements")).unwrap(), Cmd::Statements);
         assert_eq!(parse(&a("watches")).unwrap(), Cmd::Watches);
+        assert_eq!(parse(&a("assets")).unwrap(), Cmd::Assets);
+        assert_eq!(
+            parse(&a("asset-price t1 3.400,50")).unwrap(),
+            Cmd::AssetPrice {
+                topic: "t1".into(),
+                unit_price: "3.400,50".into()
+            }
+        );
+        assert!(parse(&a("asset-price t1")).is_err());
         assert_eq!(
             parse(&a("watch-report t1 rapor.json")).unwrap(),
             Cmd::WatchReport {

@@ -667,6 +667,58 @@ pub async fn set_watch(
     store.update_topic(&t, now).await.map_err(err)
 }
 
+// ---------------- Varlıklar (2026-11-08) ----------------
+
+pub async fn assets(store: &Store, now: DateTime<Utc>, tz: Tz) -> CmdResult<notai_api::AssetsView> {
+    let today = now.with_timezone(&tz).date_naive();
+    let topics = store.asset_topics().await.map_err(err)?;
+    let past = store
+        .assets_total_on(today - chrono::Duration::days(30))
+        .await
+        .map_err(err)?;
+    Ok(convert::assets_view(&topics, past))
+}
+
+/// Yeni varlık: "Varlıklar" ana konusunun altında yeni konu; kimliği döner.
+pub async fn create_asset(
+    store: &Store,
+    req: &notai_api::AssetRequest,
+    now: DateTime<Utc>,
+    tz: Tz,
+) -> CmdResult<String> {
+    let info = convert::asset_info(req, now.with_timezone(&tz).date_naive())?;
+    let root = store.assets_root(now).await.map_err(err)?;
+    let mut n = NewTopic::new(
+        TopicName::new(&req.name).map_err(|e| e.to_string())?,
+        ParaKind::Resource,
+    );
+    n.parent = Some(root.id);
+    let mut t = store.create_topic(n, now).await.map_err(err)?;
+    t.asset = Some(info);
+    store.update_topic(&t, now).await.map_err(err)?;
+    Ok(t.id.to_string())
+}
+
+/// Konunun varlık bilgisini günceller; `kind` boşsa kaldırır.
+pub async fn set_asset(
+    store: &Store,
+    topic: &str,
+    req: &notai_api::AssetRequest,
+    now: DateTime<Utc>,
+    tz: Tz,
+) -> CmdResult<()> {
+    let mut t = store.topic(id::<TopicId>(topic)?).await.map_err(err)?;
+    t.asset = if req.kind.trim().is_empty() {
+        None
+    } else {
+        Some(convert::asset_info(
+            req,
+            now.with_timezone(&tz).date_naive(),
+        )?)
+    };
+    store.update_topic(&t, now).await.map_err(err)
+}
+
 // ---------------- Harcamalar (2026-11-07) ----------------
 
 fn month_range(y: i32, m: u32) -> CmdResult<(NaiveDate, NaiveDate)> {

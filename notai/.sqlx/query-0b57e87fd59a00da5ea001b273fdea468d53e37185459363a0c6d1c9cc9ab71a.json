@@ -1,0 +1,12 @@
+{
+  "db_name": "SQLite",
+  "query": "UPDATE topics SET name = ?2, name_key = ?3, kind = ?4, due_date = ?5, icon = ?6, pinned = ?7,\n                    updated_at = ?8, avatar = ?9, parent_id = ?10, watch = ?11, asset = ?12\n             WHERE id = ?1",
+  "describe": {
+    "columns": [],
+    "parameters": {
+      "Right": 12
+    },
+    "nullable": []
+  },
+  "hash": "0b57e87fd59a00da5ea001b273fdea468d53e37185459363a0c6d1c9cc9ab71a"
+}

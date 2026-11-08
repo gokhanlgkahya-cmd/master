@@ -1,12 +1,14 @@
 //! Harcamalar (Gökhan, 2026-11-07): aylık gelir/gider/birikim, yorumlar ve öneriler, iş/ev/kişisel
 //! dağılımı, kategoriler, düzenli ödemeler, hareketler (kategori/kapsam düzeltilir, öğrenilir) ve
 //! banka ekstresi yükleme. Ekstre yerelde okunur; mükerrer satır eklenmez.
+//! Varlıklar sekmesi (2026-11-08): menkul/gayrimenkul toplamı, 30 günlük değişim, tür dağılımı.
 
 use leptos::html::Input;
 use leptos::prelude::*;
 use leptos::task::spawn_local;
-use notai_api::{FinanceView, ShareView, TransactionView};
+use notai_api::{AssetRowView, AssetsView, FinanceView, ShareView, TransactionView};
 
+use crate::sheets::AssetSheet;
 use crate::view::TopicLook;
 use crate::{Avatar, ErrorNote, Icon, Screen, TabBar, backend, ctx, failed, loading, run, web};
 
@@ -22,6 +24,7 @@ fn shift_month(m: &str, delta: i32) -> String {
 #[component]
 pub fn Finance() -> impl IntoView {
     let c = ctx();
+    let assets_tab = RwSignal::new(false);
     let month = RwSignal::new(None::<String>);
     let message = RwSignal::new(None::<String>);
     let file = NodeRef::<Input>::new();
@@ -76,13 +79,25 @@ pub fn Finance() -> impl IntoView {
             <div class="flowbar__who">
                 <Avatar look=TopicLook::plain("wallet") small=true/>
                 <div class="flowbar__text">
-                    <span class="flowbar__name">"Harcamalar"</span>
-                    <span class="flowbar__sub">{move || match data.get() { Some(Ok(v)) => v.title, _ => String::new() }}</span>
+                    <span class="flowbar__name">{move || if assets_tab.get() { "Varlıklar" } else { "Harcamalar" }}</span>
+                    <span class="flowbar__sub">{move || if assets_tab.get() { "Menkul ve gayrimenkuller".to_owned() } else {
+                        match data.get() { Some(Ok(v)) => v.title, _ => String::new() } }}</span>
                 </div>
             </div>
-            <button class="iconbtn" aria-label="Önceki ay" on:click=move |_| go(-1)><Icon name="back"/></button>
-            <button class="iconbtn" aria-label="Sonraki ay" on:click=move |_| go(1)><Icon name="chevr"/></button>
+            {move || (!assets_tab.get()).then(|| view! {
+                <button class="iconbtn" aria-label="Önceki ay" on:click=move |_| go(-1)><Icon name="back"/></button>
+                <button class="iconbtn" aria-label="Sonraki ay" on:click=move |_| go(1)><Icon name="chevr"/></button>
+            })}
         </header>
+        <div class="fin-switch">
+            <div class="switch2" role="tablist" aria-label="Bölüm">
+                <button role="tab" aria-selected=move || (!assets_tab.get()).to_string()
+                    on:click=move |_| assets_tab.set(false)>"Harcamalar"</button>
+                <button role="tab" aria-selected=move || assets_tab.get().to_string()
+                    on:click=move |_| assets_tab.set(true)>"Varlıklar"</button>
+            </div>
+        </div>
+        {move || if assets_tab.get() { view! { <Assets/> }.into_any() } else { let on_file = on_file.clone(); view! {
         <div class="body scroll">
             <div class="fin-actions">
                 <button class="btn btn--outline" on:click=move |_| { if let Some(el) = file.get_untracked() { el.click(); } }>
@@ -98,8 +113,119 @@ pub fn Finance() -> impl IntoView {
                 Some(Ok(v)) => report(v).into_any(),
             }}
         </div>
+        }.into_any() }}
         <ErrorNote/>
         <TabBar/>
+    }
+}
+
+/// Varlıklar sekmesi.
+#[component]
+fn Assets() -> impl IntoView {
+    let c = ctx();
+    let adding = RwSignal::new(false);
+    let editing = RwSignal::new(None::<notai_api::TopicRef>);
+    let edit_open = RwSignal::new(false);
+    let data = LocalResource::new(move || {
+        let _ = c.version.get();
+        let b = backend();
+        async move { b.assets().await }
+    });
+    view! {
+        <div class="body scroll">
+            <div class="fin-actions">
+                <button class="btn btn--outline" on:click=move |_| adding.set(true)>
+                    <Icon name="plus" size="sm"/>"Varlık ekle"
+                </button>
+            </div>
+            {move || match data.get() {
+                None => loading(),
+                Some(Err(e)) => failed(e),
+                Some(Ok(v)) => assets_report(v, editing, edit_open).into_any(),
+            }}
+        </div>
+        {move || adding.get().then(|| view! { <AssetSheet topic=None open=adding/> })}
+        {move || (edit_open.get()).then(|| editing.get().map(|t| view! { <AssetSheet topic=Some(t) open=edit_open/> }))}
+    }
+}
+
+fn assets_report(
+    v: AssetsView,
+    editing: RwSignal<Option<notai_api::TopicRef>>,
+    edit_open: RwSignal<bool>,
+) -> impl IntoView {
+    if v.assets.is_empty() {
+        return view! {
+            <div class="empty">
+                <span class="empty__icon"><Icon name="house"/></span>
+                <h2 class="empty__title">"Henüz varlık yok"</h2>
+                <p class="empty__text">"Ev, araç, hisse, altın, döviz ya da mevduatını ekle. Sembol verirsen NotAI ajanı günde bir fiyatına bakar."</p>
+            </div>
+        }
+        .into_any();
+    }
+    let change_class = if v.change_negative {
+        "fin-tile__val fin-tile__val--neg"
+    } else {
+        "fin-tile__val"
+    };
+    let change = v.change_30d.clone().unwrap_or_else(|| "—".to_owned());
+    let rows = v
+        .assets
+        .into_iter()
+        .map(|r| asset_row(r, editing, edit_open))
+        .collect_view();
+    view! {
+        <div class="fin-tiles fin-tiles--2">
+            <div class="fin-tile"><span class="fin-tile__label">"Toplam"</span><span class="fin-tile__val tnum">{v.total}</span></div>
+            <div class="fin-tile"><span class="fin-tile__label">"Son 30 gün"</span><span class=change_class>{change}</span>
+                <span class="fin-tile__sub">"yeni eklenen varlık kazanç sayılmaz"</span></div>
+        </div>
+        {shares("Türlere göre", v.by_kind, true)}
+        <h2 class="grouphead">"Varlıklar"</h2>
+        <ul class="card fin-txs">{rows}</ul>
+    }
+    .into_any()
+}
+
+fn asset_row(
+    r: AssetRowView,
+    editing: RwSignal<Option<notai_api::TopicRef>>,
+    edit_open: RwSignal<bool>,
+) -> impl IntoView {
+    let meta = [
+        Some(r.kind_label.clone()),
+        Some(r.quantity.clone()).filter(|q| !q.is_empty()),
+        r.symbol.clone().map(|s| format!("fiyat: {s}")),
+        Some(r.as_of.clone()),
+    ]
+    .into_iter()
+    .flatten()
+    .collect::<Vec<_>>()
+    .join(" · ");
+    let t = notai_api::TopicRef {
+        id: r.topic_id.clone(),
+        name: r.name.clone(),
+    };
+    let c = ctx();
+    let open_chat = {
+        let t = t.clone();
+        move |_| c.screen.set(Screen::Topic(t.clone()))
+    };
+    view! {
+        <li class="fin-tx fin-asset">
+            <button class="fin-asset__main" aria-label=format!("{} yazışmasını aç", r.name) on:click=open_chat>
+                <span class="fin-tx__body">
+                    <span class="fin-tx__desc">{r.name.clone()}</span>
+                    <span class="fin-tx__meta"><span>{meta}</span></span>
+                </span>
+                <span class="fin-tx__amt tnum">{r.value}</span>
+            </button>
+            <button class="iconbtn" aria-label=format!("{} varlık bilgisini düzenle", r.name)
+                on:click=move |_| { editing.set(Some(t.clone())); edit_open.set(true); }>
+                <Icon name="pencil" size="sm"/>
+            </button>
+        </li>
     }
 }
 

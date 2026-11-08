@@ -1,6 +1,6 @@
 {
   "db_name": "SQLite",
-  "query": "SELECT t.id, t.name, t.kind, t.due_date, t.icon, t.avatar, t.parent_id, t.watch, t.pinned,\n                      (SELECT MAX(x) FROM (\n                          SELECT MAX(e.captured_at) AS x FROM entries e WHERE e.topic_id = t.id\n                          UNION ALL\n                          SELECT MAX(k.updated_at) AS x FROM tasks k WHERE k.topic_id = t.id\n                      )) AS \"last: String\"\n               FROM topics t",
+  "query": "SELECT t.id, t.name, t.kind, t.due_date, t.icon, t.avatar, t.parent_id, t.watch, t.asset, t.pinned,\n                      (SELECT MAX(x) FROM (\n                          SELECT MAX(e.captured_at) AS x FROM entries e WHERE e.topic_id = t.id\n                          UNION ALL\n                          SELECT MAX(k.updated_at) AS x FROM tasks k WHERE k.topic_id = t.id\n                      )) AS \"last: String\"\n               FROM topics t",
   "describe": {
     "columns": [
       {
@@ -92,8 +92,19 @@
         }
       },
       {
-        "name": "pinned",
+        "name": "asset",
         "ordinal": 8,
+        "type_info": "Text",
+        "origin": {
+          "Table": {
+            "table": "topics",
+            "name": "asset"
+          }
+        }
+      },
+      {
+        "name": "pinned",
+        "ordinal": 9,
         "type_info": "Integer",
         "origin": {
           "Table": {
@@ -104,7 +115,7 @@
       },
       {
         "name": "last: String",
-        "ordinal": 9,
+        "ordinal": 10,
         "type_info": "Text",
         "origin": "Expression"
       }
@@ -121,9 +132,10 @@
       true,
       true,
       true,
+      true,
       false,
       true
     ]
   },
-  "hash": "3188d6c8606f358c72551263aedcedc65424af660f710df3eb4b6013d91befa5"
+  "hash": "0b9f97dc1f4800332db0cf431a802dc4383acae51e93c0cdf564de82f56109e3"
 }

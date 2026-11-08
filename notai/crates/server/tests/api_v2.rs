@@ -1088,3 +1088,112 @@ async fn price_watch_reports_only_on_change_and_notifies() {
     let (_, topics) = h.get("/api/topics").await;
     assert!(topics["topics"][0]["watch"].is_null());
 }
+
+#[tokio::test]
+async fn assets_are_added_priced_by_agent_and_summarized() {
+    let ntfy = MockServer::start().await;
+    Mock::given(method("POST"))
+        .and(query_param("title", "Varlık · Altın birikimi"))
+        .respond_with(ResponseTemplate::new(200))
+        .expect(1)
+        .mount(&ntfy)
+        .await;
+    let mut cfg = Config::defaults();
+    cfg.ntfy_url = Some(ntfy.uri());
+    let h = h(cfg, ScriptedLlm::new(), false).await;
+    let (s, _) = h
+        .post(
+            "/api/assets",
+            json!({ "name": "Bozuk", "kind": "uzay gemisi", "value": "1" }),
+        )
+        .await;
+    assert_eq!(s, StatusCode::BAD_REQUEST);
+    let (s, r) = h
+        .post(
+            "/api/assets",
+            json!({ "name": "Altın birikimi", "kind": "altin", "quantity": "12,5",
+                    "unit": "gram", "symbol": "gram altın", "value": "40.000" }),
+        )
+        .await;
+    assert_eq!(s, StatusCode::OK, "{r}");
+    let gold = r["topic_id"].as_str().unwrap().to_owned();
+    let (_, r) = h
+        .post(
+            "/api/assets",
+            json!({ "name": "Kadıköy daire", "kind": "gayrimenkul", "value": "5.000.000" }),
+        )
+        .await;
+    let flat = r["topic_id"].as_str().unwrap().to_owned();
+    // Varlıklar ana konusunun altında, simgesi türünden.
+    let (_, topics) = h.get("/api/topics").await;
+    let row = topics["topics"]
+        .as_array()
+        .unwrap()
+        .iter()
+        .find(|t| t["id"] == flat.as_str())
+        .unwrap()
+        .clone();
+    assert_eq!(row["path"], "Varlıklar / Kadıköy daire");
+    assert_eq!(row["icon"], "house");
+
+    let (_, v) = h.get("/api/assets").await;
+    assert_eq!(v["total"], "5.040.000,00\u{a0}₺");
+    assert_eq!(v["assets"][0]["name"], "Kadıköy daire", "büyükten küçüğe");
+    assert_eq!(v["assets"][1]["quantity"], "12,5 gram");
+    assert_eq!(v["assets"][1]["form"]["value"], "40.000,00");
+    assert_eq!(v["by_kind"][0]["key"], "gayrimenkul");
+
+    // Ajan: bugün eklenenler fiyatlanmış sayılır; ertesi gün yalnız sembollü altın.
+    let (_, jobs) = h.get("/api/agent/assets").await;
+    assert!(jobs.as_array().unwrap().is_empty());
+    h.clock.set(t0() + Duration::hours(25));
+    let (_, jobs) = h.get("/api/agent/assets").await;
+    assert_eq!(jobs.as_array().unwrap().len(), 1);
+    assert_eq!(jobs[0]["topic_id"], gold.as_str());
+    assert_eq!(jobs[0]["quantity"], "12,5");
+    // Küçük değişim sessiz; büyük değişim konuya yazılır + bildirim.
+    let (_, r) = h
+        .post(
+            &format!("/api/agent/assets/{gold}/price"),
+            json!({ "unit_price": "3.220" }),
+        )
+        .await;
+    assert_eq!(r["changed"], false);
+    h.clock.set(t0() + Duration::hours(49));
+    let (_, r) = h
+        .post(
+            &format!("/api/agent/assets/{gold}/price"),
+            json!({ "unit_price": "3.400" }),
+        )
+        .await;
+    assert_eq!(r["changed"], true, "{r}");
+    assert!(r["message"].as_str().unwrap().contains("42.500,00"));
+    let (_, n) = h.get("/api/notice").await;
+    assert_eq!(n["topic_id"], gold.as_str());
+    let (s, _) = h
+        .post(
+            &format!("/api/agent/assets/{gold}/price"),
+            json!({ "unit_price": "0" }),
+        )
+        .await;
+    assert_eq!(s, StatusCode::BAD_REQUEST);
+
+    // Elle düzenleme ve kaldırma.
+    let (s, _) = h
+        .post(
+            &format!("/api/topics/{flat}/asset"),
+            json!({ "kind": "gayrimenkul", "value": "5.250.000" }),
+        )
+        .await;
+    assert_eq!(s, StatusCode::OK);
+    let (_, v) = h.get("/api/assets").await;
+    assert_eq!(v["total"], "5.292.500,00\u{a0}₺");
+    let (_, _) = h
+        .post(
+            &format!("/api/topics/{flat}/asset"),
+            json!({ "kind": "", "value": "" }),
+        )
+        .await;
+    let (_, v) = h.get("/api/assets").await;
+    assert_eq!(v["assets"].as_array().unwrap().len(), 1);
+}

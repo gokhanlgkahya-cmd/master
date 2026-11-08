@@ -394,17 +394,150 @@ fn NewTopicForm(open: RwSignal<bool>, parent: Option<TopicRef>) -> impl IntoView
 pub fn TopicMenu(topic: TopicRef, open: RwSignal<bool>) -> impl IntoView {
     let new_sub = RwSignal::new(false);
     let watching = RwSignal::new(false);
+    let valuing = RwSignal::new(false);
     let t_sheet = topic.clone();
     let t_watch = topic.clone();
+    let t_asset = topic.clone();
     view! {
         {move || {
             let t = topic.clone();
             open.get()
-                .then(|| view! { <TopicMenuBody topic=t open=open new_sub=new_sub watching=watching/> })
+                .then(|| view! { <TopicMenuBody topic=t open=open new_sub=new_sub watching=watching valuing=valuing/> })
         }}
         <NewTopicSheet open=new_sub parent=t_sheet/>
         {move || watching.get().then(|| view! { <WatchSheet topic=t_watch.clone() open=watching/> })}
+        {move || valuing.get().then(|| view! { <AssetSheet topic=Some(t_asset.clone()) open=valuing/> })}
     }
+}
+
+/// Varlık formu (2026-11-08): tür, miktar + birim, fiyat sembolü, toplam değer. `topic` yoksa
+/// "Varlıklar" altında yeni konu açılır; varsa o konunun varlık bilgisi düzenlenir/kaldırılır.
+#[component]
+pub fn AssetSheet(topic: Option<TopicRef>, open: RwSignal<bool>) -> impl IntoView {
+    let c = ctx();
+    let b = backend();
+    let form = RwSignal::new(notai_api::AssetRequest {
+        kind: "gayrimenkul".into(),
+        ..Default::default()
+    });
+    let existing = RwSignal::new(false);
+    let kinds = RwSignal::new(Vec::<(String, String)>::new());
+    let tid = topic.as_ref().map(|t| t.id.clone());
+    let data = LocalResource::new(move || {
+        let b = backend();
+        async move { b.assets().await }
+    });
+    let tid_load = tid.clone();
+    Effect::new(move |_| {
+        if let Some(Ok(v)) = data.get() {
+            kinds.set(v.kind_options.clone());
+            if let Some(id) = &tid_load
+                && let Some(r) = v.assets.iter().find(|r| &r.topic_id == id)
+            {
+                form.set(r.form.clone());
+                existing.set(true);
+            }
+        }
+    });
+    let is_new = topic.is_none();
+    let title = topic.as_ref().map_or_else(
+        || "Yeni varlık".to_owned(),
+        |t| format!("{} · varlık bilgisi", t.name),
+    );
+    let tid_save = tid.clone();
+    let b_save = b.clone();
+    let save = move || {
+        let req = form.get_untracked();
+        if req.value.trim().is_empty() || (is_new && req.name.trim().is_empty()) {
+            c.error.set(Some("Ad ve değer gerekli.".into()));
+            return;
+        }
+        open.set(false);
+        match tid_save.clone() {
+            Some(id) => crate::run_in(
+                c,
+                b_save.clone(),
+                move |b| async move { b.set_asset(id, req).await },
+                |()| {},
+            ),
+            None => crate::run_in(
+                c,
+                b_save.clone(),
+                move |b| async move { b.create_asset(req).await },
+                |_| {},
+            ),
+        }
+    };
+    let remove = move |_| {
+        let Some(id) = tid.clone() else {
+            return;
+        };
+        open.set(false);
+        crate::run_in(
+            c,
+            b.clone(),
+            move |b| async move { b.set_asset(id, notai_api::AssetRequest::default()).await },
+            |()| {},
+        );
+    };
+    let input = NodeRef::<leptos::html::Input>::new();
+    web::focus_later(input);
+    let field = move |label: &'static str,
+                      aria: &'static str,
+                      mode: &'static str,
+                      ph: &'static str,
+                      get: fn(&notai_api::AssetRequest) -> String,
+                      set: fn(&mut notai_api::AssetRequest, String)| {
+        view! {
+            <label class="fieldbox">
+                <span class="fieldbox__label">{label}</span>
+                <span class="fieldbox__val"><input type="text" lang="tr" inputmode=mode aria-label=aria placeholder=ph
+                    prop:value=move || form.with(get) on:input=move |ev| form.update(|f| set(f, event_target_value(&ev)))/></span>
+            </label>
+        }
+    };
+    let content = view! {
+        <form class="sheet__body" on:submit=move |ev| { ev.prevent_default(); save() }>
+            <h2 class="sheet__title">{title}</h2>
+            <p class="setnote">"Sembol girersen (ör. THYAO, gram altın, USD) Hermes / Claude Code günde bir birim fiyata bakar; değer miktar × fiyat olur, %2'den büyük değişim bu konuya yazılır. Sembolsüz varlığı (ev, araç) arada sen güncellersin."</p>
+            {is_new.then(|| view! {
+                <label class="formfield formfield--sheet">
+                    <span class="formfield__label">"Ad"</span>
+                    <span class="input"><input type="text" lang="tr" node_ref=input placeholder="Örn. Kadıköy daire, Altın birikimi"
+                        prop:value=move || form.with(|f| f.name.clone()) on:input=move |ev| form.update(|f| f.name = event_target_value(&ev))/></span>
+                </label>
+            })}
+            <div class="fields">
+                <label class="fieldbox">
+                    <span class="fieldbox__label">"Tür"</span>
+                    <span class="fieldbox__val"><select aria-label="Tür" on:change=move |ev| form.update(|f| f.kind = event_target_value(&ev))>
+                        {move || kinds.get().into_iter().map(|(k, l)| {
+                            let k2 = k.clone();
+                            view! { <option value=k selected=move || form.with(|f| f.kind == k2)>{l}</option> }
+                        }).collect_view()}
+                    </select></span>
+                </label>
+                {field("Değer (₺)", "Değer", "decimal", "Örn. 1.250.000", |f| f.value.clone(), |f, v| f.value = v)}
+            </div>
+            <div class="fields">
+                {field("Miktar", "Miktar", "decimal", "İsteğe bağlı", |f| f.quantity.clone(), |f, v| f.quantity = v)}
+                {field("Birim", "Birim", "text", "gram, adet, USD", |f| f.unit.clone(), |f, v| f.unit = v)}
+            </div>
+            <label class="formfield formfield--sheet">
+                <span class="formfield__label">"Fiyat sembolü (isteğe bağlı)"</span>
+                <span class="input"><input type="text" lang="tr" placeholder="THYAO · gram altın · USD/TRY · BTC"
+                    prop:value=move || form.with(|f| f.symbol.clone()) on:input=move |ev| form.update(|f| f.symbol = event_target_value(&ev))/></span>
+            </label>
+            <div class="sheet__foot sheet__foot--flat">
+                <button class="btn btn--primary btn--block" type="submit">"Kaydet"</button>
+                {move || existing.get().then(|| {
+                    let remove = remove.clone();
+                    view! { <button class="btn btn--text btn--block" type="button" on:click=remove>"Varlık bilgisini kaldır"</button> }
+                })}
+            </div>
+        </form>
+    };
+    shell("Varlık", || "sheet--auto", move || open.set(false), content)
 }
 
 /// Fiyat / ürün takibi formu: ürün, bağlantılar, hedef fiyat, sıklık. Ajan (Hermes / Claude
@@ -529,6 +662,7 @@ fn TopicMenuBody(
     open: RwSignal<bool>,
     new_sub: RwSignal<bool>,
     watching: RwSignal<bool>,
+    valuing: RwSignal<bool>,
 ) -> impl IntoView {
     let c = ctx();
     let renaming = RwSignal::new(false);
@@ -765,6 +899,11 @@ fn TopicMenuBody(
                             Some(w) => format!("Takipte: {}", w.query),
                             None => "Bir ürünün fiyatını takip et; düşünce haber ver".to_owned(),
                         }}</span></span>
+                </button>
+                <button class="setrow" on:click=move |_| { open.set(false); valuing.set(true); }>
+                    <span class="setrow__ic"><Icon name="wallet"/></span>
+                    <span class="setrow__txt"><span class="setrow__title">"Varlık bilgisi"</span>
+                        <span class="setrow__sub">"Ev, araç, hisse, altın… değerini tut, Varlıklar'da topla"</span></span>
                 </button>
                 <button class="setrow" aria-expanded=move || choosing_parent.get().to_string()
                     on:click=move |_| choosing_parent.update(|v| *v = !*v)>

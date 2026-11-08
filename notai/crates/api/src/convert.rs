@@ -155,7 +155,13 @@ pub fn topic_row(a: TopicActivity, now: DateTime<Utc>, tz: Tz) -> TopicRowView {
         watch: a.topic.watch.as_ref().map(watch_view),
         pinned: a.topic.pinned,
         last_label: a.last_at.map(|t| list_time_label(t, now, tz)),
-        preview: a.last_preview,
+        // Varlık konusunda kayıt yoksa satırda değeri görünür ("Gayrimenkul · 5.000.000,00 ₺").
+        preview: a.last_preview.or_else(|| {
+            a.topic
+                .asset
+                .as_ref()
+                .map(|x| format!("{} · {}", x.kind.label(), x.value.format_abs()))
+        }),
     }
 }
 
@@ -597,6 +603,103 @@ pub fn finance_view(
             .map(|(k, l)| ((*k).to_owned(), (*l).to_owned()))
             .collect(),
     }
+}
+
+/// Varlıklar görünümü.
+#[must_use]
+pub fn assets_view(
+    topics: &[notai_core::topic::Topic],
+    past_total: Option<notai_core::finance::Money>,
+) -> crate::AssetsView {
+    use notai_core::asset::{AssetKind, format_quantity, summary};
+    let infos: Vec<notai_core::asset::AssetInfo> =
+        topics.iter().filter_map(|t| t.asset.clone()).collect();
+    let s = summary(&infos, past_total);
+    let total = s.total.0.max(1);
+    let mut rows: Vec<(i64, crate::AssetRowView)> = topics
+        .iter()
+        .filter_map(|t| {
+            let a = t.asset.as_ref()?;
+            let qty = a.quantity_milli.map_or_else(String::new, |q| {
+                format!(
+                    "{} {}",
+                    format_quantity(q),
+                    a.unit.clone().unwrap_or_default()
+                )
+                .trim()
+                .to_owned()
+            });
+            Some((
+                a.value.0,
+                crate::AssetRowView {
+                    topic_id: t.id.to_string(),
+                    name: t.name.as_str().to_owned(),
+                    kind: a.kind.name().to_owned(),
+                    kind_label: a.kind.label().to_owned(),
+                    value: a.value.format_abs(),
+                    quantity: qty,
+                    symbol: a.symbol.clone(),
+                    as_of: format!(
+                        "{} {}",
+                        chrono::Datelike::day(&a.as_of),
+                        notai_core::tr::month_short(chrono::Datelike::month(&a.as_of))
+                    ),
+                    form: crate::AssetRequest {
+                        name: t.name.as_str().to_owned(),
+                        kind: a.kind.name().to_owned(),
+                        quantity: a.quantity_milli.map(format_quantity).unwrap_or_default(),
+                        unit: a.unit.clone().unwrap_or_default(),
+                        symbol: a.symbol.clone().unwrap_or_default(),
+                        value: a.value.format_abs().trim_end_matches("\u{a0}₺").to_owned(),
+                    },
+                },
+            ))
+        })
+        .collect();
+    rows.sort_by_key(|(v, _)| std::cmp::Reverse(*v));
+    let assets = rows.into_iter().map(|(_, r)| r).collect();
+    crate::AssetsView {
+        total: s.total.format_abs(),
+        change_30d: s
+            .change_30d
+            .map(|c| format!("{} (30 gün)", c.format_signed())),
+        change_negative: s.change_30d.is_some_and(|c| c.0 < 0),
+        by_kind: s
+            .by_kind
+            .iter()
+            .map(|(k, m)| crate::ShareView {
+                key: k.name().to_owned(),
+                label: k.label().to_owned(),
+                amount: m.format_abs(),
+                pct: m.0 * 100 / total,
+            })
+            .collect(),
+        assets,
+        kind_options: AssetKind::ALL
+            .iter()
+            .map(|k| (k.name().to_owned(), k.label().to_owned()))
+            .collect(),
+    }
+}
+
+/// Form → varlık bilgisi.
+pub fn asset_info(
+    r: &crate::AssetRequest,
+    today: NaiveDate,
+) -> Result<notai_core::asset::AssetInfo, String> {
+    use notai_core::asset::{AssetInfo, AssetKind};
+    let kind = AssetKind::parse(&r.kind).map_err(|e| e.to_string())?;
+    let value = notai_core::finance::Money::parse(&r.value).map_err(|e| e.to_string())?;
+    let opt = |s: &str| Some(s).filter(|x| !x.trim().is_empty()).map(str::to_owned);
+    AssetInfo::new(
+        kind,
+        opt(&r.quantity).as_deref(),
+        opt(&r.unit).as_deref(),
+        opt(&r.symbol).as_deref(),
+        value,
+        today,
+    )
+    .map_err(|e| e.to_string())
 }
 
 /// Ekstre yükleme sonucunun Türkçe özeti.

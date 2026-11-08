@@ -1,0 +1,50 @@
+{
+  "db_name": "SQLite",
+  "query": "SELECT topic_id AS \"topic_id!\", as_of AS \"as_of!\", value AS \"value!: i64\"\n               FROM asset_values ORDER BY topic_id, as_of",
+  "describe": {
+    "columns": [
+      {
+        "name": "topic_id!",
+        "ordinal": 0,
+        "type_info": "Text",
+        "origin": {
+          "Table": {
+            "table": "asset_values",
+            "name": "topic_id"
+          }
+        }
+      },
+      {
+        "name": "as_of!",
+        "ordinal": 1,
+        "type_info": "Text",
+        "origin": {
+          "Table": {
+            "table": "asset_values",
+            "name": "as_of"
+          }
+        }
+      },
+      {
+        "name": "value!: i64",
+        "ordinal": 2,
+        "type_info": "Integer",
+        "origin": {
+          "Table": {
+            "table": "asset_values",
+            "name": "value"
+          }
+        }
+      }
+    ],
+    "parameters": {
+      "Right": 0
+    },
+    "nullable": [
+      false,
+      false,
+      false
+    ]
+  },
+  "hash": "e8e94ea882b3b6da40df8b86bdc91cace8c7efa32bf03b5032d577d051609242"
+}

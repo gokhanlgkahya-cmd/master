@@ -371,6 +371,54 @@ pub struct WatchRequest {
     pub active: Option<bool>,
 }
 
+/// Varlıklar ekranı.
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize, Default)]
+pub struct AssetsView {
+    pub total: String,
+    /// "+12.500,00 ₺ (30 gün)"; geçmiş yoksa yok.
+    pub change_30d: Option<String>,
+    pub change_negative: bool,
+    pub by_kind: Vec<ShareView>,
+    pub assets: Vec<AssetRowView>,
+    /// Seçilebilir türler (anahtar, ad).
+    pub kind_options: Vec<(String, String)>,
+}
+
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+pub struct AssetRowView {
+    pub topic_id: String,
+    pub name: String,
+    pub kind: String,
+    pub kind_label: String,
+    pub value: String,
+    /// "12,5 gram" gibi; yoksa boş.
+    pub quantity: String,
+    pub symbol: Option<String>,
+    /// "8 Kas" (son değerleme).
+    pub as_of: String,
+    /// Form için ham alanlar.
+    pub form: AssetRequest,
+}
+
+/// Varlık ekleme/düzenleme isteği.
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize, Default)]
+pub struct AssetRequest {
+    /// Yalnız yeni varlıkta: konu adı.
+    #[serde(default)]
+    pub name: String,
+    pub kind: String,
+    /// "12,5"; boşsa tek parça.
+    #[serde(default)]
+    pub quantity: String,
+    #[serde(default)]
+    pub unit: String,
+    /// Otomatik fiyat için sembol; boşsa elle güncellenir.
+    #[serde(default)]
+    pub symbol: String,
+    /// Toplam değer ("1.250.000").
+    pub value: String,
+}
+
 /// Harcamalar ekranı (bir ay).
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize, Default)]
 pub struct FinanceView {
