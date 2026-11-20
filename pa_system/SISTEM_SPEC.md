@@ -1,5 +1,6 @@
-# PA Tabanlı Çoklu Zaman Dilimi İşlem Sistemi — Spesifikasyon v1.0
+# PA Tabanlı Çoklu Zaman Dilimi İşlem Sistemi — Spesifikasyon v1.1
 
+> Sürüm 1.1.0 — risk limitleri (%2 / %6 / grup %3 / aylık %6), pozisyon tavanları, gap kontrolü, Ç2 seviye/yön ayrımı, makro rüzgar eklendi.
 > Durum: **Üretim öncesi taslak.** `⚠ AÇIK` ile işaretli maddeler `OPEN_DECISIONS.md` içinde karar bekliyor; o zamana kadar `config/params.yaml` içindeki varsayılan geçerlidir.
 > Tüm sayısal değerler `config/params.yaml` içindedir; bu dokümandaki sayılar başlangıç değerleridir ve kod içine sabit yazılmaz.
 
@@ -167,7 +168,7 @@ IDLE ──(HTF uygun + kurulum oluşuyor)──► ARMED ──(tetik + tüm gi
 4. Aşırı uzama yok.
 5. Stop mesafesi ≤ 2×ATR (giriş TF).
 6. TP1 (karşı likidite = önceki HTF ana pivot) ≥ 2R; değilse işlem yok.
-7. Korelasyon / toplam risk limiti uygun (§11).
+7. Risk limitleri uygun (§11.1: işlem %2, açık %6, grup %3, aylık limit) ve pozisyon tavanı / gap kontrolü (§11.3) sağlanıyor.
 8. Emir: kapanış teyidi sonrası sonraki mum açılışı (varsayılan) veya stop-limit.
 
 ### Karar matrisi
@@ -217,10 +218,29 @@ IDLE ──(HTF uygun + kurulum oluşuyor)──► ARMED ──(tetik + tüm gi
 
 ## 11. Risk ve pozisyon boyutu
 
-- Mevcut çerçeve korunur: `risk% = clamp(BASE × Ç1 × Ç2 × Ç3 × Ç5 × Ç6 × Ç7, 0.5, 2.0)`, aylık max %6 (`carpan_tablosu_v2.md`, `risk_multipliers.py`).
-- **Değişiklik:** Ç3 (1D teknik çarpan; eski sinyal tipleri + ADX) yerine **kalite notu çarpanı** (A+ 1.0 / A 0.75 / B 0.5). Aynı bilgi tarama skoru ve Ç3'te iki kez sayılmaz. ⚠ AÇIK: Ç3 tamamen mi değişecek, yoksa yalnız ADX kısmı mı çıkacak.
-- Korelasyon grupları: {BTC, ETH}, {XAU, XAG}; BIST sektör başına max 2–3 pozisyon. Grup toplam riski tek pozisyon riskinin 1.5 katını aşmaz.
-- Pozisyon boyutu = (sermaye × risk%) / (giriş − stop); BIST'te stop mesafesine gap payı eklenir.
+### 11.1 Limitler (karar verildi)
+| Limit | Değer |
+|---|---|
+| İşlem başı risk | **max %2** (çarpanlar yalnız aşağı çeker) |
+| Açık toplam risk | **max %6** |
+| Korelasyon grubu toplam risk | **max %3** |
+| Aylık zarar limiti | Ay içi gerçekleşen kayıp **%6** → ay sonuna kadar yeni işlem yok |
+
+- **Açık risk tanımı:** her pozisyonun **güncel stopuna göre** kalan riski toplanır: `(giriş − güncel_stop) × adet` (long). Stop başabaş veya üzerindeyse risk = 0 → bütçe serbest kalır.
+- Korelasyon grupları: {BTC, ETH}, {XAU, XAG}, risk-on grubu {kripto, BIST} (§12.4 sürücü korelasyonuyla dinamik), BIST sektör başına max 2.
+
+### 11.2 Risk yüzdesi
+- `risk% = min(2.0, clamp(BASE × Ç1 × Ç2_seviye × Q × Ç5 × Ç6 × Ç7, 0.5, 2.0))` → ardından açık risk, grup ve aylık limit kontrolü.
+- **Ç2_seviye:** Ç2 yalnız **seviye** bileşenleriyle çalışır (VIX rejimi + VIX vade yapısı). **Yön** bileşenleri (VVIX değişimi, DXY trendi, US10Y trendi, XU100/sektör rotasyonu, BTC.D rotasyonu) Ç2'den çıkarılıp tarama skoruna (§12.4) taşındı. Uygulama: mevcut `calc_macro_multiplier` nötr yön girdileriyle çağrılır (`vvix_change_5d=0`, `dxy_trend='FLAT'`, diğer yön girdileri `None`); `risk_multipliers.py` değiştirilmez.
+- **Q (kalite notu):** A+ 1.0 / A 0.75 / B 0.5 — Ç3 yerine. ⚠ AÇIK: Ç3 tamamen mi değişecek.
+
+### 11.3 Pozisyon boyutu
+- `stop_mesafesi% = (giriş − stop) / giriş`, stop = giriş TF `ara` pivot − k×ATR (ATR payı dahil).
+- `pozisyon% = risk% / stop_mesafesi%` → örnek: risk %2, stop %10.6 → pozisyon sermayenin %18.9'u.
+- **Pozisyon tavanı (sermayenin %'si):** BIST tek hisse 25 · BTC 30 · ETH 20 · XAU 30 · XAG 15. Formül tavanı aşarsa tavan uygulanır (risk düşer). Kaldıraç yok.
+- **Gap kontrolü:** `pozisyon% × (stop_mesafesi% + gap_payı%) ≤ 1.5 × risk%`; sağlanmazsa pozisyon küçültülür. Gap payı: enstrümanın son 100 gap'inin 95. yüzdeliği (BIST gece, kripto hafta sonu, metal pazartesi açılışı).
+- **HTF ana pivot ≠ stop:** HTF (ör. haftalık) son ana dip **trend geçersizlik seviyesidir**; işlemin stopu her zaman giriş TF pivotundan alınır. HTF pivot uzak (ör. %50) ise bu ayrıca fiyatın premium bölgede olduğunu gösterir → S1 zaten giriş vermez.
+- ⚠ AÇIK: Kademeli giriş (ilk parça dar stopla, yapı teyitlendikçe ekleme; toplam risk yine ≤ %2).
 
 ---
 
@@ -229,7 +249,7 @@ IDLE ──(HTF uygun + kurulum oluşuyor)──► ARMED ──(tetik + tüm gi
 **Skor = G × Σ(wᵢ·Sᵢ) × M** (+ uyum bonusu) — sıralama aracıdır, giriş sinyali değildir.
 
 ### G — eleme (0/1)
-Likidite (20g ort. TL hacim > eşik) · HTF yapı DOWN değil · rejim ≠ D · aşırı uzama yok · olay penceresi dışında.
+Likidite (20g ort. TL hacim > eşik) · HTF yapı DOWN değil · rejim ≠ D · aşırı uzama yok · olay penceresi dışında · **VIX şoku yok** (risk-on varlıklarda [kripto, BIST] yeni long için: VIX 5 günde > +%30 **ve** VVIX yükseliyorsa G = 0).
 
 ### S — bileşenler (0–1)
 | Bileşen | Ölçü | w |
@@ -242,7 +262,35 @@ Likidite (20g ort. TL hacim > eşik) · HTF yapı DOWN değil · rejim ≠ D · 
 | R/R | Hedef / stop: 1.5→0, ≥3→1 | 10 |
 
 ### M — piyasa çarpanı
-XU100 rejimi UP=1.0 · RANGE=0.8 · DOWN=0.5 (kripto/metal için mevcut Ç2 makro çarpanı).
+`M = M_piyasa × (1 + 0.15 × rüzgar)` → aralık 0.425–1.15.
+- **M_piyasa:** BIST → XU100 yapısı UP 1.0 · RANGE 0.8 · DOWN 0.5. Kripto → BTC HTF yapısı (aynı tablo). Metal → 1.0.
+- **rüzgar:** §12.4 makro rüzgar, [−1, +1].
+
+### 12.4 Makro rüzgar (yön bileşenleri)
+Seviye risk'te (Ç2_seviye), **yön** burada. Ç2'den taşınan yön bilgisi + ilişkili pariteler.
+
+**Yön ölçümü (her sürücü d):** HTF'de `yön_d ∈ {−1, 0, +1}` = EMA20 eğim işareti **ve** 20 bar değişim z-skoru |z| ≥ 0.5 birlikte sağlanırsa işaret, değilse 0.
+
+**Ağırlık = dinamik korelasyon:** `ρ_d` = enstrüman ile sürücü getirilerinin 60 günlük korelasyonu.
+`rüzgar = Σ(ρ_d × yön_d) / Σ|ρ_d|`
+- |ρ_60| < 0.3 **veya** sign(ρ_60) ≠ sign(ρ_120) → sürücü dışarıda (ağırlık 0).
+- İşaretler elle yazılmaz; korelasyon belirler (ör. altın–reel faiz ilişkisi 2022 sonrası zayıfladı).
+- Hiç geçerli sürücü yoksa rüzgar = 0.
+
+**Sürücü havuzu (v1):**
+| Enstrüman | Sürücüler (beklenen ilişki, bilgi amaçlı) |
+|---|---|
+| BTC | VIX ↓, VVIX ↓, DXY ↓, Nasdaq100 ↑, BTC.D (BTC için ↑) |
+| ETH | BTC ↑, ETH/BTC ↑, VIX ↓, BTC.D ↓ |
+| XAU | DXY ↓, US10Y ↓, VIX (korelasyon belirler) |
+| XAG | XAU ↑, DXY ↓, bakır (HG) ↑, XAU/XAG ↓ |
+| BIST | VIX ↓, VVIX ↓, EEM ↑, USDTRY (USD bazlı XU100 ile), sektör: havayolu → Brent ↓, ihracatçı → EURUSD ↑ |
+
+**Kapsam dışı (v1):** Türkiye CDS (güvenilir ücretsiz kaynak yok).
+
+**Zaman hizalama (lookahead):** sürücü değeri, enstrümanın mum kapanış anında **kapanmış** son sürücü mumundan alınır. BIST günlük (18:00 TSİ) → önceki günün ABD kapanışı (VIX, DXY, US10Y, NDX). Kripto günlük (UTC 00:00) → ABD kapanışı aynı gün kapanmışsa o gün, değilse önceki gün.
+
+**Doğrulama:** rüzgar bileşeni, desil testinde skora anlamlı katkı vermezse kaldırılır.
 
 ### Çıktı
 - Her **enstrüman × profil** için skor; enstrümanın en iyi profili = max skor; iki profil aynı yönde ve ≥60 → +5..10 uyum bonusu.

@@ -12,7 +12,7 @@ Karar verilene kadar `config/params.yaml` içindeki varsayılan geçerlidir. Kar
 | 6 | Altın/gümüş enstrümanı | Spot/CFD · VİOP · COMEX vadeli | ? (RVOL buna bağlı) | |
 | 7 | Kripto | Spot · Perp; kaldıraç | Spot, kaldıraçsız | |
 | 8 | Öncelikli profil | P1 4H/15m · P2 1D/1H · P3 1W/4H | P2 | |
-| 9 | İşlem başı risk / max eşzamanlı pozisyon | Mevcut %0.5–2.0, aylık %6 · başka | Mevcut çerçeve; max 5 pozisyon | |
+| 9 | İşlem başı risk / açık risk | — | — | ✅ İşlem max %2 · açık toplam max %6 (güncel stopa göre) · grup max %3 · aylık zarar limiti %6 |
 | 10 | Hedef profil | Düşük win% + yüksek R · Sık küçük kazanç | Düşük win% + yüksek R | |
 | 11 | Pivot yöntemi | Hibrit (fraktal + ATR + alternasyon) · Saf ATR zigzag | Hibrit | |
 | 12 | Trend çizgisi teyidi | 2 temas · 3 temas şart | 2 temas = ARMED, 3 temas = kalite | |
@@ -27,3 +27,8 @@ Karar verilene kadar `config/params.yaml` içindeki varsayılan geçerlidir. Kar
 | 21 | Bildirim kanalı | Telegram · e-posta · HTML rapor | HTML rapor + Telegram | |
 | 22 | Orkestrasyon | Hermes Agent (Nous Research?) · Claude Code zamanlanmış görev · cron | Netleştirilecek | |
 | 23 | Kısmi kâr ve başabaş | 1.5R %40 + BE · 1R + BE · kısmi yok | 1.5R %40 + BE (test edilecek) | |
+| 24 | Kademeli giriş | Kapalı · İlk parça dar stop + yapı teyidinde ekleme (toplam ≤ %2) | Kapalı | |
+| 25 | Pozisyon tavanları | — | — | ✅ BIST 25 · BTC 30 · ETH 20 · XAU 30 · XAG 15 (sermaye %); kaldıraç yok; gap kontrolü açık |
+| 26 | Ç2 seviye/yön ayrımı | — | — | ✅ Seviye (VIX rejimi, vade yapısı) risk'te; yön (VVIX, DXY, US10Y, XU100/sektör, BTC.D) taramada makro rüzgar |
+| 27 | Türkiye CDS | — | — | ✅ v1 kapsam dışı |
+| 28 | HTF pivot ve stop | — | — | ✅ HTF ana pivot = trend geçersizlik seviyesi; stop giriş TF pivotundan |

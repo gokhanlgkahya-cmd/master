@@ -2,7 +2,7 @@
 # Kod içinde sayı sabit yazılmaz; buradan okunur.
 # "open: true" işaretli değerler OPEN_DECISIONS.md'de karar bekliyor (varsayılan geçerli).
 
-ruleset_version: "1.0.0"
+ruleset_version: "1.1.0"
 
 profiles:
   P1: { htf: "4h", ltf: "15m", trail_tf: "1h",  assets: [BTC, ETH, XAU, XAG] }
@@ -110,16 +110,51 @@ assets:
           min_avg_turnover_try: 50000000, adjusted_data: true, usd_trend_check: true, open: true }
 
 risk:
-  use_existing_multipliers: true      # risk_multipliers.calculate_position_risk
+  # Karar verildi (v1.1)
+  max_trade_risk_pct: 2.0
+  min_trade_risk_pct: 0.5
+  max_open_risk_pct: 6.0              # güncel stopa göre kalan risk; stop >= BE ise 0
+  max_corr_group_risk_pct: 3.0
+  monthly_loss_limit_pct: 6.0         # aşılırsa ay sonuna kadar yeni işlem yok
+  corr_groups:
+    crypto: [BTC, ETH]
+    metals: [XAU, XAG]
+    risk_on: [BTC, ETH, BIST]         # dinamik korelasyonla doğrulanır
+  max_position_pct: { BIST: 25, BTC: 30, ETH: 20, XAU: 30, XAG: 15 }
+  leverage: false
+  gap_check:
+    enabled: true
+    max_loss_mult_of_risk: 1.5
+    gap_percentile: 95
+    gap_lookback: 100
+  c2_mode: level_only                 # yön girdileri nötr: vvix_change_5d=0, dxy_trend=FLAT, diğerleri None
+  use_existing_multipliers: true      # risk_multipliers.calculate_position_risk (dosya değiştirilmez)
   replace_c3_with_quality: true       # open: true
   quality_mult: { "A+": 1.0, "A": 0.75, "B": 0.5 }
-  corr_group_max_risk_mult: 1.5
+  scaled_entry: { enabled: false, open: true }   # kademeli giriş; toplam risk yine <= max_trade_risk_pct
 
 scanner:
   weights: { structure: 25, pd: 20, relative_strength: 15, trend_quality: 15, setup_readiness: 15, rr: 10 }
   structure_scores: { up: 1.0, range_breakout: 0.7, fresh_choch: 0.5 }
   rr_map: { zero_at: 1.5, full_at: 3.0 }
-  market_mult: { up: 1.0, range: 0.8, down: 0.5 }
+  market_mult: { up: 1.0, range: 0.8, down: 0.5 }   # BIST: XU100, kripto: BTC HTF yapısı, metal: 1.0
+  macro_wind:
+    enabled: true
+    weight: 0.15                      # M = M_piyasa * (1 + weight * rüzgar)
+    direction: { ema_length: 20, z_lookback: 20, z_min: 0.5 }
+    correlation: { short_days: 60, long_days: 120, min_abs: 0.3, require_sign_stability: true }
+    vix_shock_gate: { vix_5d_change_min: 0.30, require_vvix_rising: true, assets: [BTC, ETH, BIST] }
+    drivers:
+      BTC:  [VIX, VVIX, DXY, NDX, BTC_D]
+      ETH:  [BTC, ETHBTC, VIX, BTC_D]
+      XAU:  [DXY, US10Y, VIX]
+      XAG:  [XAU, DXY, HG, XAUXAG]
+      BIST: [VIX, VVIX, EEM, USDTRY]
+      BIST_sector:
+        havayolu: [BRENT]
+        ihracatci: [EURUSD]
+    excluded_v1: [TR_CDS_5Y]
+    alignment: closed_bars_only       # BIST günlük -> önceki ABD kapanışı
   alignment_bonus: { min_score: 60, bonus: 7 }
   tiers: { ready: 75, watch: 60, exit_hysteresis: 65 }
   max_per_sector: 3
