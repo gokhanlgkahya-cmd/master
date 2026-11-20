@@ -1,0 +1,29 @@
+# Açık Kararlar
+
+Karar verilene kadar `config/params.yaml` içindeki varsayılan geçerlidir. Karar verilince bu dosyada **Karar** sütunu doldurulur ve params güncellenir (PATCH/MINOR sürüm).
+
+| # | Konu | Seçenekler | Varsayılan | Karar |
+|---|---|---|---|---|
+| 1 | Kullanım modu | Manuel karar desteği · Yarı otomatik (alarm) · Tam otomatik bot | Karar desteği + alarm | |
+| 2 | Platform önceliği | Python çekirdek + Pine görsel · Yalnız Pine | Python çekirdek, Pine görsel/parite | |
+| 3 | BIST short | Long-only · VİOP ile short | Long-only | |
+| 4 | BIST evreni | BIST30 · BIST100 | BIST30 | |
+| 5 | BIST veri kaynağı | yfinance (sınırlı) · Matriks · İş Yatırım · TV export · diğer | ? | |
+| 6 | Altın/gümüş enstrümanı | Spot/CFD · VİOP · COMEX vadeli | ? (RVOL buna bağlı) | |
+| 7 | Kripto | Spot · Perp; kaldıraç | Spot, kaldıraçsız | |
+| 8 | Öncelikli profil | P1 4H/15m · P2 1D/1H · P3 1W/4H | P2 | |
+| 9 | İşlem başı risk / max eşzamanlı pozisyon | Mevcut %0.5–2.0, aylık %6 · başka | Mevcut çerçeve; max 5 pozisyon | |
+| 10 | Hedef profil | Düşük win% + yüksek R · Sık küçük kazanç | Düşük win% + yüksek R | |
+| 11 | Pivot yöntemi | Hibrit (fraktal + ATR + alternasyon) · Saf ATR zigzag | Hibrit | |
+| 12 | Trend çizgisi teyidi | 2 temas · 3 temas şart | 2 temas = ARMED, 3 temas = kalite | |
+| 13 | Çizgi kırılımında giriş | CHoCH onayı · Agresif yarım risk | CHoCH onayı | |
+| 14 | Trailing TF | Giriş TF · Ara TF · HTF | Ara TF | |
+| 15 | BIST P2 trailing | 1H ara pivot · 1D ara pivot | 1D ara pivot | |
+| 16 | Sığ geri çekilme (pd 0.50–0.62) | Kapalı · Yarım risk | Kapalı | |
+| 17 | Yatay piyasada aralık içi işlem | Kapalı · PD ile mean-reversion | Kapalı | |
+| 18 | Ç3 değişimi | Kalite notu ile tamamen değiştir · Yalnız ADX kısmını çıkar | Tamamen değiştir | |
+| 19 | Tarama frekansı | Günlük kapanış · Seans içi saatlik | Günlük kapanış | |
+| 20 | Paper trading süresi | 4 · 8 · 12 hafta | 8 hafta | |
+| 21 | Bildirim kanalı | Telegram · e-posta · HTML rapor | HTML rapor + Telegram | |
+| 22 | Orkestrasyon | Hermes Agent (Nous Research?) · Claude Code zamanlanmış görev · cron | Netleştirilecek | |
+| 23 | Kısmi kâr ve başabaş | 1.5R %40 + BE · 1R + BE · kısmi yok | 1.5R %40 + BE (test edilecek) | |

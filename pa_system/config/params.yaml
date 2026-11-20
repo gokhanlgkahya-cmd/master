@@ -1,0 +1,132 @@
+# PA sistemi parametreleri — tek doğruluk kaynağı.
+# Kod içinde sayı sabit yazılmaz; buradan okunur.
+# "open: true" işaretli değerler OPEN_DECISIONS.md'de karar bekliyor (varsayılan geçerli).
+
+ruleset_version: "1.0.0"
+
+profiles:
+  P1: { htf: "4h", ltf: "15m", trail_tf: "1h",  assets: [BTC, ETH, XAU, XAG] }
+  P2: { htf: "1d", ltf: "1h",  trail_tf: "4h",  assets: [BTC, ETH, XAU, XAG, BIST] }
+  P3: { htf: "1w", ltf: "4h",  trail_tf: "1d",  assets: [BTC, ETH, XAU, XAG] }
+  P3_BIST: { htf: "1w", ltf: "1d", trail_tf: "1d", assets: [BIST] }
+  overrides:
+    BIST:
+      P2: { trail_tf: "1d", trail_level: "ara", open: true }   # BIST'te 4H yok
+
+indicators:
+  atr: { length: 14 }
+  atr_pct_rank: { lookback: 100, high: 80, low: 20 }
+  ema: { fast: 50, slow: 200, slope_lookback: 10 }      # eğim = (EMA50 - EMA50[10]) / ATR
+  er: { length: 20, trend_enter: 0.30, trend_exit: 0.20, range_max: 0.15 }
+  adx: { length: 14, enabled: false }                    # yalnız teyit, puanlanmaz
+  rsi: { length: 14, uptrend_floor: 40, downtrend_ceiling: 60 }
+  bollinger: { length: 20, mult: 2.0 }
+  keltner: { length: 20, atr_mult: 1.5 }
+  rvol: { length: 20, bist_session_normalize: true }
+
+pivots:
+  htf: { left: 5, right: 5 }
+  ltf: { left: 3, right: 3 }
+  min_swing_atr: { ana: 1.5, ara: 0.75 }
+  enforce_alternation: true
+  price_source: wick          # pivot fiyatı fitil; kırılım kapanış
+  calibration:
+    match_bar_tolerance: 2
+    match_price_tolerance_atr: 0.25
+
+pd:
+  discount_max: 0.50
+  ote_long: [0.21, 0.38]
+  ote_short: [0.62, 0.79]
+  shallow_pullback: { enabled: false, long_range: [0.50, 0.62], risk_mult: 0.5, open: true }
+
+regime:
+  priority: [D, C, B, A]
+  confirm_bars: 2
+  D: { atr_pct_rank_min: 80, er_max: 0.20 }
+  C: { squeeze_min_bars: 6, atr_pct_rank_max: 40 }
+  B: { er_max: 0.15 }
+  A: { er_min: 0.30 }
+  overextension_atr: 2.5      # |close - EMA50| HTF
+  range_trading: { enabled: false, open: true }
+
+levels:
+  cluster_tolerance_atr: 0.25
+  min_touches: 2
+
+trendline:
+  min_pivots: 2
+  valid_touches: 3
+  touch_tolerance_atr: 0.25
+  min_bar_spacing: 5
+  max_slope_atr_per_bar: 0.5
+  aggressive_entry_on_line_break: { enabled: false, risk_mult: 0.5, open: true }
+
+breakout:
+  buffer_atr: 0.2
+  rvol_min: 1.3
+  rvol_min_squeeze: 1.5
+  rvol_weekend_add: 0.3       # kripto hafta sonu
+  body_ratio_min: 0.5
+  close_in_top_pct: 0.30
+  followthrough_bars: 3
+  success_label_r: 1.0
+
+divergence:
+  oscillator: rsi
+  pivot_level: ara
+  min_bars: 5
+  max_bars: 60
+  regular_first_pivot_rsi_long_max: 40
+  regular_first_pivot_rsi_short_min: 60
+
+state_machine:
+  armed_ttl_ltf_bars: 20
+  cooldown_ltf_bars_after_stop: 10
+  entry_order: next_open      # next_open | stop_limit
+
+event_filter:
+  macro_window_hours: 2       # FOMC, CPI, NFP, TCMB
+  bist_corporate_window_days: 3   # bilanço, temettü, bedelsiz
+
+entry:
+  max_stop_atr: 2.0
+  min_rr_to_tp1: 2.0
+
+exit:
+  partial: { at_r: 1.5, fraction: 0.40, move_stop_to_be: true }
+  chandelier_atr: 3.0
+  time_stop_ltf_bars: 30
+  time_stop_min_r: 1.0
+  regime_exit_on_htf_ema50_cross: true
+  bist_gap_allowance_mult: 1.5
+
+assets:
+  BTC:  { stop_k_atr: 0.75, rvol: true, volume_source: "binance_spot", corr_group: crypto, open_volume_source: true }
+  ETH:  { stop_k_atr: 0.75, rvol: true, volume_source: "binance_spot", corr_group: crypto, filter: eth_btc_trend }
+  XAU:  { stop_k_atr: 0.50, rvol: false, volume_source: null, corr_group: metals, open: true }
+  XAG:  { stop_k_atr: 1.00, rvol: false, volume_source: null, corr_group: metals, confirm_with: XAU, open: true }
+  BIST: { stop_k_atr: 0.50, rvol: true, long_only: true, corr_group: sector, max_per_sector: 2,
+          min_avg_turnover_try: 50000000, adjusted_data: true, usd_trend_check: true, open: true }
+
+risk:
+  use_existing_multipliers: true      # risk_multipliers.calculate_position_risk
+  replace_c3_with_quality: true       # open: true
+  quality_mult: { "A+": 1.0, "A": 0.75, "B": 0.5 }
+  corr_group_max_risk_mult: 1.5
+
+scanner:
+  weights: { structure: 25, pd: 20, relative_strength: 15, trend_quality: 15, setup_readiness: 15, rr: 10 }
+  structure_scores: { up: 1.0, range_breakout: 0.7, fresh_choch: 0.5 }
+  rr_map: { zero_at: 1.5, full_at: 3.0 }
+  market_mult: { up: 1.0, range: 0.8, down: 0.5 }
+  alignment_bonus: { min_score: 60, bonus: 7 }
+  tiers: { ready: 75, watch: 60, exit_hysteresis: 65 }
+  max_per_sector: 3
+  frequency: daily_close        # open: true (1D/1H için saatlik gerekebilir)
+
+validation:
+  min_trades_report: 30
+  min_trades_decision: 100
+  paper_trading_weeks: 8        # open: true
+  walk_forward: { train_months: 24, test_months: 6 }

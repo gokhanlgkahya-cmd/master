@@ -1,0 +1,162 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "pa_system/outputs.schema.json",
+  "title": "PA sistemi çıktı şemaları",
+  "$defs": {
+    "meta": {
+      "type": "object",
+      "required": ["ruleset_version", "params_hash", "generated_at"],
+      "properties": {
+        "ruleset_version": { "type": "string" },
+        "params_hash": { "type": "string" },
+        "generated_at": { "type": "string", "format": "date-time" }
+      }
+    },
+    "pivot": {
+      "type": "object",
+      "required": ["kind", "level", "bar_index", "confirmed_index", "price", "time"],
+      "properties": {
+        "kind": { "enum": ["high", "low"] },
+        "level": { "enum": ["ana", "ara"] },
+        "bar_index": { "type": "integer" },
+        "confirmed_index": { "type": "integer" },
+        "price": { "type": "number" },
+        "time": { "type": "string", "format": "date-time" }
+      }
+    },
+    "signal_card": {
+      "type": "object",
+      "required": ["meta", "symbol", "profile", "regime", "htf_structure", "pd", "state", "action"],
+      "properties": {
+        "meta": { "$ref": "#/$defs/meta" },
+        "symbol": { "type": "string" },
+        "profile": { "enum": ["P1", "P2", "P3", "P3_BIST"] },
+        "regime": { "enum": ["A", "A-", "B", "C", "D", "UNDEFINED"] },
+        "htf_structure": { "enum": ["UP", "DOWN", "RANGE", "TRANSITION_UP", "TRANSITION_DOWN"] },
+        "pd": { "type": "number", "minimum": 0, "maximum": 1 },
+        "state": { "enum": ["IDLE", "ARMED", "TRIGGERED", "IN_POSITION", "EXITED", "COOLDOWN"] },
+        "action": { "enum": ["NO_TRADE", "WATCH", "OPEN_LONG", "OPEN_SHORT", "HOLD", "MOVE_STOP", "PARTIAL_CLOSE", "CLOSE"] },
+        "setup": { "enum": ["S1", "S2", "S3", null] },
+        "quality": { "enum": ["A+", "A", "B", null] },
+        "trigger": { "type": "string" },
+        "entry": { "type": ["number", "null"] },
+        "order_type": { "enum": ["next_open", "stop_limit", null] },
+        "stop": { "type": ["number", "null"] },
+        "tp1": { "type": ["number", "null"] },
+        "tp2": { "type": ["string", "null"], "description": "ör. 'trailing'" },
+        "rr_tp1": { "type": ["number", "null"] },
+        "risk_pct": { "type": ["number", "null"] },
+        "invalidation": { "type": "string" },
+        "ttl_bars": { "type": ["integer", "null"] },
+        "setup_stats": {
+          "type": "object",
+          "properties": {
+            "win_rate": { "type": "number" },
+            "avg_r": { "type": "number" },
+            "expectancy_r": { "type": "number" },
+            "n": { "type": "integer" }
+          }
+        },
+        "warnings": { "type": "array", "items": { "type": "string" } },
+        "reasons": { "type": "array", "items": { "type": "string" }, "maxItems": 3 }
+      }
+    },
+    "scan_row": {
+      "type": "object",
+      "required": ["meta", "symbol", "profile", "gate_pass", "score", "tier"],
+      "properties": {
+        "meta": { "$ref": "#/$defs/meta" },
+        "symbol": { "type": "string" },
+        "profile": { "type": "string" },
+        "gate_pass": { "type": "boolean" },
+        "gate_fail_reasons": { "type": "array", "items": { "type": "string" } },
+        "components": {
+          "type": "object",
+          "properties": {
+            "structure": { "type": "number" },
+            "pd": { "type": "number" },
+            "relative_strength": { "type": "number" },
+            "trend_quality": { "type": "number" },
+            "setup_readiness": { "type": "number" },
+            "rr": { "type": "number" }
+          }
+        },
+        "market_mult": { "type": "number" },
+        "alignment_bonus": { "type": "number" },
+        "score": { "type": "number", "minimum": 0, "maximum": 110 },
+        "tier": { "enum": ["READY", "WATCH", "OUT"] },
+        "best_profile": { "type": "boolean" },
+        "sector": { "type": ["string", "null"] }
+      }
+    },
+    "pivot_label": {
+      "type": "object",
+      "required": ["symbol", "timeframe", "labeler", "pivots"],
+      "properties": {
+        "symbol": { "type": "string" },
+        "timeframe": { "type": "string" },
+        "labeler": { "enum": ["user", "claude_prelabel", "user_corrected"] },
+        "blind": { "type": "boolean", "description": "Öneri görülmeden etiketlendi mi" },
+        "pivots": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "required": ["kind", "level", "bar_index"],
+            "properties": {
+              "kind": { "enum": ["high", "low"] },
+              "level": { "enum": ["ana", "ara"] },
+              "bar_index": { "type": "integer" },
+              "note": { "type": "string" }
+            }
+          }
+        }
+      }
+    },
+    "journal_entry": {
+      "type": "object",
+      "required": ["meta", "trade_id", "symbol", "profile", "setup", "entry_time", "result_r"],
+      "properties": {
+        "meta": { "$ref": "#/$defs/meta" },
+        "trade_id": { "type": "string" },
+        "symbol": { "type": "string" },
+        "profile": { "type": "string" },
+        "setup": { "enum": ["S1", "S2", "S3"] },
+        "quality": { "enum": ["A+", "A", "B"] },
+        "entry_time": { "type": "string", "format": "date-time" },
+        "exit_time": { "type": ["string", "null"], "format": "date-time" },
+        "exit_reason": { "enum": ["stop", "trail", "choch", "regime", "time", "failed_breakout", "tp", "manual", null] },
+        "result_r": { "type": ["number", "null"] },
+        "screenshots": { "type": "array", "items": { "type": "string" } },
+        "review_class": { "enum": ["a_normal_loss", "b_rule_violation", "c_rule_gap", "d_data_tech", null] },
+        "review_note": { "type": "string" }
+      }
+    },
+    "screenshot_meta": {
+      "type": "object",
+      "required": ["path", "symbol", "timeframe", "purpose", "ruleset_version", "params_hash", "captured_at"],
+      "properties": {
+        "path": { "type": "string" },
+        "symbol": { "type": "string" },
+        "timeframe": { "type": "string" },
+        "bar_range": { "type": "array", "items": { "type": "integer" }, "minItems": 2, "maxItems": 2 },
+        "purpose": { "enum": ["U1", "U2", "U3", "U4", "U5", "U6", "U7", "U8"] },
+        "source": { "enum": ["python_render", "tradingview", "user_upload"] },
+        "ruleset_version": { "type": "string" },
+        "params_hash": { "type": "string" },
+        "captured_at": { "type": "string", "format": "date-time" }
+      }
+    },
+    "veto_log": {
+      "type": "object",
+      "required": ["symbol", "profile", "score", "vetoed_at", "reason"],
+      "properties": {
+        "symbol": { "type": "string" },
+        "profile": { "type": "string" },
+        "score": { "type": "number" },
+        "vetoed_at": { "type": "string", "format": "date-time" },
+        "reason": { "type": "string" },
+        "outcome_r_after_n": { "type": ["number", "null"] }
+      }
+    }
+  }
+}
