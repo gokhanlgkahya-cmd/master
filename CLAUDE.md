@@ -8,6 +8,8 @@
   3. `pa_system/IMPLEMENTATION_PLAN.md` — fazlar ve kabul kriterleri
   4. `pa_system/OPEN_DECISIONS.md` — açık kararlar
   5. `pa_system/schemas/outputs.schema.json` — çıktı şemaları
+  6. `pa_system/KONUSMA_OZETI.md` — kararların gerekçesi, tartışma geçmişi, bekleyen konular
+  7. `pa_system/TEMEL_ANALIZ_MIMARI.md` — BIST temel analiz modülü taslağı (+ `research/sasa/` denemesi)
 
 ## Kesin kurallar
 - **Lookahead yok:** HTF değerleri yalnız kapanmış mumdan; pivotlar yalnız `confirmed_index`'ten itibaren kullanılır. Her motor değişikliğinde "kesilmiş seri = tam seri" testi geçmeli.

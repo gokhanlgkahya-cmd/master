@@ -32,3 +32,8 @@ Karar verilene kadar `config/params.yaml` içindeki varsayılan geçerlidir. Kar
 | 26 | Ç2 seviye/yön ayrımı | — | — | ✅ Seviye (VIX rejimi, vade yapısı) risk'te; yön (VVIX, DXY, US10Y, XU100/sektör, BTC.D) taramada makro rüzgar |
 | 27 | Türkiye CDS | — | — | ✅ v1 kapsam dışı |
 | 28 | HTF pivot ve stop | — | — | ✅ HTF ana pivot = trend geçersizlik seviyesi; stop giriş TF pivotundan |
+| 29 | RSI 30 + RSI EMA20 sinyali | Ana tetik · Mevcut tetiklere ek teyit; hangi TF | Ek teyit (alternatif tetik), LTF; backtest karşılaştırması sonrası karar (KONUSMA_OZETI §4) | |
+| 30 | Temel veri kaynağı | İş Yatırım (gayriresmî) · KAP XBRL · Fintables/Matriks (ücretli) | İş Yatırım (deneme), üretim için netleşecek | |
+| 31 | Temel analiz evreni | BIST30 · BIST100 | BIST30 (banka + holding şablonları gerekli) | |
+| 32 | Büyüme birimi | Reel TL (TÜFE) · USD | İkisi de hesaplanır, skorda reel TL (deneme USD ile yapıldı) | |
+| 33 | Analist tahminleri | Var · Yok | v1'de yok | |
